@@ -62,8 +62,8 @@ export default function PartnerPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Email</h3>
-                    <a href="mailto:partnerships@mamaplus.org" className="text-muted-foreground hover:text-primary transition">
-                      partnerships@mamaplus.org
+                    <a href="mailto:info@mamaplus.co.ke" className="text-muted-foreground hover:text-primary transition">
+                      info@mamaplus.co.ke
                     </a>
                   </div>
                 </div>
@@ -74,8 +74,8 @@ export default function PartnerPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Phone</h3>
-                    <a href="tel:+254700000000" className="text-muted-foreground hover:text-primary transition">
-                      +254 700 000 000
+                    <a href="tel:+254769886655" className="text-muted-foreground hover:text-primary transition">
+                      +254 769 886 655
                     </a>
                   </div>
                 </div>
@@ -155,7 +155,7 @@ export default function PartnerPage() {
                   <Input
                     type="tel"
                     name="phone"
-                    placeholder="+254 700 000 000"
+                    placeholder="+254 769 886 655"
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full bg-white border-border focus:border-primary"
