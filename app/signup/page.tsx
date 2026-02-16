@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import SEOHead from '@/components/seo-head'
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -35,6 +36,17 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4">
+      <SEOHead
+        title="Create Account - Start Your Caregiving Career"
+        description="Join MamaPlus and start your professional caregiving career. Access training, certification, and job opportunities across Kenya."
+        keywords={[
+          'become a caregiver Kenya',
+          'nanny registration',
+          'childcare worker signup',
+          'caregiver jobs Kenya',
+        ]}
+        canonicalUrl="https://mamaplus.co.ke/signup"
+      />
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

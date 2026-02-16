@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import SEOHead from '@/components/seo-head'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -33,6 +34,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4">
+      <SEOHead
+        title="Sign In - Caregiver Portal"
+        description="Sign in to your MamaPlus caregiver account. Access training courses, job opportunities, and professional support."
+        keywords={[
+          'caregiver login Kenya',
+          'childcare worker portal',
+          'nanny account access',
+        ]}
+        canonicalUrl="https://mamaplus.co.ke/login"
+      />
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

@@ -3,8 +3,21 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Clock, Users, DollarSign } from 'lucide-react'
+import SEOHead from '@/components/seo-head'
 
 export default function CoursesPage() {
+  const courseSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'EducationalOrganization',
+    name: 'MamaPlus Training & Support Centre',
+    description: 'Professional childcare training courses and certification programs in Kenya',
+    url: 'https://mamaplus.co.ke/courses',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Nairobi',
+      addressCountry: 'KE',
+    },
+  }
   const courses = [
     {
       id: 1,
@@ -131,23 +144,38 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/10 to-secondary/10">
+      <SEOHead
+        title="Childcare Training Courses & Certification Programs"
+        description="Professional childcare training courses in Kenya: child safeguarding, caregiver certification, disability inclusion, leadership, and climate resilience. Build skills, advance your career."
+        keywords={[
+          'childcare training courses Kenya',
+          'caregiver certification Nairobi',
+          'childcare worker training',
+          'child safeguarding course',
+          'nanny certification program',
+          'early childhood education Kenya',
+          'professional childcare training',
+        ]}
+        canonicalUrl="https://mamaplus.co.ke/courses"
+        schema={courseSchema}
+      />
+      {/* Hero Section - Mobile Optimized */}
+      <section className="pt-20 pb-10 px-4 sm:pt-24 sm:pb-12 md:pt-32 md:pb-16 lg:px-8 bg-gradient-to-br from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-bold text-primary mb-6 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
             Build Skills, Lead <span className="text-secondary">Change</span>, Protect Children
           </h1>
-          <p className="text-xl text-secondary font-semibold max-w-3xl mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold max-w-3xl mb-6 md:mb-8">
             MamaPlus Training & Support Centre offers practical, interactive courses to equip childcare workers, centre staff, and parents with the knowledge and skills to deliver high-quality, safe, and sustainable childcare.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/login">
-              <Button className="bg-primary hover:bg-primary/90 text-white text-lg px-8 py-6">
-                Sign In to Access Courses <ArrowRight className="ml-2 w-5 h-5" />
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <Link href="/login" className="w-full">
+              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
+                Sign In to Access Courses <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/partner">
-              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-lg px-8 py-6 bg-transparent">
+            <Link href="/partner" className="w-full">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 w-full bg-transparent">
                 Contact MamaPlus for More Info
               </Button>
             </Link>
@@ -155,74 +183,74 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* Courses List */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
+      {/* Courses List - Mobile Optimized */}
+      <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {courses.map((course) => (
               <div key={course.id} className="bg-white rounded-xl border border-border overflow-hidden hover:border-primary/50 transition">
                 {/* Course Header */}
-                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-8">
-                  <h2 className="text-3xl font-bold text-primary mb-4">{course.title}</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-5 sm:p-6 md:p-8">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-4">{course.title}</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Duration</p>
-                        <p className="font-semibold text-foreground">{course.duration}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Duration</p>
+                        <p className="text-sm sm:text-base font-semibold text-foreground">{course.duration}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Dates</p>
-                      <p className="font-semibold text-foreground text-sm">{course.dates}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Dates</p>
+                      <p className="text-sm sm:text-base font-semibold text-foreground">{course.dates}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Location</p>
-                      <p className="font-semibold text-foreground">{course.location}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Location</p>
+                      <p className="text-sm sm:text-base font-semibold text-foreground">{course.location}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-primary" />
+                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Cost</p>
-                        <p className="font-semibold text-foreground">{course.cost}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Cost</p>
+                        <p className="text-sm sm:text-base font-semibold text-foreground">{course.cost}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Course Content */}
-                <div className="p-8">
+                <div className="p-5 sm:p-6 md:p-8">
                   {/* Overview */}
-                  <div className="mb-8">
-                    <h3 className="text-2xl font-bold text-primary mb-3">Course Overview</h3>
-                    <p className="text-lg text-muted-foreground">{course.overview}</p>
+                  <div className="mb-6 sm:mb-8">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-3">Course Overview</h3>
+                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground">{course.overview}</p>
                   </div>
 
                   {/* Target Audience */}
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-primary" />
+                  <div className="mb-6 sm:mb-8">
+                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                       Target Audience
                     </h3>
-                    <ul className="grid md:grid-cols-2 gap-3">
+                    <ul className="grid md:grid-cols-2 gap-2.5 sm:gap-3">
                       {course.audience.map((item, i) => (
-                        <li key={i} className="flex gap-3">
+                        <li key={i} className="flex gap-2.5 sm:gap-3">
                           <span className="text-primary font-bold">•</span>
-                          <span className="text-foreground">{item}</span>
+                          <span className="text-sm sm:text-base text-foreground">{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {/* Learning Objectives */}
-                  <div className="grid md:grid-cols-2 gap-8 mb-8">
+                  <div className="grid md:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
                     <div>
-                      <h3 className="text-xl font-bold text-primary mb-4">Learning Objectives</h3>
-                      <ul className="space-y-3">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-primary mb-4">Learning Objectives</h3>
+                      <ul className="space-y-2.5 sm:space-y-3">
                         {course.objectives.map((obj, i) => (
-                          <li key={i} className="flex gap-3">
+                          <li key={i} className="flex gap-2.5 sm:gap-3">
                             <span className="text-primary font-bold">✓</span>
-                            <span className="text-muted-foreground">{obj}</span>
+                            <span className="text-sm sm:text-base text-muted-foreground">{obj}</span>
                           </li>
                         ))}
                       </ul>
@@ -230,12 +258,12 @@ export default function CoursesPage() {
 
                     {/* Benefits */}
                     <div>
-                      <h3 className="text-xl font-bold text-primary mb-4">Key Benefits</h3>
-                      <ul className="space-y-3">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-primary mb-4">Key Benefits</h3>
+                      <ul className="space-y-2.5 sm:space-y-3">
                         {course.benefits.map((benefit, i) => (
-                          <li key={i} className="flex gap-3">
+                          <li key={i} className="flex gap-2.5 sm:gap-3">
                             <span className="text-primary font-bold">✓</span>
-                            <span className="text-muted-foreground">{benefit}</span>
+                            <span className="text-sm sm:text-base text-muted-foreground">{benefit}</span>
                           </li>
                         ))}
                       </ul>
@@ -243,22 +271,22 @@ export default function CoursesPage() {
                   </div>
 
                   {/* What's Included */}
-                  <div className="bg-white/50 border border-border rounded-lg p-6 mb-6">
-                    <p className="text-foreground"><span className="font-semibold">What's Included:</span> {course.includes}</p>
+                  <div className="bg-white/50 border border-border rounded-lg p-4 sm:p-5 md:p-6 mb-4 sm:mb-6">
+                    <p className="text-sm sm:text-base text-foreground"><span className="font-semibold">What's Included:</span> {course.includes}</p>
                     {course.scholarship && (
-                      <p className="text-secondary font-semibold mt-3"><span className="text-primary">💡 Special Offer:</span> {course.scholarship}</p>
+                      <p className="text-sm sm:text-base text-secondary font-semibold mt-3"><span className="text-primary">💡 Special Offer:</span> {course.scholarship}</p>
                     )}
                   </div>
 
                   {/* CTA Button */}
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <Link href="/partner" className="flex-1">
-                      <Button className="w-full bg-primary hover:bg-primary/90 text-white py-6">
-                        Contact Us <ArrowRight className="ml-2 w-5 h-5" />
+                      <Button className="w-full bg-primary hover:bg-primary/90 text-white py-4 sm:py-5 md:py-6 text-sm sm:text-base">
+                        Contact Us <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </Link>
                     <Link href="/login" className="flex-1">
-                      <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 py-6 bg-transparent">
+                      <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 py-4 sm:py-5 md:py-6 bg-transparent text-sm sm:text-base">
                         Sign In to Portal
                       </Button>
                     </Link>
@@ -270,11 +298,11 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* Why MamaPlus Training */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/50">
+      {/* Why MamaPlus Training - Mobile Optimized */}
+      <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-white/50">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-primary mb-12 text-center">Why Choose MamaPlus Training?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-8 sm:mb-10 md:mb-12 text-center">Why Choose MamaPlus Training?</h2>
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {[
               {
                 title: "Practical & Hands-On",
@@ -301,30 +329,30 @@ export default function CoursesPage() {
                 description: "Network with other childcare professionals and build relationships with peers in your field."
               }
             ].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-6 border border-border hover:border-primary/50 transition">
-                <h3 className="text-xl font-bold text-primary mb-3">{item.title}</h3>
-                <p className="text-muted-foreground">{item.description}</p>
+              <div key={idx} className="bg-white rounded-xl p-5 sm:p-6 border border-border hover:border-primary/50 transition">
+                <h3 className="text-lg sm:text-xl font-bold text-primary mb-3">{item.title}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
+      {/* CTA Section - Mobile Optimized */}
+      <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-primary mb-6">Ready to Start Your Learning Journey?</h2>
-          <p className="text-xl text-secondary font-semibold mb-8 max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Ready to Start Your Learning Journey?</h2>
+          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold mb-6 md:mb-8 max-w-2xl mx-auto px-4">
             Choose a course that matches your goals and elevate your childcare skills.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/partner">
-              <Button className="bg-primary hover:bg-primary/90 text-white text-lg px-8 py-6">
-                Contact Us <ArrowRight className="ml-2 w-5 h-5" />
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <Link href="/partner" className="w-full">
+              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
+                Contact Us <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/partner">
-              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-lg px-8 py-6 bg-transparent">
+            <Link href="/partner" className="w-full">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 w-full bg-transparent">
                 Contact for More Info
               </Button>
             </Link>
