@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Users, Award, Home, Briefcase, BookOpen, Heart, ChevronDown } from 'lucide-react'
+import { ArrowRight, Users, Award, Home, Briefcase, BookOpen, Heart, ChevronDown, Building2 } from 'lucide-react'
 import { useState } from 'react'
 import SEOHead from '@/components/seo-head'
 
@@ -90,6 +90,20 @@ export default function ServicesPage() {
         "Practical resources and community connection"
       ],
       cta: "Access Parent Resources"
+    },
+    {
+      icon: Building2,
+      title: "Solutions for Government & Public Sector",
+      description: "We partner with governments to strengthen childcare systems, expand access to quality care, and build a trained workforce that supports national development goals.",
+      features: [
+        "Policy implementation support and technical assistance",
+        "Public childcare infrastructure development and management",
+        "National caregiver training and certification programs",
+        "Quality standards development and monitoring systems",
+        "Community-based childcare program expansion",
+        "Data systems for childcare workforce and service mapping"
+      ],
+      cta: "Partner With Government"
     }
   ]
 
@@ -269,58 +283,65 @@ export default function ServicesPage() {
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-white/50">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-6 sm:mb-8 md:mb-12 text-center">Value Proposition</h2>
-          {/* Mobile: Horizontal scroll, Desktop: Grid */}
-          <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="flex md:grid md:grid-cols-subgrid gap-4 md:gap-6 lg:gap-8 pb-4 md:pb-0">
-              {[
-                {
-                  title: "For Families",
-                  items: [
-                    "Childcare you can trust",
-                    "Caregivers who are trained and supported",
-                    "Clear expectations and standards",
-                    "Peace of mind to work and thrive"
-                  ]
-                },
-                {
-                  title: "For Caregivers",
-                  items: [
-                    "Professional training and certification",
-                    "Job matching and placement support",
-                    "Ongoing mentorship and support",
-                    "Dignified, rewarding career path"
-                  ]
-                },
-                {
-                  title: "Placement Agencies",
-                  items: [
-                    "Access to trained caregivers",
-                    "Clear quality standards and guidance",
-                    "Increased trust from families",
-                    "Shared commitment to child wellbeing"
-                  ]
-                },
-                {
-                  title: "For Corporates",
-                  items: [
-                    "Access to quality childcare for staff",
-                    "Access to training courses"
-                  ]
-                }
-              ].map((proposition, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 sm:p-6 md:p-8 border border-border min-w-[280px] md:min-w-0 flex-shrink-0">
-                  <h3 className="text-xl sm:text-2xl font-bold text-primary mb-3 sm:mb-4">{proposition.title}</h3>
-                  <ul className="space-y-2.5 sm:space-y-3">
-                    {proposition.items.map((item, j) => (
-                      <li key={j} className="flex gap-2.5 sm:gap-3 text-sm sm:text-base text-muted-foreground">
-                        <span className="text-primary font-bold flex-shrink-0">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+          {/* Mobile: Horizontal scroll, Desktop: Horizontal Grid */}
+          <div className="flex lg:grid lg:grid-cols-5 gap-4 lg:gap-4 overflow-x-auto lg:overflow-visible -mx-4 px-4 lg:mx-0 lg:px-0 pb-4 lg:pb-0">
+            {[
+              {
+                title: "For Families",
+                items: [
+                  "Childcare you can trust",
+                  "Caregivers who are trained and supported",
+                  "Clear expectations and standards",
+                  "Peace of mind to work and thrive"
+                ]
+              },
+              {
+                title: "For Caregivers",
+                items: [
+                  "Professional training and certification",
+                  "Job matching and placement support",
+                  "Ongoing mentorship and support",
+                  "Dignified, rewarding career path"
+                ]
+              },
+              {
+                title: "Placement Agencies",
+                items: [
+                  "Access to trained caregivers",
+                  "Clear quality standards and guidance",
+                  "Increased trust from families",
+                  "Shared commitment to child wellbeing"
+                ]
+              },
+              {
+                title: "For Corporates",
+                items: [
+                  "Access to quality childcare for staff",
+                  "Access to training courses"
+                ]
+              },
+              {
+                title: "For Governments",
+                items: [
+                  "Policy implementation support",
+                  "Public childcare infrastructure development",
+                  "National workforce training programs",
+                  "Quality monitoring and data systems"
+                ]
+              }
+            ].map((proposition, i) => (
+              <div key={i} className="bg-white rounded-xl p-5 sm:p-6 border border-border min-w-[280px] lg:min-w-0 flex-shrink-0">
+                <h3 className="text-lg sm:text-xl font-bold text-primary mb-3 sm:mb-4">{proposition.title}</h3>
+                <ul className="space-y-2 sm:space-y-2.5">
+                  {proposition.items.map((item, j) => (
+                    <li key={j} className="flex gap-2 sm:gap-2.5 text-sm text-muted-foreground">
+                      <span className="text-primary font-bold flex-shrink-0">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
