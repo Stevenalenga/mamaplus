@@ -19,13 +19,16 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname()
   const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isDashboardPage = pathname?.startsWith('/dashboard')
+  const isCoursesPage = pathname === '/courses'
+  const isAppPage = isAuthPage || isDashboardPage || isCoursesPage
 
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        {!isAuthPage && <Header />}
+        {!isAppPage && <Header />}
         {children}
-        {!isAuthPage && <Footer />}
+        {!isAppPage && <Footer />}
         <Analytics />
       </body>
     </html>

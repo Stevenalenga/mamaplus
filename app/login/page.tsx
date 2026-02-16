@@ -1,15 +1,17 @@
 'use client'
 
-import React from "react"
+import React from 'react'
 
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -27,8 +29,23 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
+    // Dummy login: redirect to user dashboard
     console.log('Login attempt:', formData)
+    localStorage.setItem('currentUserType', 'user')
+    router.push('/dashboard/user')
+  }
+
+  const handleAdminLogin = () => {
+    // Dummy admin login redirect
+    localStorage.setItem('currentUserType', 'admin')
+    router.push('/dashboard/admin')
+  }
+
+  const handleSocialLogin = (provider: string) => {
+    // Placeholder: in future wire up OAuth flows
+    console.log('Social login:', provider)
+    localStorage.setItem('currentUserType', 'user')
+    router.push('/dashboard/user')
   }
 
   return (
@@ -114,6 +131,10 @@ export default function LoginPage() {
           >
             Sign In
           </Button>
+
+          <Button type="button" onClick={handleAdminLogin} className="w-full bg-muted text-foreground font-semibold py-3">
+            Sign In as Admin (placeholder)
+          </Button>
         </form>
 
         {/* Divider */}
@@ -131,7 +152,7 @@ export default function LoginPage() {
         {/* Social Sign In */}
         <div className="space-y-3 mb-6">
           {/* Google */}
-          <button className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
+          <button onClick={() => handleSocialLogin('google')} className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 c0-3.331,2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.461,2.268,15.365,1.25,12.545,1.25 c-6.209,0-11.25,5.041-11.25,11.25c0,6.209,5.041,11.25,11.25,11.25c6.209,0,11.25-5.041,11.25-11.25 C23.795,11.6,23.7,10.999,23.589,10.403H12.545z"/>
             </svg>
@@ -139,7 +160,7 @@ export default function LoginPage() {
           </button>
 
           {/* Microsoft */}
-          <button className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
+          <button onClick={() => handleSocialLogin('microsoft')} className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#00A4EF" d="M0 0h11v11H0z"/>
               <path fill="#7FBA00" d="M13 0h11v11H13z"/>

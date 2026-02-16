@@ -21,6 +21,7 @@ export default function Header() {
           <Link href="/" className="text-foreground hover:text-primary transition">Home</Link>
           <Link href="/services" className="text-foreground hover:text-primary transition">Services</Link>
           <Link href="/courses" className="text-foreground hover:text-primary transition">Courses</Link>
+          <Link href="/locations" className="text-foreground hover:text-primary transition">Locations</Link>
           <Link href="/partner" className="text-foreground hover:text-primary transition">Partner with us</Link>
           <Link href="/donate" className="text-foreground hover:text-primary transition">Donate</Link>
         </div>
