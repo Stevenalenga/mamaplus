@@ -11,6 +11,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [userType, setUserType] = useState<'educator' | 'student'>('student')
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -49,6 +50,35 @@ export default function SignupPage() {
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">Create Account</h1>
           <p className="text-secondary font-semibold">Start your journey in professional caregiving</p>
+        </div>
+
+        {/* User Type Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-3">I am a:</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setUserType('student')}
+              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
+                userType === 'student'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType('educator')}
+              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
+                userType === 'educator'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              Educator
+            </button>
+          </div>
         </div>
 
         {/* Sign up Form */}

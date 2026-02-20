@@ -13,6 +13,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 export default function LoginPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
+  const [userType, setUserType] = useState<'educator' | 'student'>('student')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,6 +65,35 @@ export default function LoginPage() {
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">Welcome Back</h1>
           <p className="text-secondary font-semibold">Sign in to access your caregiver portal</p>
+        </div>
+
+        {/* User Type Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-3">I am a:</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setUserType('student')}
+              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
+                userType === 'student'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType('educator')}
+              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
+                userType === 'educator'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
+              }`}
+            >
+              Educator
+            </button>
+          </div>
         </div>
 
         {/* Login Form */}
