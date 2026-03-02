@@ -16,10 +16,10 @@ export async function POST(request: Request) {
             },
         })
 
-        // Email to info@uthabitiafrica.org and mamapluske@gmail.com
+        // Email to mamapluske@gmail.com
         await transporter.sendMail({
             from: process.env.SMTP_FROM || 'noreply@mamaplus.co.ke',
-            to: 'info@uthabitiafrica.org, mamapluske@gmail.com',
+            to: 'mamapluske@gmail.com',
             subject: 'New Quick Signup - MamaPlus Training',
             html: `
                 <h2>New Quick Signup Submission</h2>

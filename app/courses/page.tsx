@@ -47,10 +47,10 @@ export default function CoursesPage() {
       id: 2,
       title: "15-Day Accelerated Childcare Worker Training Course",
       duration: "15 Days",
-      dates: "Flexible schedule, including weekends",
-      location: "TBD",
-      cost: "KES 1,000 per day",
-      audience: ["Experienced childcare workers", "Childcare micro-entrepreneurs", "Domestic workers without formal training"],
+      dates: "16th March onwards (Inservice during school holidays)",
+      location: "Nairobi, Kisumu, Bungoma & Migori",
+      cost: "KES 24,000",
+      audience: ["Experienced childcare workers", "Childcare micro-entrepreneurs", "Domestic workers without formal training", "Early Childhood Development (ECD) teachers – 0–5 years", "Anyone interested in childcare"],
       overview: "This intensive 15-day training equips childcare workers with practical skills to deliver safe, nurturing, and high-quality care. Participants gain hands-on experience, professional knowledge, and leadership skills needed to excel in childcare homes, centres, or entrepreneurial ventures.",
       objectives: [
         "Foundations of Childcare – Health, hygiene, child safety, and basic development",
@@ -74,7 +74,7 @@ export default function CoursesPage() {
       duration: "2 Days",
       dates: "Ongoing, demand-driven",
       location: "TBD",
-      cost: "Contact for pricing",
+      cost: "KES 8,000",
       audience: ["Teachers", "Childcare Workers", "Development Professionals"],
       overview: "Learn to create inclusive, accessible, and safe childcare environments for children with diverse needs. This course equips staff to support children with disabilities while strengthening centre operations.",
       objectives: [
@@ -98,7 +98,7 @@ export default function CoursesPage() {
       duration: "2 Days",
       dates: "Ongoing, Demand-Driven",
       location: "TBD",
-      cost: "KES 2,500",
+      cost: "KES 3,000",
       audience: ["Childcare workers", "Centre managers", "Supervisors"],
       overview: "Build leadership, management, and operational skills to lead teams, improve childcare operations, and drive sustainable growth.",
       objectives: [
@@ -122,7 +122,7 @@ export default function CoursesPage() {
       duration: "1 Day",
       dates: "Ongoing and Demand-driven",
       location: "TBD",
-      cost: "KES 1,500",
+      cost: "KES 3,000",
       audience: ["Childcare workers", "Centre managers", "Home-based providers"],
       overview: "Understand climate risks and their impact on children, and learn to create resilient, safe, and sustainable childcare environments.",
       objectives: [

@@ -21,12 +21,11 @@ export default function QuickSignupPage() {
     const [submittedPhone, setSubmittedPhone] = useState('')
 
     const courses = [
-        'Certified Child Development Training',
-        'Child Safety & CPR',
-        'Educational Play & Learning',
-        'Soft Skills Training',
-        'Nutrition & Hygiene',
-        'Early Childhood Development',
+        'Regional Child Safeguarding & Protection Training',
+        '15-Day Accelerated Childcare Worker Training Course',
+        'Disability & Inclusion in Early Childhood Care, Education and Development',
+        'Leadership & Management for Childcare Workers',
+        'Climate Change & Environmental Management',
     ]
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

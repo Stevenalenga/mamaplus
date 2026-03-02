@@ -3,29 +3,75 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, CheckCircle, Users, ChevronDown } from 'lucide-react'
+import { ArrowRight, CheckCircle, ChevronDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import SEOHead from '@/components/seo-head'
 
 export default function LandingPage() {
   const [expandedService, setExpandedService] = useState<number | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [heroImageIndex, setHeroImageIndex] = useState(0)
   
+  // Hero section images - Training and education focused
+  const heroImages = [
+    {
+      src: '/mamaplusservices/explain.jpeg',
+      alt: 'MamaPlus trainers conducting caregiver education session',
+      caption: 'Professional Caregiver Training'
+    },
+    {
+      src: '/mamaplusservices/newsec.jpeg',
+      alt: 'MamaPlus trainer presenting to caregivers in a training session',
+      caption: 'Expert-Led Caregiver Training'
+    },
+    {
+      src: '/mamaplus images/education.jpeg',
+      alt: 'Interactive hands-on training session for caregivers',
+      caption: 'Hands-On Skills Development'
+    },
+    {
+      src: '/mamaplusservices/crowd.jpeg',
+      alt: 'Caregivers learning in MamaPlus training center',
+      caption: 'Building Quality Care Standards'
+    },
+    {
+      src: '/mamaplusservices/totalnew.jpeg',
+      alt: 'Caregivers in a vibrant classroom learning environment',
+      caption: 'Learning Environments That Inspire'
+    }
+  ]
+
+  // Gallery section images - Community and impact focused
   const galleryImages = [
     {
-      src: '/mamaplus images/photoopp.jpeg',
-      alt: 'MamaPlus community gathering - caregivers and stakeholders',
+      src: '/mamaplusservices/crowd.jpeg',
+      alt: 'Caregivers attending training session in classroom environment',
       caption: 'Building a Community of Care'
     },
     {
-      src: '/mamaplus images/presentaton.jpeg',
-      alt: 'Climate action and childcare presentation',
-      caption: 'When Childcare Stops, Everything Stops'
+      src: '/mamaplusservices/explain.jpeg',
+      alt: 'Interactive hands-on training with practical learning activities',
+      caption: 'Hands-On Skills Development'
     },
     {
-      src: '/mamaplus images/imageconfrence.jpeg',
-      alt: 'Panel discussion on childcare standards',
-      caption: 'Expert Insights on Quality Childcare'
+      src: '/mamaplusservices/newsec.jpeg',
+      alt: 'MamaPlus trainer presenting to caregivers in a training session',
+      caption: 'Expert-Led Caregiver Training'
+    },
+    {
+      src: '/mamaplusservices/newpic.jpeg',
+      alt: 'Professional development session for childcare providers',
+      caption: 'Professional Growth & Standards'
+    },
+    {
+      src: '/mamaplus images/education.jpeg',
+      alt: 'Interactive training with real-world childcare scenarios',
+      caption: 'Practical Training That Works'
+    },
+    {
+      src: '/mamaplusservices/totalnew.jpeg',
+      alt: 'Caregivers in a vibrant classroom learning environment',
+      caption: 'Inspiring Learning Environments'
     }
   ]
 
@@ -35,6 +81,13 @@ export default function LandingPage() {
     }, 5000)
     return () => clearInterval(interval)
   }, [galleryImages.length])
+
+  useEffect(() => {
+    const heroInterval = setInterval(() => {
+      setHeroImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
+    }, 4000)
+    return () => clearInterval(heroInterval)
+  }, [heroImages.length])
   
   const pageSchema = {
     '@context': 'https://schema.org',
@@ -75,9 +128,9 @@ export default function LandingPage() {
                 MamaPlus supports families by ensuring children receive safe, nurturing, and high-quality childcare—at home, in centres, or near the workplace.
               </p>
               <div className="flex flex-col gap-3 sm:gap-4">
-                <Link href="/services" className="w-full">
+                <Link href="/services/quicksignup" className="w-full">
                   <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
-                    Find Childcare <ArrowRight className="ml-2 w-4 h-4" />
+                    Get Started Now <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
                 <Link href="/signup" className="w-full">
@@ -87,10 +140,46 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl p-6 h-48 sm:h-64 md:h-80 lg:h-96 flex items-center justify-center">
-              <div className="text-center">
-                <Users className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 text-primary mx-auto mb-3 md:mb-4" />
-                <p className="text-primary font-semibold text-sm sm:text-base md:text-lg">Trusted Childcare Platform</p>
+            <div className="relative rounded-2xl overflow-hidden h-48 sm:h-64 md:h-80 lg:h-96 shadow-xl">
+              {heroImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+                    index === heroImageIndex
+                      ? 'opacity-100 scale-100'
+                      : 'opacity-0 scale-105'
+                  }`}
+                >
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+                    <p className="text-white font-bold text-base sm:text-lg md:text-xl lg:text-2xl drop-shadow-lg">
+                      {image.caption}
+                    </p>
+                    <p className="text-white/90 text-xs sm:text-sm md:text-base mt-1 sm:mt-2 drop-shadow-lg">
+                      Trusted Childcare Platform
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {/* Navigation Dots */}
+              <div className="absolute top-4 right-4 flex gap-1.5 sm:gap-2">
+                {heroImages.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                      index === heroImageIndex
+                        ? 'w-6 sm:w-8 bg-white'
+                        : 'w-1.5 sm:w-2 bg-white/50'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -107,8 +196,11 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="bg-white rounded-xl p-5 sm:p-6 md:p-8 border border-border mb-8 sm:mb-10 md:mb-12">
+            <p className="text-sm sm:text-base md:text-lg text-foreground mb-3 md:mb-4">
+              The MamaPlus Training & Support Centres are the backbone of our childcare model. Working closely with County Governments and training institutions, we coordinate scalable workforce development initiatives, ensuring every caregiver and childcare provider in our network meets clear, child-centred skills aligned with national and international standards and best practices.
+            </p>
             <p className="text-sm sm:text-base md:text-lg text-foreground mb-5 md:mb-6">
-              The MamaPlus Training & Support Centres are the backbone of our childcare model. They ensure that every caregiver and childcare provider in our network meets clear, child-centred standards.
+              We run our own centres in Nairobi and Bungoma, while collaborating with others to deliver our workforce development solutions in other geographies.
             </p>
             <div className="grid md:grid-cols-2 gap-6 md:gap-8">
               <div>
@@ -128,10 +220,6 @@ export default function LandingPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-4">Our Impact</h3>
-                <p className="text-sm sm:text-base text-muted-foreground mb-4">
-                  Working with county governments, national institutions, and regional partners across Africa, MamaPlus aligns childcare standards across homes, centres, and workplaces.
-                </p>
                 <Link href="/services">
                   <Button className="bg-primary hover:bg-primary/90 text-white w-full text-base py-5">
                     Learn About Our Standards
@@ -139,6 +227,15 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-5 sm:p-6 md:p-8 border border-border">
+            <div className="text-center mb-4 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2 md:mb-3">Our Impact</h2>
+            </div>
+            <p className="text-sm sm:text-base md:text-lg text-foreground text-center max-w-3xl mx-auto">
+              We upgrade skills, facilities and practices so that childcare standards and practices are aligned across homes, centres, and workplaces. This way we ensure that we are the practical engine for childcare that families can trust.
+            </p>
           </div>
         </div>
       </section>
@@ -202,7 +299,7 @@ export default function LandingPage() {
           </div>
 
           {/* Thumbnail Strip */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto">
             {galleryImages.map((image, index) => (
               <button
                 key={index}

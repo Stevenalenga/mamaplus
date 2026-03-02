@@ -23,6 +23,7 @@ export default function Footer() {
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
               <li><Link href="/services" className="hover:text-primary transition">Features</Link></li>
               <li><Link href="/courses" className="hover:text-primary transition">Pricing</Link></li>
+              <li><Link href="/services/quicksignup" className="hover:text-primary transition">Get Started Quickly</Link></li>
               <li><Link href="#" className="hover:text-primary transition">Security</Link></li>
             </ul>
           </div>
@@ -30,7 +31,7 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
               <li><Link href="#" className="hover:text-primary transition">About</Link></li>
-              <li><Link href="#" className="hover:text-primary transition">Blog</Link></li>
+              <li><Link href="/blog" className="hover:text-primary transition">Blog</Link></li>
               <li><Link href="#" className="hover:text-primary transition">Careers</Link></li>
               <li><Link href="/partner" className="hover:text-primary transition">Partner with us</Link></li>
               <li><Link href="/donate" className="hover:text-primary transition">Donate</Link></li>

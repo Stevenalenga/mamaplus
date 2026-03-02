@@ -19,7 +19,7 @@ export default function Header() {
             width={320}
             height={106}
             priority
-            className="h-8 w-auto sm:h-10"
+            className="h-16 w-auto sm:h-20"
           />
         </Link>
         
@@ -27,11 +27,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-8">
           <Link href="/" className="text-foreground hover:text-primary transition">Home</Link>
           <Link href="/services" className="text-foreground hover:text-primary transition">Services</Link>
-          <Link href="/services/quicksignup" className="text-foreground hover:text-primary transition">Get Started Quickly</Link>
           <Link href="/courses" className="text-foreground hover:text-primary transition">Courses</Link>
-          <Link href="/blog" className="text-foreground hover:text-primary transition">Blog</Link>
-          <Link href="/partner" className="text-foreground hover:text-primary transition">Partner with us</Link>
-          <Link href="/donate" className="text-foreground hover:text-primary transition">Donate</Link>
         </div>
         
         {/* Desktop Auth Buttons */}
@@ -77,39 +73,11 @@ export default function Header() {
               Services
             </Link>
             <Link 
-              href="/services/quicksignup" 
-              className="block py-2 text-foreground hover:text-primary transition"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Get Started Quickly
-            </Link>
-            <Link 
               href="/courses" 
               className="block py-2 text-foreground hover:text-primary transition"
               onClick={() => setMobileMenuOpen(false)}
             >
               Courses
-            </Link>
-            <Link 
-              href="/blog" 
-              className="block py-2 text-foreground hover:text-primary transition"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Blog
-            </Link>
-            <Link 
-              href="/partner" 
-              className="block py-2 text-foreground hover:text-primary transition"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Partner with us
-            </Link>
-            <Link 
-              href="/donate" 
-              className="block py-2 text-foreground hover:text-primary transition"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Donate
             </Link>
             <div className="pt-3 border-t border-border space-y-2">
               <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
