@@ -27,6 +27,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-8">
           <Link href="/" className="text-foreground hover:text-primary transition">Home</Link>
           <Link href="/services" className="text-foreground hover:text-primary transition">Services</Link>
+          <Link href="/services/quicksignup" className="text-foreground hover:text-primary transition">Get Started Quickly</Link>
           <Link href="/courses" className="text-foreground hover:text-primary transition">Courses</Link>
           <Link href="/blog" className="text-foreground hover:text-primary transition">Blog</Link>
           <Link href="/partner" className="text-foreground hover:text-primary transition">Partner with us</Link>
@@ -74,6 +75,13 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Services
+            </Link>
+            <Link 
+              href="/services/quicksignup" 
+              className="block py-2 text-foreground hover:text-primary transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Get Started Quickly
             </Link>
             <Link 
               href="/courses" 

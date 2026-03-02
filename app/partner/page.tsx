@@ -95,7 +95,7 @@ export default function PartnerPage() {
                   <div>
                     <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1">Phone</h3>
                     <a href="tel:+254769886655" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition">
-                      +254 769 886 655
+                      +254769886655
                     </a>
                   </div>
                 </div>
@@ -175,7 +175,7 @@ export default function PartnerPage() {
                   <Input
                     type="tel"
                     name="phone"
-                    placeholder="+254 769 886 655"
+                    placeholder="+254769886655"
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full bg-white border-border focus:border-primary"

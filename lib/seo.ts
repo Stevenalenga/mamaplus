@@ -95,7 +95,7 @@ export const organizationSchema = {
   logo: `${siteConfig.url}/logo.png`,
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+254-769-886-655',
+    telephone: '+254769886655',
     contactType: 'customer service',
     areaServed: ['KE', 'Africa'],
     availableLanguage: ['English', 'Swahili'],
@@ -119,7 +119,7 @@ export const localBusinessSchema = {
   image: `${siteConfig.url}/logo.png`,
   '@id': siteConfig.url,
   url: siteConfig.url,
-  telephone: '+254-769-886-655',
+  telephone: '+254769886655',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Nairobi',

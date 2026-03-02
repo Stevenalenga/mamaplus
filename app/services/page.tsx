@@ -1,13 +1,49 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Users, Award, Home, Briefcase, BookOpen, Heart, ChevronDown, Building2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import SEOHead from '@/components/seo-head'
 
 export default function ServicesPage() {
   const [expandedService, setExpandedService] = useState<number | null>(null)
+  const [visibleImages, setVisibleImages] = useState<boolean[]>([false, false, false])
+  const imageRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    const observers = imageRefs.current.map((ref, index) => {
+      if (!ref) return null
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setVisibleImages(prev => {
+                if (prev[index]) return prev // Already visible, don't update
+                const newState = [...prev]
+                newState[index] = true
+                return newState
+              })
+            }
+          })
+        },
+        { threshold: 0.3 }
+      )
+      
+      observer.observe(ref)
+      return observer
+    })
+
+    return () => {
+      observers.forEach((observer, index) => {
+        if (observer && imageRefs.current[index]) {
+          observer.unobserve(imageRefs.current[index]!)
+        }
+      })
+    }
+  }, [])
   
   const serviceSchema = {
     '@context': 'https://schema.org',
@@ -178,6 +214,78 @@ export default function ServicesPage() {
                 ))}
               </ul>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Training in Action - Circular Images with Scroll Animation */}
+      <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-br from-blue-50 via-white to-blue-50/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4">
+              Training in Action
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Real moments from our training centres across Kenya
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 lg:gap-12">
+            {[
+              {
+                src: '/mamaplus images/relate.jpeg',
+                alt: 'Caregiver training session with instructor',
+                caption: 'Hands-On Training'
+              },
+              {
+                src: '/mamaplus images/education.jpeg',
+                alt: 'Caregivers learning in classroom setting',
+                caption: 'Professional Development'
+              },
+              {
+                src: '/mamaplus images/growpep.jpeg',
+                alt: 'One-on-one mentorship and guidance',
+                caption: 'Personalized Mentorship'
+              }
+            ].map((image, index) => (
+              <div
+                key={index}
+                ref={(el) => { imageRefs.current[index] = el }}
+                className="flex flex-col items-center"
+              >
+                <div
+                  className={`relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full border-[6px] border-blue-500 shadow-xl overflow-hidden transition-all duration-1000 ease-out ${
+                    visibleImages[index] ? 'animate-spin-once' : ''
+                  }`}
+                  style={{
+                    animationFillMode: 'forwards'
+                  }}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
+                <p className="mt-4 sm:mt-6 text-base sm:text-lg md:text-xl font-semibold text-primary text-center">
+                  {image.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-8 sm:mt-12">
+            <p className="text-sm sm:text-base text-muted-foreground mb-4">
+              Join our community of trained caregivers making a difference
+            </p>
+            <Link href="/signup">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white text-base px-8 py-5">
+                Start Your Training Journey <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

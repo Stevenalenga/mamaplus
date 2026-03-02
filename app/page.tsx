@@ -1,13 +1,40 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, CheckCircle, Users, ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SEOHead from '@/components/seo-head'
 
 export default function LandingPage() {
   const [expandedService, setExpandedService] = useState<number | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  
+  const galleryImages = [
+    {
+      src: '/mamaplus images/photoopp.jpeg',
+      alt: 'MamaPlus community gathering - caregivers and stakeholders',
+      caption: 'Building a Community of Care'
+    },
+    {
+      src: '/mamaplus images/presentaton.jpeg',
+      alt: 'Climate action and childcare presentation',
+      caption: 'When Childcare Stops, Everything Stops'
+    },
+    {
+      src: '/mamaplus images/imageconfrence.jpeg',
+      alt: 'Panel discussion on childcare standards',
+      caption: 'Expert Insights on Quality Childcare'
+    }
+  ]
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % galleryImages.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [galleryImages.length])
   
   const pageSchema = {
     '@context': 'https://schema.org',
@@ -112,6 +139,88 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Image Gallery - MamaPlus in Action */}
+      <section className="py-12 px-4 sm:py-16 md:py-20 lg:px-8 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4">
+              MamaPlus in Action
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Empowering caregivers, supporting families, and transforming childcare across Africa
+            </p>
+          </div>
+
+          {/* Main Carousel Image */}
+          <div className="relative max-w-5xl mx-auto mb-6 sm:mb-8">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl">
+              {galleryImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+                    index === currentImageIndex
+                      ? 'opacity-100 scale-100'
+                      : 'opacity-0 scale-105'
+                  }`}
+                >
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+                    <p className="text-white font-semibold text-lg sm:text-xl md:text-2xl drop-shadow-lg">
+                      {image.caption}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation Dots */}
+            <div className="flex justify-center gap-2 mt-4 sm:mt-6">
+              {galleryImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentImageIndex
+                      ? 'w-8 bg-primary'
+                      : 'w-2 bg-primary/30 hover:bg-primary/50'
+                  }`}
+                  aria-label={`View image ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Thumbnail Strip */}
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto">
+            {galleryImages.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentImageIndex(index)}
+                className={`relative aspect-[4/3] rounded-lg overflow-hidden transition-all duration-300 ${
+                  index === currentImageIndex
+                    ? 'ring-4 ring-primary shadow-lg scale-105'
+                    : 'ring-2 ring-border hover:ring-primary/50 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <Image
+                  src={image.src}
+                  alt={image.alt}
+                  fill
+                  className="object-cover"
+                />
+              </button>
+            ))}
           </div>
         </div>
       </section>

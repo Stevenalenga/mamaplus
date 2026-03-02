@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Clock, Users, DollarSign } from 'lucide-react'
+import { ArrowRight, Clock, Users, DollarSign, Smartphone } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 
 export default function CoursesPage() {
@@ -334,6 +334,110 @@ export default function CoursesPage() {
                 <p className="text-sm sm:text-base text-muted-foreground">{item.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Payment Information - M-Pesa */}
+      <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border-2 border-green-600 p-6 sm:p-8 md:p-10">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+              <div className="bg-green-600 rounded-full p-4">
+                <Smartphone className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+              </div>
+              <div className="text-center sm:text-left">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-800 mb-2">
+                  Pay with M-Pesa
+                </h2>
+                <p className="text-base sm:text-lg text-green-700">
+                  Quick and secure mobile payment for all courses
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-5 sm:p-6 md:p-8 shadow-lg">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-4">
+                How to Pay via M-Pesa Paybill
+              </h3>
+              
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground">
+                    Go to M-Pesa menu on your phone
+                  </p>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground">
+                    Select <span className="font-semibold">Lipa na M-Pesa</span>, then <span className="font-semibold">Pay Bill</span>
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm sm:text-base text-foreground mb-2">
+                      Enter the following details:
+                    </p>
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <div className="grid gap-3">
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Business Number (Paybill)</p>
+                          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-700">4182157</p>
+                        </div>
+                        <div className="border-t border-green-200 pt-3">
+                          <p className="text-xs sm:text-sm text-muted-foreground">Account Number</p>
+                          <p className="text-lg sm:text-xl font-bold text-green-700">Your ID Number</p>
+                          <p className="text-xs text-muted-foreground mt-1">Enter your national ID number as the account number</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    4
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground">
+                    Enter the <span className="font-semibold">course amount</span> you wish to pay
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    5
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground">
+                    Enter your <span className="font-semibold">M-Pesa PIN</span> and confirm the payment
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                    6
+                  </div>
+                  <p className="text-sm sm:text-base text-foreground">
+                    You will receive an <span className="font-semibold">M-Pesa confirmation SMS</span>. Keep this for your records.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                <p className="text-sm sm:text-base text-blue-900">
+                  <span className="font-semibold">📱 Need Help?</span> After payment, contact us at <Link href="/partner" className="text-blue-700 underline hover:text-blue-800">our contact page</Link> with your M-Pesa confirmation message to confirm your enrollment.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
