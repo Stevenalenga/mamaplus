@@ -33,7 +33,7 @@ export default function Footer() {
               <li><Link href="#" className="hover:text-primary transition">About</Link></li>
               <li><Link href="/blog" className="hover:text-primary transition">Blog</Link></li>
               <li><Link href="#" className="hover:text-primary transition">Careers</Link></li>
-              <li><Link href="/partner" className="hover:text-primary transition">Partner with us</Link></li>
+              <li><Link href="/partner" className="hover:text-primary transition">Join the MamaPlus ELC Network</Link></li>
               <li><Link href="/donate" className="hover:text-primary transition">Donate</Link></li>
             </ul>
           </div>
