@@ -25,9 +25,9 @@ export default function Header() {
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-foreground hover:text-primary transition">Home</Link>
           <Link href="/services" className="text-foreground hover:text-primary transition">Services</Link>
           <Link href="/courses" className="text-foreground hover:text-primary transition">Courses</Link>
+          <Link href="/partner" className="text-foreground hover:text-primary transition">Partner with us</Link>
         </div>
         
         {/* Desktop Auth Buttons */}
@@ -59,13 +59,6 @@ export default function Header() {
         <div className="md:hidden bg-white border-t border-border">
           <div className="px-4 py-4 space-y-3">
             <Link 
-              href="/" 
-              className="block py-2 text-foreground hover:text-primary transition"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link 
               href="/services" 
               className="block py-2 text-foreground hover:text-primary transition"
               onClick={() => setMobileMenuOpen(false)}
@@ -78,6 +71,13 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Courses
+            </Link>
+            <Link 
+              href="/partner" 
+              className="block py-2 text-foreground hover:text-primary transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Partner with us
             </Link>
             <div className="pt-3 border-t border-border space-y-2">
               <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
