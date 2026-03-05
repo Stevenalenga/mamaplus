@@ -24,13 +24,11 @@ export default function Footer() {
               <li><Link href="/services" className="hover:text-primary transition">Features</Link></li>
               <li><Link href="/courses" className="hover:text-primary transition">Pricing</Link></li>
               <li><Link href="/services/quicksignup" className="hover:text-primary transition">Get Started Quickly</Link></li>
-              <li><Link href="#" className="hover:text-primary transition">Security</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
-              <li><Link href="#" className="hover:text-primary transition">About</Link></li>
               <li><Link href="/blog" className="hover:text-primary transition">Blog</Link></li>
               <li><Link href="#" className="hover:text-primary transition">Careers</Link></li>
               <li><Link href="/partner" className="hover:text-primary transition">Join the MamaPlus ELC Network</Link></li>
@@ -41,8 +39,7 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
               <li><Link href="#" className="hover:text-primary transition">Privacy</Link></li>
-              <li><Link href="#" className="hover:text-primary transition">Terms</Link></li>
-              <li><Link href="/partner" className="hover:text-primary transition">Contact</Link></li>
+              <li><Link href="/contact" className="hover:text-primary transition">Enquiry</Link></li>
             </ul>
           </div>
         </div>

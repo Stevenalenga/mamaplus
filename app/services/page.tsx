@@ -250,7 +250,7 @@ export default function ServicesPage() {
               MamaPlus offers integrated services that support the entire childcare ecosystem—from families and caregivers to childcare centres and employers.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/signup">
+              <Link href="/services/quicksignup">
                 <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-5 text-base rounded-xl shadow-lg shadow-primary/25">
                   Get Started <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>

@@ -1,4 +1,6 @@
 import SEOHead from '@/components/seo-head'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default function PartnerPage() {
   const networkSchema = {
@@ -34,6 +36,13 @@ export default function PartnerPage() {
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto">
             Every child deserves a safe, nurturing place to learn and grow. At MamaPlus, we bring quality early learning to children who need it most.
           </p>
+          <div className="mt-6">
+            <Link href="/services/quicksignup">
+              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-5 text-base">
+                Get Started Now
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
