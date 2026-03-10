@@ -11,7 +11,7 @@ import { Eye, EyeOff } from 'lucide-react'
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [userType, setUserType] = useState<'educator' | 'student'>('student')
+  const [userType, setUserType] = useState<'educator' | 'caregiver'>('caregiver')
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -39,7 +39,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/login" className="inline-block hover:opacity-80 transition mb-6">
+          <Link href="https://mamaplus.co.ke/" className="inline-block hover:opacity-80 transition mb-6">
             <Image
               src="/logo.png"
               alt="MamaPlus"
@@ -58,14 +58,14 @@ export default function SignupPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setUserType('student')}
+              onClick={() => setUserType('caregiver')}
               className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
-                userType === 'student'
+                userType === 'caregiver'
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:border-primary/50'
               }`}
             >
-              Student
+              Caregiver
             </button>
             <button
               type="button"
