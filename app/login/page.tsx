@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -54,7 +54,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block hover:opacity-80 transition mb-6">
+          <Link href="/login" className="inline-block hover:opacity-80 transition mb-6">
             <Image
               src="/logo.png"
               alt="MamaPlus"
@@ -208,14 +208,6 @@ export default function LoginPage() {
             Create one now
           </Link>
         </p>
-
-        {/* Back to Home */}
-        <div className="mt-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition">
-            <ArrowLeft className="w-4 h-4" />
-            Back to home
-          </Link>
-        </div>
       </div>
     </div>
   )
