@@ -35,7 +35,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4 py-8">
       <SEOHead
         title="Create Account - Start Your Caregiving Career"
         description="Join MamaPlus and start your professional caregiving career. Access training, certification, and job opportunities across Kenya."
@@ -61,6 +61,30 @@ export default function SignupPage() {
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">Create Account</h1>
           <p className="text-secondary font-semibold">Start your journey in professional caregiving</p>
+        </div>
+
+        {/* Portal Coming Soon Notification */}
+        <div className="mb-6 bg-secondary/10 border border-secondary rounded-xl p-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-secondary flex items-center justify-center mt-0.5">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground text-sm mb-1">Portal Coming Soon</h3>
+                <p className="text-sm text-muted-foreground">
+                  Our online portal is currently under development. In the meantime, you can sign up for our training programs using the quick signup form.
+                </p>
+              </div>
+            </div>
+            <Link href="/services/quicksignup" className="w-full">
+              <Button className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold">
+                Go to Quick Signup
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Sign up Form */}

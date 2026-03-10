@@ -37,7 +37,7 @@ export default function Header() {
               Sign In
             </Button>
           </Link>
-          <Link href="/signup">
+          <Link href="/services/quicksignup">
             <Button className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-4 text-xs sm:text-sm">
               Get Started
             </Button>
@@ -85,7 +85,7 @@ export default function Header() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/signup" className="block" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/services/quicksignup" className="block" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-primary hover:bg-primary/90 text-white">
                   Get Started
                 </Button>

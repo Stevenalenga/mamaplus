@@ -78,7 +78,7 @@ export default function ServicesPage() {
       ],
       cta: "Find a House Manager",
       stat: "500+",
-      statLabel: "Placements Made"
+      statLabel: "Target Placements"
     },
     {
       icon: GraduationCap,
@@ -98,7 +98,7 @@ export default function ServicesPage() {
       ],
       cta: "Explore Training",
       stat: "1,200+",
-      statLabel: "Caregivers Trained"
+      statLabel: "Training Target"
     },
     {
       icon: Users,
@@ -118,7 +118,7 @@ export default function ServicesPage() {
       ],
       cta: "Join the Centre Network",
       stat: "80+",
-      statLabel: "Centres Supported"
+      statLabel: "Target Centres"
     },
     {
       icon: Briefcase,
@@ -138,7 +138,7 @@ export default function ServicesPage() {
       ],
       cta: "Partner With Us",
       stat: "30+",
-      statLabel: "Corporate Partners"
+      statLabel: "Target Partners"
     },
     {
       icon: Heart,
@@ -158,7 +158,7 @@ export default function ServicesPage() {
       ],
       cta: "Access Parent Resources",
       stat: "2,000+",
-      statLabel: "Families Reached"
+      statLabel: "Target Families"
     },
     {
       icon: Building2,
@@ -179,7 +179,7 @@ export default function ServicesPage() {
       ],
       cta: "Partner With Government",
       stat: "5+",
-      statLabel: "County Partnerships"
+      statLabel: "Target Counties"
     }
   ]
 
@@ -296,11 +296,11 @@ export default function ServicesPage() {
               {/* Floating stat cards */}
               <div className="absolute top-4 left-4 bg-white rounded-2xl px-4 py-3 shadow-lg border border-border">
                 <p className="text-2xl font-black text-primary">1,200+</p>
-                <p className="text-xs text-muted-foreground">Caregivers Trained</p>
+                <p className="text-xs text-muted-foreground">Training Target</p>
               </div>
               <div className="absolute bottom-8 right-4 bg-white rounded-2xl px-4 py-3 shadow-lg border border-border">
                 <p className="text-2xl font-black text-primary">500+</p>
-                <p className="text-xs text-muted-foreground">Families Served</p>
+                <p className="text-xs text-muted-foreground">Target Families</p>
               </div>
             </div>
           </AnimatedSection>
@@ -309,18 +309,21 @@ export default function ServicesPage() {
 
       {/* ── STATS STRIP ───────────────────────────────────── */}
       <section className="py-8 px-4 lg:px-8 bg-primary text-white">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: '1,200+', label: 'Caregivers Trained' },
-            { value: '500+', label: 'Family Placements' },
-            { value: '80+', label: 'Centres Supported' },
-            { value: '30+', label: 'Corporate Partners' },
-          ].map((s, i) => (
-            <AnimatedSection key={i} delay={i * 80}>
-              <p className="text-3xl sm:text-4xl font-black">{s.value}</p>
-              <p className="text-sm text-white/70 mt-1">{s.label}</p>
-            </AnimatedSection>
-          ))}
+        <div className="max-w-7xl mx-auto">
+          <p className="text-center text-sm text-white/80 mb-4 font-semibold">Our 2026 Impact Targets</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { value: '1,200+', label: 'Caregivers Trained' },
+              { value: '500+', label: 'Family Placements' },
+              { value: '80+', label: 'Centres Supported' },
+              { value: '30+', label: 'Corporate Partners' },
+            ].map((s, i) => (
+              <AnimatedSection key={i} delay={i * 80}>
+                <p className="text-3xl sm:text-4xl font-black">{s.value}</p>
+                <p className="text-sm text-white/70 mt-1">{s.label}</p>
+              </AnimatedSection>
+            ))}
+          </div>
         </div>
       </section>
 
