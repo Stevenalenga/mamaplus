@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
+import { ROLES, getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 
 type Resource = {
   id: string
@@ -39,6 +40,14 @@ type Educator = {
   name: string
   subject: string
   school: string
+}
+
+type ManagedUser = {
+  id: string
+  email: string
+  name: string | null
+  role: string
+  createdAt: string
 }
 
 function uid() {
@@ -159,6 +168,17 @@ export default function AdminDashboardPage() {
   const [educatorSubject, setEducatorSubject] = useState('')
   const [educatorSchool, setEducatorSchool] = useState('')
 
+  // User management state
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([])
+  const [userSearch, setUserSearch] = useState('')
+  const [userRoleFilter, setUserRoleFilter] = useState('')
+  const [userPage, setUserPage] = useState(1)
+  const [userTotal, setUserTotal] = useState(0)
+  const [userTotalPages, setUserTotalPages] = useState(1)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
+  const [userMessage, setUserMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   useEffect(() => {
     // Redirect if not authenticated or not admin
     if (status === 'loading') return
@@ -186,6 +206,64 @@ export default function AdminDashboardPage() {
       localStorage.setItem('admin:educators', JSON.stringify(educators))
     } catch {}
   }, [educators])
+
+  // Fetch users from API
+  const fetchUsers = useCallback(async (search = '', role = '', page = 1) => {
+    setLoadingUsers(true)
+    setUserMessage(null)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      if (role) params.set('role', role)
+      params.set('page', String(page))
+      params.set('limit', '10')
+      const res = await fetch(`/api/admin/users?${params.toString()}`)
+      const json = await res.json()
+      if (json.success) {
+        setManagedUsers(json.data.users)
+        setUserTotal(json.data.total)
+        setUserTotalPages(json.data.totalPages)
+        setUserPage(json.data.page)
+      } else {
+        setUserMessage({ type: 'error', text: json.message || 'Failed to load users' })
+      }
+    } catch {
+      setUserMessage({ type: 'error', text: 'Failed to load users' })
+    } finally {
+      setLoadingUsers(false)
+    }
+  }, [])
+
+  // Fetch users on mount and when filters change
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      fetchUsers(userSearch, userRoleFilter, userPage)
+    }
+  }, [status, session, fetchUsers, userSearch, userRoleFilter, userPage])
+
+  // Update a user's role
+  const updateUserRole = async (userId: string, newRole: string) => {
+    setUpdatingUserId(userId)
+    setUserMessage(null)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: newRole }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        setManagedUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+        setUserMessage({ type: 'success', text: `${json.data.name || json.data.email} is now ${getRoleDisplayName(newRole)}` })
+      } else {
+        setUserMessage({ type: 'error', text: json.message || 'Failed to update role' })
+      }
+    } catch {
+      setUserMessage({ type: 'error', text: 'Failed to update role' })
+    } finally {
+      setUpdatingUserId(null)
+    }
+  }
 
   const handleInitialFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -560,6 +638,122 @@ export default function AdminDashboardPage() {
             <p className="text-3xl font-bold text-orange-600">68%</p>
             <p className="text-xs text-muted-foreground mt-1">Completion rate</p>
           </div>
+        </div>
+
+        {/* User Management */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">User Management</h2>
+          <p className="text-sm text-muted-foreground mb-4">Search for users and assign or update their roles.</p>
+
+          {/* Search & Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="flex-1">
+              <input
+                value={userSearch}
+                onChange={e => { setUserSearch(e.target.value); setUserPage(1) }}
+                className="w-full border px-3 py-2 rounded"
+                placeholder="Search by name or email..."
+              />
+            </div>
+            <select
+              value={userRoleFilter}
+              onChange={e => { setUserRoleFilter(e.target.value); setUserPage(1) }}
+              className="border px-3 py-2 rounded min-w-[160px]"
+            >
+              <option value="">All Roles</option>
+              <option value="USER">Student / Caregiver</option>
+              <option value="INSTRUCTOR">Teacher / Educator</option>
+              <option value="ADMIN_ASSISTANT">Admin Assistant</option>
+              <option value="ADMIN">Administrator</option>
+            </select>
+          </div>
+
+          {/* Status Message */}
+          {userMessage && (
+            <div className={`mb-4 px-4 py-2 rounded text-sm ${
+              userMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              {userMessage.text}
+            </div>
+          )}
+
+          {/* Users Table */}
+          {loadingUsers ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : managedUsers.length === 0 ? (
+            <p className="text-muted-foreground py-4">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-2 font-medium">Name</th>
+                    <th className="pb-2 font-medium">Email</th>
+                    <th className="pb-2 font-medium">Current Role</th>
+                    <th className="pb-2 font-medium">Joined</th>
+                    <th className="pb-2 font-medium">Change Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {managedUsers.map(user => (
+                    <tr key={user.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                      <td className="py-3 pr-3">{user.name || '—'}</td>
+                      <td className="py-3 pr-3 text-muted-foreground">{user.email}</td>
+                      <td className="py-3 pr-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getRoleBadgeColor(user.role)}`}>
+                          {getRoleDisplayName(user.role)}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3 text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</td>
+                      <td className="py-3">
+                        {user.id === session?.user?.id ? (
+                          <span className="text-xs text-muted-foreground italic">You</span>
+                        ) : (
+                          <select
+                            value={user.role}
+                            onChange={e => updateUserRole(user.id, e.target.value)}
+                            disabled={updatingUserId === user.id}
+                            className="border px-2 py-1 rounded text-sm disabled:opacity-50"
+                          >
+                            <option value="USER">Student / Caregiver</option>
+                            <option value="INSTRUCTOR">Teacher / Educator</option>
+                            <option value="ADMIN_ASSISTANT">Admin Assistant</option>
+                            <option value="ADMIN">Administrator</option>
+                          </select>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {userTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">Showing {managedUsers.length} of {userTotal} users</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                  disabled={userPage === 1}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1 text-sm">Page {userPage} of {userTotalPages}</span>
+                <button
+                  onClick={() => setUserPage(p => Math.min(userTotalPages, p + 1))}
+                  disabled={userPage === userTotalPages}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Physical Schools Management */}

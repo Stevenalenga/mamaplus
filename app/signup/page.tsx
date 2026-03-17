@@ -105,7 +105,8 @@ export default function SignupPage() {
         body: JSON.stringify({
           name: formData.fullName.trim(),
           email: formData.email.trim(),
-          password: formData.password
+          password: formData.password,
+          role: userType === 'educator' ? 'INSTRUCTOR' : 'USER',
         }),
       })
 
@@ -151,11 +152,13 @@ export default function SignupPage() {
         const session = await sessionResponse.json()
         
         // Redirect based on user role using full page navigation
-        if (session?.user?.role === 'ADMIN') {
+        const userRole = session?.user?.role
+        if (userRole === 'ADMIN') {
           window.location.href = '/dashboard/admin'
-        } else if (userType === 'educator') {
-          // Even if not admin, redirect educator signup to appropriate page
-          window.location.href = '/dashboard/user'
+        } else if (userRole === 'ADMIN_ASSISTANT') {
+          window.location.href = '/dashboard/admin-assistant'
+        } else if (userRole === 'INSTRUCTOR') {
+          window.location.href = '/dashboard/educator'
         } else {
           window.location.href = '/dashboard/user'
         }

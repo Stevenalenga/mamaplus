@@ -16,7 +16,7 @@ model User {
   email         String    @unique
   name          String?
   password      String    // Hashed password
-  role          String    @default("USER") // USER, ADMIN, INSTRUCTOR
+  role          String    @default("USER") // USER, INSTRUCTOR, ADMIN_ASSISTANT, ADMIN
   phoneNumber   String?
   avatar        String?   // Profile picture URL
   isVerified    Boolean   @default(false)

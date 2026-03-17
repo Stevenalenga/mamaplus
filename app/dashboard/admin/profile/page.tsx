@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
+import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 
 type AdminProfile = {
   name: string
@@ -228,7 +229,11 @@ export default function AdminProfilePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
-              <p className="text-foreground font-semibold">{profile.role}</p>
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getRoleBadgeColor(session?.user?.role || 'ADMIN')}`}>
+                  {getRoleDisplayName(session?.user?.role || 'ADMIN')}
+                </span>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Admin Since</label>

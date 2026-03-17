@@ -33,6 +33,10 @@ export default function LoginPage() {
       const userRole = (session.user as any).role
       if (userRole === 'ADMIN') {
         window.location.href = '/dashboard/admin'
+      } else if (userRole === 'ADMIN_ASSISTANT') {
+        window.location.href = '/dashboard/admin-assistant'
+      } else if (userRole === 'INSTRUCTOR') {
+        window.location.href = '/dashboard/educator'
       } else {
         window.location.href = '/dashboard/user'
       }
@@ -104,8 +108,13 @@ export default function LoginPage() {
         const session = await sessionResponse.json()
         
         // Redirect based on user role
-        if (session?.user?.role === 'ADMIN') {
+        const userRole = session?.user?.role
+        if (userRole === 'ADMIN') {
           window.location.href = '/dashboard/admin'
+        } else if (userRole === 'ADMIN_ASSISTANT') {
+          window.location.href = '/dashboard/admin-assistant'
+        } else if (userRole === 'INSTRUCTOR') {
+          window.location.href = '/dashboard/educator'
         } else {
           window.location.href = '/dashboard/user'
         }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { Bell } from 'lucide-react'
+import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 import {
   Popover,
   PopoverContent,
@@ -378,6 +379,17 @@ on ${new Date().toLocaleDateString()}
             Back to Dashboard
           </button>
           <h1 className="text-3xl font-bold">My Profile</h1>
+        </div>
+
+        {/* Role / Access Level Card */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-3">Access Level</h2>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${getRoleBadgeColor(session?.user?.role)}`}>
+              {getRoleDisplayName(session?.user?.role)}
+            </span>
+            <p className="text-sm text-muted-foreground">You have student access to browse and enroll in courses.</p>
+          </div>
         </div>
 
         {/* Personal Info Card */}
