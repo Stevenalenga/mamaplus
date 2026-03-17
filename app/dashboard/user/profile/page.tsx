@@ -4,6 +4,13 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useSession, signOut } from 'next-auth/react'
+import { Bell } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 type EnrolledCourse = {
   id: string
@@ -70,36 +77,96 @@ const defaultProfile: UserProfile = {
 
 export default function UserProfilePage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [profile, setProfile] = useState<UserProfile>(defaultProfile)
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
   const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [uploadingPicture, setUploadingPicture] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: '1', title: 'New Course Available', message: 'Maternal Health Basics course is now available', time: '2 hours ago', read: false },
+    { id: '2', title: 'Certificate Ready', message: 'Your certificate for Infant Nutrition is ready to download', time: '1 day ago', read: false },
+    { id: '3', title: 'Welcome to MamaPlus', message: 'Thank you for joining our caregiving community', time: '3 days ago', read: true },
+  ])
+  const unreadCount = notifications.filter(n => !n.read).length
+  const markAsRead = (id: string) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
+  const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
 
   useEffect(() => {
-    // Validate session
-    const currentUserType = localStorage.getItem('currentUserType')
-    if (currentUserType !== 'user') {
-      router.push('/login')
+    // Redirect if not authenticated
+    if (status === 'loading') return
+    
+    if (status === 'unauthenticated') {
+      window.location.href = '/login'
       return
     }
 
-    // Load from localStorage
-    try {
-      const saved = localStorage.getItem('user:profile')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setProfile(parsed)
-        setEditedName(parsed.name)
-        setEditedEmail(parsed.email)
-      } else {
-        localStorage.setItem('user:profile', JSON.stringify(defaultProfile))
+    // Fetch user profile from database
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/users/me')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.data) {
+            const dbUser = data.data
+            // Load enrolled courses from localStorage (kept separately)
+            let enrolledCourses = defaultProfile.enrolledCourses
+            try {
+              const saved = localStorage.getItem('user:profile')
+              if (saved) {
+                const parsed = JSON.parse(saved)
+                enrolledCourses = parsed.enrolledCourses || defaultProfile.enrolledCourses
+              }
+            } catch {}
+
+            const dbProfile: UserProfile = {
+              name: dbUser.name || '',
+              email: dbUser.email || '',
+              profilePicture: dbUser.avatar || '',
+              enrolledCourses,
+            }
+            setProfile(dbProfile)
+            setEditedName(dbProfile.name)
+            setEditedEmail(dbProfile.email)
+            return
+          }
+        }
+      } catch {
+        // Fall through to session/localStorage fallback
       }
-    } catch {
-      // Ignore errors
+
+      // Fallback: use session data
+      try {
+        const saved = localStorage.getItem('user:profile')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          const fallbackProfile = {
+            ...parsed,
+            name: session?.user?.name || parsed.name,
+            email: session?.user?.email || parsed.email,
+          }
+          setProfile(fallbackProfile)
+          setEditedName(fallbackProfile.name)
+          setEditedEmail(fallbackProfile.email)
+        } else {
+          const sessionProfile = {
+            ...defaultProfile,
+            name: session?.user?.name || defaultProfile.name,
+            email: session?.user?.email || defaultProfile.email,
+            profilePicture: session?.user?.image || ''
+          }
+          setProfile(sessionProfile)
+          setEditedName(sessionProfile.name)
+          setEditedEmail(sessionProfile.email)
+        }
+      } catch {
+        // Ignore errors
+      }
     }
-  }, [router])
+
+    fetchProfile()
+  }, [status, session])
 
   const saveProfile = () => {
     const updated = { ...profile, name: editedName, email: editedEmail }
@@ -210,6 +277,20 @@ on ${new Date().toLocaleDateString()}
     ? Math.round(profile.enrolledCourses.reduce((sum, c) => sum + c.progress, 0) / profile.enrolledCourses.length)
     : 0
 
+  const handleLogout = async () => {
+    await signOut({ redirect: false })
+    window.location.href = '/login'
+  }
+
+  // Show loading spinner while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
@@ -223,7 +304,65 @@ on ${new Date().toLocaleDateString()}
             <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
             <Link href="/dashboard/user/profile" className="text-sm font-semibold text-primary border-b-2 border-primary">My Profile</Link>
           </div>
-          <button onClick={() => { localStorage.removeItem('currentUserType'); router.push('/login'); }} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
+          <div className="flex items-center gap-4">
+            {/* Notifications Bell */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="relative p-2 text-gray-700 hover:text-primary transition rounded-full hover:bg-gray-100 border border-gray-200">
+                  <Bell className="w-5 h-5 stroke-2" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 rounded-full w-3 h-3 border-2 border-white animate-pulse" />
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h3 className="font-semibold text-lg">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs text-primary hover:underline">Mark all as read</button>
+                  )}
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                      <p>No notifications yet</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {notifications.map(notification => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 hover:bg-gray-50 transition cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                          onClick={() => markAsRead(notification.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm mb-1">{notification.title}</h4>
+                              <p className="text-sm text-muted-foreground mb-1">{notification.message}</p>
+                              <p className="text-xs text-muted-foreground">{notification.time}</p>
+                            </div>
+                            {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {session?.user && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {session.user.name || session.user.email}
+                </span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium capitalize">
+                  {session.user.role?.toLowerCase() || 'user'}
+                </span>
+              </div>
+            )}
+            <button onClick={handleLogout} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
+          </div>
         </div>
       </nav>
 

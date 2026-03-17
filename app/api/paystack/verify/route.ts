@@ -16,23 +16,17 @@ export async function GET(request: NextRequest) {
     // Verify payment with Paystack
     const response = await paystack.transaction.verify(reference)
 
-    // Check if payment was successful
-    if (response.data.status === 'success') {
-      // Here you can save the payment details to your database
-      console.log('Payment verified successfully:', response.data)
-      
-      return NextResponse.json({
-        success: true,
-        data: response.data,
-        message: 'Payment verified successfully'
-      })
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: 'Payment was not successful',
-        data: response.data
-      })
-    }
+    console.log(`Verifying payment ${reference}: Status = ${response.data.status}`)
+
+    // Return the full data regardless of status
+    // Frontend will handle different statuses appropriately
+    return NextResponse.json({
+      success: true, // API call succeeded
+      data: response.data,
+      message: response.data.status === 'success' 
+        ? 'Payment verified successfully'
+        : `Payment status: ${response.data.status}`
+    })
 
   } catch (error: any) {
     console.error('Payment verification error:', error)

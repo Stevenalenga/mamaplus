@@ -4,14 +4,21 @@ import React from "react"
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn, useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function SignupPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { data: session, status } = useSession()
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState<'educator' | 'caregiver'>('caregiver')
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -19,6 +26,28 @@ export default function SignupPage() {
     confirmPassword: '',
     agreeToTerms: false
   })
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === 'loading') return
+    
+    if (status === 'authenticated' && session?.user) {
+      const userRole = (session.user as any).role
+      if (userRole === 'ADMIN') {
+        window.location.href = '/dashboard/admin'
+      } else {
+        window.location.href = '/dashboard/user'
+      }
+    }
+  }, [status, session])
+
+  // Check for messages in URL
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message === 'account_required') {
+      toast.info('Please create an account to continue')
+    }
+  }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -28,10 +57,134 @@ export default function SignupPage() {
     }))
   }
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle signup logic here
-    console.log('Signup attempt:', formData)
+    
+    // Client-side validation
+    if (!formData.fullName || !formData.email || !formData.password) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    if (formData.fullName.trim().length < 2) {
+      toast.error('Name must be at least 2 characters long')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email.trim())) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+    
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters long')
+      return
+    }
+    
+    if (!formData.agreeToTerms) {
+      toast.error('Please agree to the Terms of Service and Privacy Policy')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Register user
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.fullName.trim(),
+          email: formData.email.trim(),
+          password: formData.password
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 409) {
+          toast.error(data.message || 'An account with this email already exists. Please log in instead.')
+        } else if (response.status === 400) {
+          toast.error(data.message || 'Please check your input and try again')
+        } else if (response.status === 500) {
+          toast.error('Server error. Please try again later.')
+        } else {
+          toast.error(data.message || 'Registration failed. Please try again.')
+        }
+        return
+      }
+
+      // Registration successful
+      console.log('Registration successful:', data)
+      toast.success('Account created successfully! Logging you in...')
+
+      // Auto-login with NextAuth
+      const loginResult = await signIn('credentials', {
+        email: formData.email.trim(),
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (loginResult?.error) {
+        toast.error('Account created but login failed. Please try logging in manually.')
+        router.push('/login')
+        return
+      }
+
+      if (loginResult?.ok) {
+        // Small delay to ensure session is set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Fetch the session to get user role
+        const sessionResponse = await fetch('/api/auth/session')
+        const session = await sessionResponse.json()
+        
+        // Redirect based on user role using full page navigation
+        if (session?.user?.role === 'ADMIN') {
+          window.location.href = '/dashboard/admin'
+        } else if (userType === 'educator') {
+          // Even if not admin, redirect educator signup to appropriate page
+          window.location.href = '/dashboard/user'
+        } else {
+          window.location.href = '/dashboard/user'
+        }
+      }
+      
+    } catch (err: any) {
+      console.error('Signup error:', err)
+      
+      // Handle network and other errors
+      if (err.message.includes('fetch')) {
+        toast.error('Network error. Please check your internet connection.')
+      } else {
+        toast.error(err.message || 'An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Show loading state while checking authentication status
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -59,22 +212,24 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setUserType('caregiver')}
+              disabled={isLoading}
               className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
                 userType === 'caregiver'
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Caregiver
             </button>
             <button
               type="button"
               onClick={() => setUserType('educator')}
+              disabled={isLoading}
               className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
                 userType === 'educator'
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Educator
             </button>
@@ -92,6 +247,7 @@ export default function SignupPage() {
               placeholder="Jane Doe"
               value={formData.fullName}
               onChange={handleInputChange}
+              disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
               required
             />
@@ -106,6 +262,7 @@ export default function SignupPage() {
               placeholder="jane@example.com"
               value={formData.email}
               onChange={handleInputChange}
+              disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
               required
             />
@@ -121,13 +278,15 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleInputChange}
+                disabled={isLoading}
                 className="w-full bg-white border-border focus:border-primary pr-10"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -145,6 +304,7 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
+                disabled={isLoading}
                 className="w-full bg-white border-border focus:border-primary pr-10"
                 required
               />
@@ -158,7 +318,8 @@ export default function SignupPage() {
               name="agreeToTerms"
               checked={formData.agreeToTerms}
               onChange={handleInputChange}
-              className="w-4 h-4 mt-1 rounded border-border cursor-pointer accent-primary"
+              disabled={isLoading}
+              className="w-4 h-4 mt-1 rounded border-border cursor-pointer accent-primary disabled:opacity-50"
               required
             />
             <label className="text-sm text-muted-foreground">
@@ -171,9 +332,17 @@ export default function SignupPage() {
           {/* Sign Up Button */}
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-6 mt-6"
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-6 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Account
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              'Create Account'
+            )}
           </Button>
         </form>
 

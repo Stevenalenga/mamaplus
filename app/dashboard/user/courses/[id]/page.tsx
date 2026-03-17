@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Download, CheckCircle, Circle, Video, FileText, ImageIcon } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 type Resource = {
   id: string
@@ -47,6 +48,7 @@ export default function UserCoursePage() {
   const router = useRouter()
   const params = useParams()
   const courseId = params.id as string
+  const { data: session, status } = useSession()
 
   const [course, setCourse] = useState<Course | null>(null)
   const [enrolledCourse, setEnrolledCourse] = useState<EnrolledCourse | null>(null)
@@ -55,10 +57,11 @@ export default function UserCoursePage() {
   const [expandedResource, setExpandedResource] = useState<string | null>(null)
 
   useEffect(() => {
-    // Validate session
-    const currentUserType = localStorage.getItem('currentUserType')
-    if (currentUserType !== 'user') {
-      router.push('/login')
+    // Redirect if not authenticated
+    if (status === 'loading') return
+    
+    if (status === 'unauthenticated') {
+      window.location.href = '/login'
       return
     }
 
@@ -95,7 +98,7 @@ export default function UserCoursePage() {
     } catch (e) {
       console.error('Error loading user profile:', e)
     }
-  }, [courseId, router])
+  }, [courseId, router, status, session])
 
   const calculateProgress = (completedResourceIds: string[]): number => {
     if (!course?.resources) return 0
@@ -224,6 +227,15 @@ Date: ${new Date().toLocaleDateString()}
     a.href = resource.fileData
     a.download = resource.fileName || resource.name
     a.click()
+  }
+
+  // Show loading spinner while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   if (!course || !enrolledCourse) {

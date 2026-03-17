@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useSession, signOut } from 'next-auth/react'
 
 type Resource = {
   id: string
@@ -46,6 +47,7 @@ function uid() {
 
 export default function AdminDashboardPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [courses, setCourses] = useState<Course[]>(() => {
     try {
       const raw = localStorage.getItem('admin:courses')
@@ -158,12 +160,14 @@ export default function AdminDashboardPage() {
   const [educatorSchool, setEducatorSchool] = useState('')
 
   useEffect(() => {
-    // Validate session
-    const currentUserType = localStorage.getItem('currentUserType')
-    if (currentUserType !== 'admin') {
-      router.push('/login')
+    // Redirect if not authenticated or not admin
+    if (status === 'loading') return
+    
+    if (status === 'unauthenticated' || session?.user?.role !== 'ADMIN') {
+      window.location.href = '/login'
+      return
     }
-  }, [router])
+  }, [router, status, session])
 
   useEffect(() => {
     try {
@@ -436,6 +440,20 @@ export default function AdminDashboardPage() {
   const totalCompletions = courses.reduce((sum, c) => sum + (c.completedStudents || 0), 0)
   const totalEnrollments = courses.reduce((sum, c) => sum + (c.enrolledStudents || 0), 0)
 
+  const handleLogout = async () => {
+    await signOut({ redirect: false })
+    window.location.href = '/login'
+  }
+
+  // Show loading spinner while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
@@ -449,7 +467,7 @@ export default function AdminDashboardPage() {
             <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
             <Link href="/dashboard/admin/profile" className="text-sm text-muted-foreground hover:text-primary">My Profile</Link>
           </div>
-          <button onClick={() => { localStorage.removeItem('currentUserType'); router.push('/login'); }} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
+          <button onClick={handleLogout} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
         </div>
       </nav>
 

@@ -4,16 +4,37 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
 const PAYSTACK_BASE_URL = 'https://api.paystack.co'
 
 // Types
+export type PaymentChannel = 'card' | 'bank' | 'ussd' | 'qr' | 'mobile_money' | 'bank_transfer'
+export type MobileMoneyProvider = 'mpesa' | 'airtel' | 'mtn' | 'vodafone' | 'tigo'
+
 export interface PaystackInitializeParams {
   email: string
   amount: number // in cents/kobo (smallest currency unit)
   currency?: string
   reference?: string
   callback_url?: string
+  channels?: PaymentChannel[]
   metadata?: {
     courseName?: string
     userId?: string
+    payment_method?: string
+    phone_number?: string
     custom_fields?: any[]
+    [key: string]: any
+  }
+}
+
+export interface MobileMoneyInitializeParams {
+  email: string
+  amount: number
+  phone_number: string
+  provider: MobileMoneyProvider
+  currency: 'KES' | 'GHS' | 'UGX'
+  reference?: string
+  callback_url?: string
+  metadata?: {
+    courseName?: string
+    userId?: string
     [key: string]: any
   }
 }
@@ -103,6 +124,42 @@ export const paystack = {
       }
 
       return data
+    },
+
+    /**
+     * Initialize a mobile money payment
+     * This will trigger an STK push for M-Pesa or similar for other providers
+     */
+    initializeMobileMoney: async (params: MobileMoneyInitializeParams): Promise<PaystackResponse> => {
+      const { email, amount, phone_number, provider, currency, reference, callback_url, metadata } = params
+
+      const payload: PaystackInitializeParams = {
+        email,
+        amount,
+        currency,
+        reference,
+        callback_url,
+        channels: ['mobile_money'],
+        metadata: {
+          ...metadata,
+          payment_method: provider,
+          phone_number: phone_number,
+          custom_fields: [
+            {
+              display_name: 'Phone Number',
+              variable_name: 'phone_number',
+              value: phone_number
+            },
+            {
+              display_name: 'Provider',
+              variable_name: 'provider',
+              value: provider
+            }
+          ]
+        }
+      }
+
+      return paystack.transaction.initialize(payload)
     }
   }
 }

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { paystack, PaystackInitializeParams } from '@/lib/paystack'
+import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, amount, currency, metadata } = body
+    const { email, amount, currency, metadata, userId, courseId } = body
 
     // Validate input
     if (!email || !amount) {
@@ -22,6 +23,23 @@ export async function POST(request: NextRequest) {
       metadata,
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/paystack/callback`
     })
+
+    // Save payment record to database if userId provided
+    if (userId && response.data.reference) {
+      await prisma.payment.create({
+        data: {
+          userId,
+          courseId: courseId || null,
+          reference: response.data.reference,
+          amount: amount / 100, // Convert from cents to main unit
+          currency: currency || 'USD',
+          status: 'PENDING',
+          paymentMethod: 'card',
+          channel: 'card',
+          metadata: JSON.stringify(metadata)
+        }
+      })
+    }
 
     return NextResponse.json({
       success: true,

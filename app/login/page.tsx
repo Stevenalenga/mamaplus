@@ -4,21 +4,52 @@ import React from 'react'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn, useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { data: session, status } = useSession()
   const [showPassword, setShowPassword] = useState(false)
   const [userType, setUserType] = useState<'educator' | 'caregiver'>('caregiver')
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   })
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === 'loading') return
+    
+    if (status === 'authenticated' && session?.user) {
+      const userRole = (session.user as any).role
+      if (userRole === 'ADMIN') {
+        window.location.href = '/dashboard/admin'
+      } else {
+        window.location.href = '/dashboard/user'
+      }
+    }
+  }, [status, session])
+
+  // Check for error messages in URL
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'auth_required') {
+      toast.error('Please log in to access that page')
+    } else if (errorParam === 'session_expired') {
+      toast.error('Your session has expired. Please log in again.')
+    } else if (errorParam === 'CredentialsSignin') {
+      toast.error('Invalid email or password. Please try again.')
+    }
+  }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -28,25 +59,91 @@ export default function LoginPage() {
     }))
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Dummy login: redirect to user dashboard
-    console.log('Login attempt:', formData)
-    localStorage.setItem('currentUserType', 'user')
-    router.push('/dashboard/user')
+    setIsLoading(true)
+
+    try {
+      // Client-side validation
+      if (!formData.email || !formData.password) {
+        toast.error('Please enter both email and password')
+        setIsLoading(false)
+        return
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email.trim())) {
+        toast.error('Please enter a valid email address')
+        setIsLoading(false)
+        return
+      }
+
+      // Use NextAuth signIn
+      const result = await signIn('credentials', {
+        email: formData.email.trim(),
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        // Handle authentication errors
+        console.error('Login error:', result.error)
+        toast.error('Invalid email or password. Please check your credentials.')
+        return
+      }
+
+      if (result?.ok) {
+        toast.success('Login successful! Redirecting...')
+        
+        // Small delay to ensure session is set before redirect
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Fetch the session to get user role
+        const sessionResponse = await fetch('/api/auth/session')
+        const session = await sessionResponse.json()
+        
+        // Redirect based on user role
+        if (session?.user?.role === 'ADMIN') {
+          window.location.href = '/dashboard/admin'
+        } else {
+          window.location.href = '/dashboard/user'
+        }
+      }
+      
+    } catch (err: any) {
+      console.error('Login error:', err)
+      toast.error('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleAdminLogin = () => {
-    // Dummy admin login redirect
-    localStorage.setItem('currentUserType', 'admin')
-    router.push('/dashboard/admin')
+  const handleAdminLogin = async () => {
+    // For testing: use a specific admin account or same login flow
+    setFormData({
+      email: 'admin@mamaplus.co.ke',
+      password: 'admin123',
+      rememberMe: false
+    })
+    toast.info('Enter admin credentials and click Sign In')
   }
 
   const handleSocialLogin = (provider: string) => {
     // Placeholder: in future wire up OAuth flows
-    console.log('Social login:', provider)
-    localStorage.setItem('currentUserType', 'user')
-    router.push('/dashboard/user')
+    toast.info(`${provider} authentication coming soon!`)
+  }
+
+  // Show loading state while checking authentication status
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -74,22 +171,24 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setUserType('caregiver')}
+              disabled={isLoading}
               className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
                 userType === 'caregiver'
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Caregiver
             </button>
             <button
               type="button"
               onClick={() => setUserType('educator')}
+              disabled={isLoading}
               className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
                 userType === 'educator'
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Educator
             </button>
@@ -107,6 +206,7 @@ export default function LoginPage() {
               placeholder="jane@example.com"
               value={formData.email}
               onChange={handleInputChange}
+              disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
               required
             />
@@ -127,13 +227,15 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleInputChange}
+                disabled={isLoading}
                 className="w-full bg-white border-border focus:border-primary pr-10"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -147,7 +249,8 @@ export default function LoginPage() {
               name="rememberMe"
               checked={formData.rememberMe}
               onChange={handleInputChange}
-              className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
+              disabled={isLoading}
+              className="w-4 h-4 rounded border-border cursor-pointer accent-primary disabled:opacity-50"
             />
             <label className="text-sm text-muted-foreground cursor-pointer">
               Remember me for 30 days
@@ -157,12 +260,25 @@ export default function LoginPage() {
           {/* Sign In Button */}
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-6 mt-6"
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-6 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </Button>
 
-          <Button type="button" onClick={handleAdminLogin} className="w-full bg-muted text-foreground font-semibold py-3">
+          <Button 
+            type="button" 
+            onClick={handleAdminLogin} 
+            disabled={isLoading}
+            className="w-full bg-muted text-foreground font-semibold py-3 disabled:opacity-50"
+          >
             Sign In as Admin (placeholder)
           </Button>
         </form>
