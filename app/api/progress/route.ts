@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { calculateCourseProgress } from '@/lib/db-utils'
+import { getCurrentUser, hasRole } from '@/lib/auth'
+import { ROLES } from '@/lib/roles'
 
 /**
  * GET /api/progress
@@ -8,14 +10,24 @@ import { calculateCourseProgress } from '@/lib/db-utils'
  */
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const searchParams = request.nextUrl.searchParams
-    const userId = searchParams.get('userId')
+    const requestedUserId = searchParams.get('userId')
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    const userId = requestedUserId && isAdmin ? requestedUserId : currentUser.userId
     const courseId = searchParams.get('courseId')
     const lessonId = searchParams.get('lessonId')
 
     if (!userId) {
       return NextResponse.json(
-        { message: 'User ID is required' },
+        { success: false, message: 'User ID is required' },
         { status: 400 }
       )
     }
@@ -87,11 +99,21 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, lessonId, isCompleted, watchedDuration } = await request.json()
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { userId: requestedUserId, lessonId, isCompleted, watchedDuration } = await request.json()
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    const userId = requestedUserId && isAdmin ? requestedUserId : currentUser.userId
 
     if (!userId || !lessonId) {
       return NextResponse.json(
-        { message: 'User ID and Lesson ID are required' },
+        { success: false, message: 'User ID and Lesson ID are required' },
         { status: 400 }
       )
     }
@@ -116,6 +138,26 @@ export async function POST(request: NextRequest) {
         lastWatchedAt: new Date()
       }
     })
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { module: { select: { courseId: true } } }
+    })
+
+    if (lesson?.module?.courseId) {
+      const courseProgress = await calculateCourseProgress(userId, lesson.module.courseId)
+      await prisma.enrollment.updateMany({
+        where: {
+          userId,
+          courseId: lesson.module.courseId
+        },
+        data: {
+          progress: courseProgress,
+          status: courseProgress === 100 ? 'COMPLETED' : 'ACTIVE',
+          ...(courseProgress === 100 ? { completedAt: new Date() } : { completedAt: null })
+        }
+      })
+    }
 
     return NextResponse.json({
       success: true,

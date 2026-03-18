@@ -6,12 +6,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Download, CheckCircle, Circle, Video, FileText, ImageIcon } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+import { decodeLessonResourceMeta, decodeModuleDescription } from '@/lib/course-authoring'
 
 type Resource = {
   id: string
   name: string
   type: 'video' | 'file' | 'image'
   url?: string
+  linkedLessonIds?: string[]
   fileData?: string
   fileName?: string
   fileSize?: number
@@ -44,6 +46,64 @@ type UserProfile = {
   enrolledCourses: EnrolledCourse[]
 }
 
+type ApiCourse = {
+  id: string
+  title: string
+  description?: string
+  modules?: Array<{
+    id: string
+    title: string
+    description?: string | null
+    lessons?: Array<{
+      id: string
+      title: string
+      content?: string | null
+      videoUrl?: string | null
+      resourceUrls?: string | null
+    }>
+  }>
+}
+
+const mapResourceType = (type: string | null | undefined): 'video' | 'file' | 'image' => {
+  if (type === 'video' || type === 'file' || type === 'image') return type
+  return 'video'
+}
+
+const mapApiCourseToLocalCourse = (apiCourse: ApiCourse): Course => {
+  const resources: Resource[] = []
+
+  ;(apiCourse.modules || []).forEach((module, moduleIndex) => {
+    const moduleMeta = decodeModuleDescription(module.description)
+    if (moduleMeta.isMilestone) {
+      resources.push({
+        id: `section-${module.id}`,
+        name: `Section Milestone ${moduleIndex + 1}: ${module.title}`,
+        type: 'file',
+        linkedLessonIds: (module.lessons || []).map((lesson) => lesson.id),
+        isMilestone: true,
+      })
+    }
+
+    ;(module.lessons || []).forEach((lesson, lessonIndex) => {
+      const lessonMeta = decodeLessonResourceMeta(lesson.resourceUrls)
+      resources.push({
+        id: lesson.id,
+        name: `S${moduleIndex + 1}.${lessonIndex + 1} ${lesson.title}`,
+        type: mapResourceType(lesson.content),
+        url: lessonMeta.url || lesson.videoUrl || undefined,
+        isMilestone: lessonMeta.isMilestone,
+      })
+    })
+  })
+
+  return {
+    id: apiCourse.id,
+    title: apiCourse.title,
+    description: apiCourse.description || '',
+    resources,
+  }
+}
+
 export default function UserCoursePage() {
   const router = useRouter()
   const params = useParams()
@@ -65,39 +125,84 @@ export default function UserCoursePage() {
       return
     }
 
-    // Load course from admin:courses
-    try {
-      const adminCoursesRaw = localStorage.getItem('admin:courses')
-      if (adminCoursesRaw) {
-        const adminCourses = JSON.parse(adminCoursesRaw) as Course[]
-        const foundCourse = adminCourses.find(c => c.id === courseId)
-        if (foundCourse) {
-          setCourse(foundCourse)
+    const loadCourse = async () => {
+      try {
+        const response = await fetch(`/api/courses/${courseId}`)
+        const json = await response.json()
+        if (response.ok && json.success && json.data) {
+          const mappedCourse = mapApiCourseToLocalCourse(json.data as ApiCourse)
+          setCourse(mappedCourse)
+          return
         }
+      } catch (e) {
+        console.error('Error loading course from API:', e)
       }
-    } catch (e) {
-      console.error('Error loading course:', e)
+
+      try {
+        const adminCoursesRaw = localStorage.getItem('admin:courses')
+        if (adminCoursesRaw) {
+          const adminCourses = JSON.parse(adminCoursesRaw) as Course[]
+          const foundCourse = adminCourses.find(c => c.id === courseId)
+          if (foundCourse) {
+            setCourse(foundCourse)
+          }
+        }
+      } catch (e) {
+        console.error('Error loading course from localStorage:', e)
+      }
     }
 
-    // Load user profile and enrollment data
+    loadCourse()
+
+    const loadEnrollmentAndProgress = async () => {
+      try {
+        const enrollmentsResponse = await fetch('/api/enrollments')
+        const enrollmentsJson = await enrollmentsResponse.json()
+
+        if (!enrollmentsResponse.ok || !enrollmentsJson.success) {
+          router.push('/dashboard/user')
+          return
+        }
+
+        const enrollment = (enrollmentsJson.data || []).find((item: any) => item.courseId === courseId)
+        if (!enrollment) {
+          router.push('/dashboard/user')
+          return
+        }
+
+        setEnrolledCourse({
+          id: enrollment.courseId,
+          title: enrollment.course?.title || 'Untitled Course',
+          progress: enrollment.progress || 0,
+          completedResources: [],
+        })
+
+        const progressResponse = await fetch('/api/progress')
+        const progressJson = await progressResponse.json()
+        if (progressResponse.ok && progressJson.success) {
+          const completedLessonIds = (progressJson.data || [])
+            .filter((entry: any) => entry.isCompleted && entry.lesson?.module?.courseId === courseId)
+            .map((entry: any) => entry.lessonId)
+
+          setCompletedResources(completedLessonIds)
+        }
+      } catch (e) {
+        console.error('Error loading enrollment/progress:', e)
+      }
+    }
+
+    // Load user profile for certificate name fallback
     try {
       const profileRaw = localStorage.getItem('user:profile')
       if (profileRaw) {
         const profile = JSON.parse(profileRaw) as UserProfile
         setUserProfile(profile)
-        
-        const enrolled = profile.enrolledCourses?.find(c => c.id === courseId)
-        if (enrolled) {
-          setEnrolledCourse(enrolled)
-          setCompletedResources(enrolled.completedResources || [])
-        } else {
-          // Not enrolled, redirect to dashboard
-          router.push('/dashboard/user')
-        }
       }
     } catch (e) {
       console.error('Error loading user profile:', e)
     }
+
+    loadEnrollmentAndProgress()
   }, [courseId, router, status, session])
 
   const calculateProgress = (completedResourceIds: string[]): number => {
@@ -106,12 +211,24 @@ export default function UserCoursePage() {
     const milestones = course.resources.filter(r => r.isMilestone)
     if (milestones.length === 0) return 0
     
-    const completedMilestones = milestones.filter(m => completedResourceIds.includes(m.id))
+    const completedMilestones = milestones.filter((milestone) => {
+      if (milestone.id.startsWith('section-')) {
+        const linkedLessons = milestone.linkedLessonIds || []
+        if (linkedLessons.length === 0) return false
+        return linkedLessons.every((lessonId) => completedResourceIds.includes(lessonId))
+      }
+
+      return completedResourceIds.includes(milestone.id)
+    })
     return Math.round((completedMilestones.length / milestones.length) * 100)
   }
 
   const toggleResourceCompletion = (resourceId: string) => {
-    if (!userProfile || !enrolledCourse) return
+    if (!enrolledCourse) return
+
+    if (resourceId.startsWith('section-')) {
+      return
+    }
 
     const newCompletedResources = completedResources.includes(resourceId)
       ? completedResources.filter(id => id !== resourceId)
@@ -122,25 +239,36 @@ export default function UserCoursePage() {
     // Calculate new progress
     const newProgress = calculateProgress(newCompletedResources)
 
-    // Update user profile
-    const updatedProfile = {
-      ...userProfile,
-      enrolledCourses: userProfile.enrolledCourses.map(c =>
-        c.id === courseId
-          ? { ...c, progress: newProgress, completedResources: newCompletedResources }
-          : c
-      )
+    // Update local profile fallback (if available)
+    if (userProfile) {
+      const updatedProfile = {
+        ...userProfile,
+        enrolledCourses: userProfile.enrolledCourses.map(c =>
+          c.id === courseId
+            ? { ...c, progress: newProgress, completedResources: newCompletedResources }
+            : c
+        )
+      }
+
+      setUserProfile(updatedProfile)
+
+      try {
+        localStorage.setItem('user:profile', JSON.stringify(updatedProfile))
+      } catch (e) {
+        console.error('Error saving progress:', e)
+      }
     }
 
-    setUserProfile(updatedProfile)
     setEnrolledCourse({ ...enrolledCourse, progress: newProgress, completedResources: newCompletedResources })
 
-    // Save to localStorage
-    try {
-      localStorage.setItem('user:profile', JSON.stringify(updatedProfile))
-    } catch (e) {
-      console.error('Error saving progress:', e)
-    }
+    // Persist lesson completion to API
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lessonId: resourceId, isCompleted: newCompletedResources.includes(resourceId) }),
+    }).catch(() => {
+      // Keep UI responsive even if API call fails
+    })
 
     // Update course completion stats in admin:courses
     if (newProgress === 100 && enrolledCourse.progress !== 100) {
@@ -221,6 +349,11 @@ Date: ${new Date().toLocaleDateString()}
   }
 
   const downloadResource = (resource: Resource) => {
+    if (!resource.fileData && resource.url) {
+      window.open(resource.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
     if (!resource.fileData) return
 
     const a = document.createElement('a')

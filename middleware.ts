@@ -15,7 +15,7 @@ const DASHBOARD_ACCESS: Record<string, string[]> = {
   '/dashboard/admin': ['ADMIN'],
   '/dashboard/admin-assistant': ['ADMIN_ASSISTANT', 'ADMIN'],
   '/dashboard/educator': ['INSTRUCTOR', 'ADMIN'],
-  '/dashboard/user': ['USER', 'INSTRUCTOR', 'ADMIN_ASSISTANT', 'ADMIN'],
+  '/dashboard/user': ['USER'],
 }
 
 // Routes that require authentication

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Loader2 } from 'lucide-react'
+import { getDashboardForRole } from '@/lib/roles'
 
 export default function HomePage() {
   const router = useRouter()
@@ -15,12 +16,8 @@ export default function HomePage() {
 
     // If authenticated, redirect to appropriate dashboard
     if (status === 'authenticated' && session?.user) {
-      const userRole = (session.user as any).role
-      if (userRole === 'ADMIN') {
-        window.location.href = '/dashboard/admin'
-      } else {
-        window.location.href = '/dashboard/user'
-      }
+      const userRole = (session.user as any).role as string | undefined
+      window.location.href = getDashboardForRole(userRole)
     } else if (status === 'unauthenticated') {
       // Not authenticated, redirect to login
       window.location.href = '/login'

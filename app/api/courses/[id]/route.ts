@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCourseRating } from '@/lib/db-utils'
+import { getCurrentUser, hasRole } from '@/lib/auth'
+import { ROLES } from '@/lib/roles'
 
 /**
  * GET /api/courses/[id]
@@ -11,6 +13,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser(request)
+
     // Try to find by ID first, then by slug
     const course = await prisma.course.findFirst({
       where: {
@@ -27,10 +31,12 @@ export async function GET(
                 id: true,
                 title: true,
                 description: true,
+                content: true,
                 duration: true,
                 order: true,
                 isFree: true,
-                videoUrl: true
+                videoUrl: true,
+                resourceUrls: true
               },
               orderBy: {
                 order: 'asc'
@@ -73,6 +79,18 @@ export async function GET(
       )
     }
 
+    const canViewUnpublished = !!currentUser && (
+      hasRole(currentUser, ROLES.ADMIN) ||
+      (hasRole(currentUser, ROLES.INSTRUCTOR) && course.instructorId === currentUser.userId)
+    )
+
+    if (!course.isPublished && !canViewUnpublished) {
+      return NextResponse.json(
+        { message: 'Course not found' },
+        { status: 404 }
+      )
+    }
+
     // Get average rating
     const rating = await getCourseRating(course.id)
 
@@ -102,6 +120,41 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: params.id },
+      select: { id: true, instructorId: true }
+    })
+
+    if (!existingCourse) {
+      return NextResponse.json(
+        { success: false, message: 'Course not found' },
+        { status: 404 }
+      )
+    }
+
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    if (!isAdmin && existingCourse.instructorId !== currentUser.userId) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
     const data = await request.json()
 
     const course = await prisma.course.update({
@@ -151,6 +204,41 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: params.id },
+      select: { id: true, instructorId: true }
+    })
+
+    if (!existingCourse) {
+      return NextResponse.json(
+        { success: false, message: 'Course not found' },
+        { status: 404 }
+      )
+    }
+
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    if (!isAdmin && existingCourse.instructorId !== currentUser.userId) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
     await prisma.course.delete({
       where: { id: params.id }
     })

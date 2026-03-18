@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { searchCourses } from '@/lib/db-utils'
+import { getCurrentUser, hasRole } from '@/lib/auth'
+import { ROLES } from '@/lib/roles'
+
+function createSlug(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 /**
  * GET /api/courses
@@ -13,6 +22,66 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const level = searchParams.get('level')
     const featured = searchParams.get('featured')
+    const mine = searchParams.get('mine') === 'true'
+
+    if (mine) {
+      const currentUser = await getCurrentUser(request)
+      if (!currentUser) {
+        return NextResponse.json(
+          { success: false, message: 'Not authenticated' },
+          { status: 401 }
+        )
+      }
+
+      if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
+        return NextResponse.json(
+          { success: false, message: 'Forbidden' },
+          { status: 403 }
+        )
+      }
+
+      const ownedCourses = await prisma.course.findMany({
+        where: hasRole(currentUser, ROLES.ADMIN)
+          ? {
+              ...(category && { category }),
+              ...(level && { level: level as any }),
+            }
+          : {
+              instructorId: currentUser.userId,
+              ...(category && { category }),
+              ...(level && { level: level as any }),
+            },
+        include: {
+          modules: {
+            include: {
+              lessons: {
+                orderBy: {
+                  order: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              order: 'asc'
+            }
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              reviews: true
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        data: ownedCourses,
+        count: ownedCourses.length
+      })
+    }
 
     // Search if query provided
     if (query) {
@@ -86,26 +155,60 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
     const data = await request.json()
+
+    if (!data.title?.trim() || !data.description?.trim() || !data.category?.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'title, description and category are required' },
+        { status: 400 }
+      )
+    }
+
+    const baseSlug = data.slug?.trim() || createSlug(data.title)
+    let slug = baseSlug
+    let suffix = 1
+
+    while (await prisma.course.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix}`
+      suffix += 1
+    }
+
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    const instructorId = isAdmin ? (data.instructorId || null) : currentUser.userId
 
     const course = await prisma.course.create({
       data: {
         title: data.title,
-        slug: data.slug,
+        slug,
         description: data.description,
         shortDescription: data.shortDescription,
         thumbnail: data.thumbnail,
         level: data.level || 'BEGINNER',
         category: data.category,
-        duration: data.duration,
-        priceUSD: data.priceUSD,
-        priceKES: data.priceKES,
+        duration: data.duration || 0,
+        priceUSD: data.priceUSD || 0,
+        priceKES: data.priceKES || 0,
         currency: data.currency || 'USD',
         isPublished: data.isPublished || false,
         isFeatured: data.isFeatured || false,
         requirements: data.requirements,
         whatYouLearn: data.whatYouLearn,
-        instructorId: data.instructorId,
+        instructorId,
         videoUrl: data.videoUrl,
         previewUrl: data.previewUrl
       }

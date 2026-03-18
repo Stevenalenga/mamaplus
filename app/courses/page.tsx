@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Calendar, MapPin, Clock, DollarSign, Users, CheckCircle, ArrowRight, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { toast } from 'sonner'
 
 type Course = {
   id: string
@@ -34,6 +36,20 @@ type Course = {
   included: string
   specialOffer?: string
   featured?: boolean
+  isEducatorUploaded?: boolean
+}
+
+type ApiPublishedCourse = {
+  id: string
+  title: string
+  description: string
+  duration: number
+  currency: string
+  priceUSD: number
+  priceKES: number
+  modules?: Array<{
+    lessons?: Array<{ id: string }>
+  }>
 }
 
 const courses: Course[] = [
@@ -196,8 +212,11 @@ const courses: Course[] = [
 ]
 
 export default function CoursesPage() {
+  const router = useRouter()
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showPaymentInfo, setShowPaymentInfo] = useState(false)
+  const [publishedEducatorCourses, setPublishedEducatorCourses] = useState<Course[]>([])
+  const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
   const { user } = useCurrentUser()
   const [notifications, setNotifications] = useState([
     { id: '1', title: 'New Course Available', message: 'Maternal Health Basics course is now available', time: '2 hours ago', read: false },
@@ -207,6 +226,106 @@ export default function CoursesPage() {
   const unreadCount = notifications.filter(n => !n.read).length
   const markAsRead = (id: string) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
   const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
+
+  useEffect(() => {
+    async function loadPublishedCourses() {
+      try {
+        const response = await fetch('/api/courses')
+        const json = await response.json()
+
+        if (!response.ok || !json.success) {
+          setPublishedEducatorCourses([])
+          return
+        }
+
+        const mapped = (json.data as ApiPublishedCourse[]).map((course) => {
+          const lessonCount = (course.modules || []).reduce((sum, module) => sum + (module.lessons?.length || 0), 0)
+          return {
+            id: course.id,
+            title: course.title,
+            duration: lessonCount > 0 ? `${lessonCount} learning items` : `${Math.max(course.duration || 0, 1)} minutes`,
+            dates: 'Self-paced',
+            location: 'Online',
+            cost: course.currency === 'KES' ? `KES ${course.priceKES || 0}` : `$${course.priceUSD || 0}`,
+            costNumeric: course.currency === 'KES' ? course.priceKES || 0 : course.priceUSD || 0,
+            currency: course.currency || 'USD',
+            overview: course.description || 'Created by educators on MamaPlus.',
+            targetAudience: ['Caregivers', 'Parents', 'Healthcare support workers'],
+            learningObjectives: [
+              'Build practical caregiving skills',
+              'Track learning progress by section',
+              'Complete educator-defined milestones',
+            ],
+            keyBenefits: [
+              'Educator-curated practical resources',
+              'Structured section-by-section learning',
+              'Flexible self-paced access',
+            ],
+            included: 'Online learning content and milestone tracking',
+            featured: false,
+            isEducatorUploaded: true,
+          } satisfies Course
+        })
+
+        setPublishedEducatorCourses(mapped)
+      } catch {
+        setPublishedEducatorCourses([])
+      }
+    }
+
+    loadPublishedCourses()
+  }, [])
+
+  const allCourses = useMemo(() => {
+    const educatorCourseIds = new Set(publishedEducatorCourses.map(course => String(course.id)))
+    const baseCourses = courses.filter(course => !educatorCourseIds.has(String(course.id)))
+    return [...publishedEducatorCourses, ...baseCourses]
+  }, [publishedEducatorCourses])
+
+  const handleEnroll = async (course: Course) => {
+    if (!user) {
+      toast.info('Please sign in to enroll in a course.')
+      router.push('/login?message=account_required')
+      return
+    }
+
+    const isFreeCourse = (course.costNumeric || 0) <= 0
+
+    if (!isFreeCourse) {
+      setSelectedCourse(course)
+      setShowPaymentInfo(true)
+      toast.info('This is a paid course. Please complete payment to activate enrollment.')
+      return
+    }
+
+    setEnrollingCourseId(course.id)
+    try {
+      const response = await fetch('/api/enrollments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId: course.id }),
+      })
+      const json = await response.json()
+
+      if (response.status === 409) {
+        toast.info('You are already enrolled. Opening course...')
+        router.push(`/dashboard/user/courses/${course.id}`)
+        return
+      }
+
+      if (!response.ok || !json.success) {
+        toast.error(json.message || 'Unable to enroll in this course right now.')
+        return
+      }
+
+      toast.success('Enrollment successful! Opening your course...')
+      router.push(`/dashboard/user/courses/${course.id}`)
+    } catch {
+      toast.error('Unable to enroll right now. Please try again.')
+    } finally {
+      setEnrollingCourseId(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -293,14 +412,19 @@ export default function CoursesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Course Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          {courses.map((course) => (
+          {allCourses.map((course) => (
             <Card key={course.id} className={`hover:shadow-lg transition ${course.featured ? 'border-primary border-2' : ''}`}>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
                   <CardTitle className="text-2xl font-bold text-primary">{course.title}</CardTitle>
-                  {course.featured && (
-                    <Badge className="bg-primary text-white">Featured</Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {course.isEducatorUploaded && (
+                      <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200">Educator Uploaded</Badge>
+                    )}
+                    {course.featured && (
+                      <Badge className="bg-primary text-white">Featured</Badge>
+                    )}
+                  </div>
                 </div>
                 <CardDescription className="text-base">{course.overview}</CardDescription>
               </CardHeader>
@@ -391,12 +515,10 @@ export default function CoursesPage() {
               <CardFooter>
                 <Button 
                   className="w-full"
-                  onClick={() => {
-                    setSelectedCourse(course)
-                    setShowPaymentInfo(true)
-                  }}
+                  onClick={() => handleEnroll(course)}
+                  disabled={enrollingCourseId === course.id}
                 >
-                  Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
+                  {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </CardFooter>
             </Card>

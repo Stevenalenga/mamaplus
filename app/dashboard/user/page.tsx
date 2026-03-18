@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { getDashboardForRole } from '@/lib/roles'
 
 type EnrolledCourse = {
   id: string
@@ -34,25 +35,38 @@ export default function UserDashboardPage() {
   const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
 
   useEffect(() => {
-    // Load courses from localStorage (temporary until we fetch from API)
-    try {
-      const saved = localStorage.getItem('user:profile')
-      if (saved) {
-        const profile = JSON.parse(saved)
-        setCourses(profile.enrolledCourses || [])
-      } else {
-        // Default courses
-        const defaultCourses = [
-          { id: '1', title: 'Introduction to Caregiving', progress: 65 },
-          { id: '2', title: 'Maternal Health Basics', progress: 30 },
-          { id: '3', title: 'Infant Nutrition', progress: 100 },
-        ]
-        setCourses(defaultCourses)
-      }
-    } catch {
-      // Ignore errors
+    if (isLoading) return
+    if (user?.role && user.role !== 'USER') {
+      window.location.href = getDashboardForRole(user.role)
+      return
     }
-  }, [])
+
+    async function loadEnrollments() {
+      try {
+        const response = await fetch('/api/enrollments')
+        const json = await response.json()
+
+        if (!response.ok || !json.success) {
+          setCourses([])
+          return
+        }
+
+        const mappedCourses: EnrolledCourse[] = (json.data || []).map((enrollment: any) => ({
+          id: enrollment.courseId,
+          title: enrollment.course?.title || 'Untitled Course',
+          progress: enrollment.progress || 0,
+          completedResources: [],
+        }))
+
+        setCourses(mappedCourses)
+      }
+      catch {
+        setCourses([])
+      }
+    }
+
+    loadEnrollments()
+  }, [isLoading, user])
 
   const goToCourses = () => router.push('/courses')
 
@@ -155,7 +169,7 @@ export default function UserDashboardPage() {
             <div className="flex gap-3">
               <button onClick={goToCourses} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">Browse Courses</button>
               <button onClick={() => router.push('/dashboard/user/profile')} className="px-4 py-2 bg-white border border-primary text-primary rounded hover:bg-primary/10">View Profile</button>
-              <button onClick={() => router.push('/dashboard/user/profile')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
+              <button onClick={goToCourses} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>

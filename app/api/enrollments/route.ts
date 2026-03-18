@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getUserEnrolledCourses } from '@/lib/db-utils'
+import { getCurrentUser, hasRole } from '@/lib/auth'
+import { ROLES } from '@/lib/roles'
 
 /**
  * GET /api/enrollments
@@ -8,12 +10,22 @@ import { getUserEnrolledCourses } from '@/lib/db-utils'
  */
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
     const searchParams = request.nextUrl.searchParams
-    const userId = searchParams.get('userId')
+    const requestedUserId = searchParams.get('userId')
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    const userId = requestedUserId && isAdmin ? requestedUserId : currentUser.userId
 
     if (!userId) {
       return NextResponse.json(
-        { message: 'User ID is required' },
+        { success: false, message: 'User ID is required' },
         { status: 400 }
       )
     }
@@ -41,11 +53,21 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, courseId } = await request.json()
+    const currentUser = await getCurrentUser(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { userId: requestedUserId, courseId } = await request.json()
+    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
+    const userId = requestedUserId && isAdmin ? requestedUserId : currentUser.userId
 
     if (!userId || !courseId) {
       return NextResponse.json(
-        { message: 'User ID and Course ID are required' },
+        { success: false, message: 'User ID and Course ID are required' },
         { status: 400 }
       )
     }
@@ -62,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { message: 'Already enrolled in this course' },
+        { success: false, message: 'Already enrolled in this course' },
         { status: 409 }
       )
     }

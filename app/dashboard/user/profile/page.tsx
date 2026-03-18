@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { Bell } from 'lucide-react'
-import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
+import { getRoleDisplayName, getRoleBadgeColor, getDashboardForRole } from '@/lib/roles'
 import {
   Popover,
   PopoverContent,
@@ -17,63 +17,23 @@ type EnrolledCourse = {
   id: string
   title: string
   amountPaid: number
-  progress: number // 0-100
+  progress: number
   enrolledDate: string
-  completedResources?: string[] // Array of resource IDs completed by this user
-}
-
-type AvailableCourse = {
-  id: string
-  title: string
-  description: string
-  price: number
 }
 
 type UserProfile = {
+  id?: string
   name: string
   email: string
   enrolledCourses: EnrolledCourse[]
   profilePicture?: string
 }
 
-const availableCourses: AvailableCourse[] = [
-  { id: '1', title: 'Introduction to Caregiving', description: 'Learn basic caregiving skills and techniques', price: 29.99 },
-  { id: '2', title: 'Maternal Health Basics', description: 'Essential knowledge for maternal health care', price: 39.99 },
-  { id: '3', title: 'Infant Nutrition', description: 'Comprehensive guide to infant and toddler nutrition', price: 24.99 },
-  { id: '4', title: 'Child Development', description: 'Understanding child growth and development stages', price: 34.99 },
-  { id: '5', title: 'Emergency Care', description: 'First aid and emergency response for caregivers', price: 44.99 },
-  { id: '6', title: 'Mental Health Support', description: 'Supporting mental wellbeing in caregiving', price: 37.99 },
-  { id: '7', title: 'Elderly Care Essentials', description: 'Specialized care for elderly patients', price: 42.99 },
-  { id: '8', title: 'Nutrition and Meal Planning', description: 'Creating healthy meal plans for all ages', price: 32.99 },
-]
-
 const defaultProfile: UserProfile = {
   name: 'Jane Doe',
   email: 'jane@example.com',
   profilePicture: '',
-  enrolledCourses: [
-    {
-      id: '1',
-      title: 'Introduction to Caregiving',
-      amountPaid: 29.99,
-      progress: 65,
-      enrolledDate: '2026-01-15'
-    },
-    {
-      id: '2',
-      title: 'Maternal Health Basics',
-      amountPaid: 39.99,
-      progress: 30,
-      enrolledDate: '2026-02-01'
-    },
-    {
-      id: '3',
-      title: 'Infant Nutrition',
-      amountPaid: 24.99,
-      progress: 100,
-      enrolledDate: '2025-12-20'
-    }
-  ]
+  enrolledCourses: [],
 }
 
 export default function UserProfilePage() {
@@ -83,98 +43,105 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
-  const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [uploadingPicture, setUploadingPicture] = useState(false)
   const [notifications, setNotifications] = useState([
     { id: '1', title: 'New Course Available', message: 'Maternal Health Basics course is now available', time: '2 hours ago', read: false },
     { id: '2', title: 'Certificate Ready', message: 'Your certificate for Infant Nutrition is ready to download', time: '1 day ago', read: false },
     { id: '3', title: 'Welcome to MamaPlus', message: 'Thank you for joining our caregiving community', time: '3 days ago', read: true },
   ])
+
   const unreadCount = notifications.filter(n => !n.read).length
   const markAsRead = (id: string) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
   const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
 
   useEffect(() => {
-    // Redirect if not authenticated
     if (status === 'loading') return
-    
+
     if (status === 'unauthenticated') {
       window.location.href = '/login'
       return
     }
 
-    // Fetch user profile from database
+    const userRole = (session?.user as any)?.role
+    if (userRole && userRole !== 'USER') {
+      window.location.href = getDashboardForRole(userRole)
+      return
+    }
+
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/users/me')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.success && data.data) {
-            const dbUser = data.data
-            // Load enrolled courses from localStorage (kept separately)
-            let enrolledCourses = defaultProfile.enrolledCourses
-            try {
-              const saved = localStorage.getItem('user:profile')
-              if (saved) {
-                const parsed = JSON.parse(saved)
-                enrolledCourses = parsed.enrolledCourses || defaultProfile.enrolledCourses
-              }
-            } catch {}
+        const [userRes, enrollmentsRes] = await Promise.all([
+          fetch('/api/users/me'),
+          fetch('/api/enrollments'),
+        ])
 
-            const dbProfile: UserProfile = {
+        let dbProfile = defaultProfile
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          if (userData.success && userData.data) {
+            const dbUser = userData.data
+            dbProfile = {
+              id: dbUser.id,
               name: dbUser.name || '',
               email: dbUser.email || '',
               profilePicture: dbUser.avatar || '',
-              enrolledCourses,
+              enrolledCourses: [],
             }
-            setProfile(dbProfile)
-            setEditedName(dbProfile.name)
-            setEditedEmail(dbProfile.email)
-            return
           }
         }
-      } catch {
-        // Fall through to session/localStorage fallback
-      }
 
-      // Fallback: use session data
-      try {
-        const saved = localStorage.getItem('user:profile')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          const fallbackProfile = {
-            ...parsed,
-            name: session?.user?.name || parsed.name,
-            email: session?.user?.email || parsed.email,
+        if (enrollmentsRes.ok) {
+          const enrollmentData = await enrollmentsRes.json()
+          if (enrollmentData.success) {
+            const enrolledCourses: EnrolledCourse[] = (enrollmentData.data || []).map((enrollment: any) => ({
+              id: enrollment.courseId,
+              title: enrollment.course?.title || 'Untitled Course',
+              amountPaid: enrollment.course?.currency === 'KES'
+                ? (enrollment.course?.priceKES || 0)
+                : (enrollment.course?.priceUSD || 0),
+              progress: enrollment.progress || 0,
+              enrolledDate: enrollment.createdAt,
+            }))
+
+            dbProfile.enrolledCourses = enrolledCourses
           }
-          setProfile(fallbackProfile)
-          setEditedName(fallbackProfile.name)
-          setEditedEmail(fallbackProfile.email)
-        } else {
-          const sessionProfile = {
-            ...defaultProfile,
-            name: session?.user?.name || defaultProfile.name,
-            email: session?.user?.email || defaultProfile.email,
-            profilePicture: session?.user?.image || ''
-          }
-          setProfile(sessionProfile)
-          setEditedName(sessionProfile.name)
-          setEditedEmail(sessionProfile.email)
         }
+
+        setProfile(dbProfile)
+        setEditedName(dbProfile.name)
+        setEditedEmail(dbProfile.email)
       } catch {
-        // Ignore errors
+        const fallbackProfile = {
+          ...defaultProfile,
+          name: session?.user?.name || defaultProfile.name,
+          email: session?.user?.email || defaultProfile.email,
+          profilePicture: session?.user?.image || '',
+        }
+        setProfile(fallbackProfile)
+        setEditedName(fallbackProfile.name)
+        setEditedEmail(fallbackProfile.email)
       }
     }
 
     fetchProfile()
   }, [status, session])
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     const updated = { ...profile, name: editedName, email: editedEmail }
     setProfile(updated)
+
     try {
-      localStorage.setItem('user:profile', JSON.stringify(updated))
+      if (profile.id) {
+        await fetch(`/api/users/${profile.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editedName,
+          }),
+        })
+      }
     } catch {}
+
     setIsEditing(false)
   }
 
@@ -193,9 +160,6 @@ export default function UserProfilePage() {
       const base64String = reader.result as string
       const updated = { ...profile, profilePicture: base64String }
       setProfile(updated)
-      try {
-        localStorage.setItem('user:profile', JSON.stringify(updated))
-      } catch {}
       setUploadingPicture(false)
     }
     reader.readAsDataURL(file)
@@ -204,45 +168,9 @@ export default function UserProfilePage() {
   const removeProfilePicture = () => {
     const updated = { ...profile, profilePicture: '' }
     setProfile(updated)
-    try {
-      localStorage.setItem('user:profile', JSON.stringify(updated))
-    } catch {}
   }
-
-  const enrollInCourse = (course: AvailableCourse) => {
-    // Check if already enrolled
-    const alreadyEnrolled = profile.enrolledCourses.some(c => c.title === course.title)
-    if (alreadyEnrolled) {
-      alert('You are already enrolled in this course!')
-      return
-    }
-
-    const newEnrollment: EnrolledCourse = {
-      id: course.id,
-      title: course.title,
-      amountPaid: course.price,
-      progress: 0,
-      enrolledDate: new Date().toISOString()
-    }
-
-    const updated = {
-      ...profile,
-      enrolledCourses: [...profile.enrolledCourses, newEnrollment]
-    }
-    setProfile(updated)
-    try {
-      localStorage.setItem('user:profile', JSON.stringify(updated))
-    } catch {}
-    setShowEnrollModal(false)
-    alert(`Successfully enrolled in ${course.title}!`)
-  }
-
-  const availableCoursesToEnroll = availableCourses.filter(
-    ac => !profile.enrolledCourses.some(ec => ec.title === ac.title)
-  )
 
   const downloadCertificate = (courseName: string) => {
-    // Generate a simple text certificate
     const certificateText = `
 ═══════════════════════════════════════════════════════════════
                     CERTIFICATE OF COMPLETION
@@ -274,7 +202,7 @@ on ${new Date().toLocaleDateString()}
   }
 
   const totalSpent = profile.enrolledCourses.reduce((sum, c) => sum + c.amountPaid, 0)
-  const avgProgress = profile.enrolledCourses.length > 0 
+  const avgProgress = profile.enrolledCourses.length > 0
     ? Math.round(profile.enrolledCourses.reduce((sum, c) => sum + c.progress, 0) / profile.enrolledCourses.length)
     : 0
 
@@ -283,7 +211,6 @@ on ${new Date().toLocaleDateString()}
     window.location.href = '/login'
   }
 
-  // Show loading spinner while checking authentication
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -294,7 +221,6 @@ on ${new Date().toLocaleDateString()}
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
       <nav className="bg-white border-b shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -306,7 +232,6 @@ on ${new Date().toLocaleDateString()}
             <Link href="/dashboard/user/profile" className="text-sm font-semibold text-primary border-b-2 border-primary">My Profile</Link>
           </div>
           <div className="flex items-center gap-4">
-            {/* Notifications Bell */}
             <Popover>
               <PopoverTrigger asChild>
                 <button className="relative p-2 text-gray-700 hover:text-primary transition rounded-full hover:bg-gray-100 border border-gray-200">
@@ -357,8 +282,8 @@ on ${new Date().toLocaleDateString()}
                 <span className="text-sm text-muted-foreground">
                   {session.user.name || session.user.email}
                 </span>
-                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium capitalize">
-                  {session.user.role?.toLowerCase() || 'user'}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getRoleBadgeColor(session.user.role)}`}>
+                  {getRoleDisplayName(session.user.role)}
                 </span>
               </div>
             )}
@@ -369,8 +294,8 @@ on ${new Date().toLocaleDateString()}
 
       <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
         <div className="mb-6">
-          <button 
-            onClick={() => router.push('/dashboard/user')} 
+          <button
+            onClick={() => router.push('/dashboard/user')}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-3 transition"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -381,7 +306,6 @@ on ${new Date().toLocaleDateString()}
           <h1 className="text-3xl font-bold">My Profile</h1>
         </div>
 
-        {/* Role / Access Level Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-3">Access Level</h2>
           <div className="flex items-center gap-3">
@@ -392,7 +316,6 @@ on ${new Date().toLocaleDateString()}
           </div>
         </div>
 
-        {/* Personal Info Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Personal Information</h2>
@@ -405,22 +328,21 @@ on ${new Date().toLocaleDateString()}
                 <button onClick={saveProfile} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
                   Save
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email); }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                   Cancel
                 </button>
               </div>
             )}
           </div>
 
-          {/* Profile Picture Section */}
           <div className="flex items-center gap-6 mb-6 pb-6 border-b">
             <div className="relative">
               {profile.profilePicture ? (
-                <Image 
-                  src={profile.profilePicture} 
-                  alt="Profile" 
-                  width={120} 
-                  height={120} 
+                <Image
+                  src={profile.profilePicture}
+                  alt="Profile"
+                  width={120}
+                  height={120}
                   className="rounded-full object-cover border-4 border-primary/20"
                 />
               ) : (
@@ -437,16 +359,16 @@ on ${new Date().toLocaleDateString()}
               <div className="flex gap-2">
                 <label className="px-4 py-2 bg-primary text-white rounded text-sm cursor-pointer hover:bg-primary/90 inline-block">
                   {uploadingPicture ? 'Uploading...' : 'Upload Photo'}
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    accept="image/*"
                     onChange={handleProfilePictureChange}
                     disabled={uploadingPicture}
                     className="hidden"
                   />
                 </label>
                 {profile.profilePicture && (
-                  <button 
+                  <button
                     onClick={removeProfilePicture}
                     className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
                   >
@@ -478,7 +400,6 @@ on ${new Date().toLocaleDateString()}
           </div>
         </div>
 
-        {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Total Courses Enrolled</p>
@@ -494,18 +415,17 @@ on ${new Date().toLocaleDateString()}
           </div>
         </div>
 
-        {/* Enrolled Courses */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Enrolled Courses</h2>
-            <button 
-              onClick={() => setShowEnrollModal(true)}
+            <button
+              onClick={() => router.push('/courses')}
               className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Enroll in New Course
+              Browse Courses to Enroll
             </button>
           </div>
           {profile.enrolledCourses.length === 0 ? (
@@ -525,7 +445,6 @@ on ${new Date().toLocaleDateString()}
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium text-gray-600">Progress</p>
@@ -537,10 +456,19 @@ on ${new Date().toLocaleDateString()}
                         style={{ width: `${course.progress}%` }}
                       ></div>
                     </div>
-                    {course.progress === 100 && (
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      {course.progress === 100 ? (
                         <p className="text-sm text-green-600 font-semibold">✓ Completed</p>
-                        <button 
+                      ) : (
+                        <button
+                          onClick={() => router.push(`/dashboard/user/courses/${course.id}`)}
+                          className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90"
+                        >
+                          Continue Course
+                        </button>
+                      )}
+                      {course.progress === 100 && (
+                        <button
                           onClick={() => downloadCertificate(course.title)}
                           className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
                         >
@@ -549,68 +477,14 @@ on ${new Date().toLocaleDateString()}
                           </svg>
                           Download Certificate
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Enrollment Modal */}
-        {showEnrollModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-              <div className="p-6 border-b flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Enroll in a New Course</h2>
-                <button 
-                  onClick={() => setShowEnrollModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-                {availableCoursesToEnroll.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600 mb-4">You are enrolled in all available courses!</p>
-                    <button 
-                      onClick={() => setShowEnrollModal(false)}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {availableCoursesToEnroll.map(course => (
-                      <div key={course.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                        <h3 className="font-semibold text-lg mb-2">{course.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3">{course.description}</p>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-500">Course Fee</p>
-                            <p className="text-xl font-bold text-green-600">${course.price.toFixed(2)}</p>
-                          </div>
-                          <button 
-                            onClick={() => enrollInCourse(course)}
-                            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-                          >
-                            Enroll Now
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
