@@ -3,9 +3,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { ROLES, getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 type Resource = {
   id: string
@@ -518,11 +518,6 @@ export default function AdminDashboardPage() {
   const totalCompletions = courses.reduce((sum, c) => sum + (c.completedStudents || 0), 0)
   const totalEnrollments = courses.reduce((sum, c) => sum + (c.enrolledStudents || 0), 0)
 
-  const handleLogout = async () => {
-    await signOut({ redirect: false })
-    window.location.href = '/login'
-  }
-
   // Show loading spinner while checking authentication
   if (status === 'loading') {
     return (
@@ -534,20 +529,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard/admin" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="MamaPlus" width={240} height={240} className="object-contain" />
-            </Link>
-            <Link href="/dashboard/admin" className="text-sm font-semibold text-primary border-b-2 border-primary">Home</Link>
-            <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
-            <Link href="/dashboard/admin/profile" className="text-sm text-muted-foreground hover:text-primary">My Profile</Link>
-          </div>
-          <button onClick={handleLogout} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
-        </div>
-      </nav>
+      <AdminHeader active="home" />
 
       <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
         <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>

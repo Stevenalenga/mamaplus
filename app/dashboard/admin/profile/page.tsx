@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 type AdminProfile = {
   name: string
@@ -110,11 +111,6 @@ export default function AdminProfilePage() {
     } catch {}
   }
 
-  const handleLogout = async () => {
-    await signOut({ redirect: false })
-    window.location.href = '/login'
-  }
-
   // Show loading spinner while checking authentication
   if (status === 'loading') {
     return (
@@ -126,20 +122,7 @@ export default function AdminProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard/admin" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="MamaPlus" width={240} height={240} className="object-contain" />
-            </Link>
-            <Link href="/dashboard/admin" className="text-sm text-muted-foreground hover:text-primary">Home</Link>
-            <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
-            <Link href="/dashboard/admin/profile" className="text-sm font-semibold text-primary border-b-2 border-primary">My Profile</Link>
-          </div>
-          <button onClick={handleLogout} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
-        </div>
-      </nav>
+      <AdminHeader active="profile" />
 
       <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
         <h1 className="text-3xl font-bold mb-6">Admin Profile</h1>

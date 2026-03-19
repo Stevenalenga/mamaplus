@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/auth'
+import { auth } from '@/auth'
 import { ROLES, type Role } from '@/lib/roles'
 
 const VALID_ROLES = Object.values(ROLES)
@@ -11,7 +11,8 @@ const VALID_ROLES = Object.values(ROLES)
  */
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
+    const session = await auth()
+    const currentUser = session?.user as { id?: string; role?: string } | undefined
     if (!currentUser || currentUser.role !== ROLES.ADMIN) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 })
     }
@@ -74,7 +75,8 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
+    const session = await auth()
+    const currentUser = session?.user as { id?: string; role?: string } | undefined
     if (!currentUser || currentUser.role !== ROLES.ADMIN) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 })
     }
@@ -96,7 +98,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Prevent admin from changing their own role
-    if (userId === currentUser.userId) {
+    if (userId === currentUser.id) {
       return NextResponse.json(
         { success: false, message: 'You cannot change your own role' },
         { status: 400 },
