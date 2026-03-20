@@ -3,340 +3,276 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, CheckCircle, ChevronDown } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ArrowRight, CheckCircle, Handshake, ShieldCheck, Users } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 
 export default function LandingPage() {
-  const [expandedService, setExpandedService] = useState<number | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [heroImageIndex, setHeroImageIndex] = useState(0)
-  
-  // Hero section images - Training and education focused
-  const heroImages = [
-    {
-      src: '/mamaplusservices/explain.jpeg',
-      alt: 'MamaPlus trainers conducting caregiver education session',
-      caption: 'Professional Caregiver Training'
-    },
-    {
-      src: '/mamaplusservices/newsec.jpeg',
-      alt: 'MamaPlus trainer presenting to caregivers in a training session',
-      caption: 'Expert-Led Caregiver Training'
-    },
-    {
-      src: '/mamaplus images/education.jpeg',
-      alt: 'Interactive hands-on training session for caregivers',
-      caption: 'Hands-On Skills Development'
-    },
-    {
-      src: '/mamaplusservices/crowd.jpeg',
-      alt: 'Caregivers learning in MamaPlus training center',
-      caption: 'Building Quality Care Standards'
-    },
-    {
-      src: '/mamaplusservices/totalnew.jpeg',
-      alt: 'Caregivers in a vibrant classroom learning environment',
-      caption: 'Learning Environments That Inspire'
-    }
-  ]
-
-  // Gallery section images - Community and impact focused
-  const galleryImages = [
-    {
-      src: '/mamaplusservices/crowd.jpeg',
-      alt: 'Caregivers attending training session in classroom environment',
-      caption: 'Building a Community of Care'
-    },
-    {
-      src: '/mamaplusservices/explain.jpeg',
-      alt: 'Interactive hands-on training with practical learning activities',
-      caption: 'Hands-On Skills Development'
-    },
-    {
-      src: '/mamaplusservices/newsec.jpeg',
-      alt: 'MamaPlus trainer presenting to caregivers in a training session',
-      caption: 'Expert-Led Caregiver Training'
-    },
-    {
-      src: '/mamaplusservices/newpic.jpeg',
-      alt: 'Professional development session for childcare providers',
-      caption: 'Professional Growth & Standards'
-    },
-    {
-      src: '/mamaplus images/education.jpeg',
-      alt: 'Interactive training with real-world childcare scenarios',
-      caption: 'Practical Training That Works'
-    },
-    {
-      src: '/mamaplusservices/totalnew.jpeg',
-      alt: 'Caregivers in a vibrant classroom learning environment',
-      caption: 'Inspiring Learning Environments'
-    }
-  ]
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % galleryImages.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [galleryImages.length])
-
-  useEffect(() => {
-    const heroInterval = setInterval(() => {
-      setHeroImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
-    }, 4000)
-    return () => clearInterval(heroInterval)
-  }, [heroImages.length])
-  
   const pageSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'MamaPlus - Quality Childcare Services Kenya',
-    description: 'Professional childcare services and caregiver training platform in Kenya. Connect with trained caregivers, access certification programs, and ensure quality care for children.',
+    name: 'MamaPlus Platform - Connecting Families, Caregivers, and Communities',
+    description: 'MamaPlus is an offline-first, digitally enabled childcare training and service platform for families, caregivers, agencies, and partners.',
     url: 'https://mamaplus.co.ke',
   }
+
+  const visualHighlights = [
+    {
+      src: '/mamaplusservices/explain.jpeg',
+      alt: 'MamaPlus facilitators delivering caregiver training',
+      caption: 'Digital + Community-Based Training',
+    },
+    {
+      src: '/mamaplusservices/newsec.jpeg',
+      alt: 'Caregiver classroom session with trainer',
+      caption: 'Practical Skills for Real Work',
+    },
+    {
+      src: '/mamaplusservices/crowd.jpeg',
+      alt: 'Women participating in MamaPlus community learning',
+      caption: 'Women-Centered Ecosystem',
+    },
+  ]
+
+  const featuredCourses = [
+    {
+      title: 'Accelerate Childcare Worker Practice (0-5 years)',
+      description: 'Hands-on childcare fundamentals focused on safety, stimulation, and daily routines for ages 0-5.',
+      image: '/mamaplus images/education.jpeg',
+      level: 'Foundational',
+    },
+    {
+      title: 'Health, Hygiene & First Aid Essentials',
+      description: 'Core caregiver health protocols, emergency response basics, and preventive hygiene practices.',
+      image: '/mamaplusservices/platform-community-training.jpeg',
+      level: 'Practical',
+    },
+    {
+      title: 'Digital Literacy & Financial Readiness',
+      description: 'Smartphone confidence, safer online behavior, communication, and money-management basics.',
+      image: '/mamaplusservices/totalnew.jpeg',
+      level: 'Career Growth',
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-white to-background">
       <SEOHead
-        title="Quality Childcare Services & Caregiver Training in Kenya"
-        description="MamaPlus connects families with trained, vetted caregivers and provides professional childcare training across Kenya and Africa. Quality care you can trust, careers you can build."
+        title="MamaPlus Platform - Connecting Families, Caregivers, and Communities"
+        description="Offline-first childcare training and service platform for low-connectivity urban and peri-urban contexts."
         keywords={[
-          'childcare services Kenya',
-          'caregiver training Nairobi',
-          'house manager placement Kenya',
-          'professional nanny services',
-          'childcare certification courses',
-          'quality childcare platform',
-          'caregiver jobs Kenya',
-          'nanny training program',
+          'offline-first childcare platform',
+          'families caregivers agencies',
+          'caregiver training kenya',
+          'maternal health and parenting tools',
+          'vetted caregiver profiles',
+          'last-mile workforce development',
         ]}
         canonicalUrl="https://mamaplus.co.ke"
         schema={pageSchema}
       />
 
-      {/* Hero Section - Mobile Optimized */}
-      <section className="pt-20 pb-12 px-4 sm:pt-24 sm:pb-16 md:pt-32 md:pb-20 lg:px-8">
+      <section className="pt-24 pb-12 px-4 md:pt-32 md:pb-20 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
-                Quality <span className="text-secondary">Childcare</span> Families Can Trust
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-6 md:mb-8 leading-relaxed">
-                MamaPlus supports families by ensuring children receive safe, nurturing, and high-quality childcare—at home, in centres, or near the workplace.
+              <p className="inline-flex items-center rounded-full border border-border px-4 py-1 text-sm text-muted-foreground mb-6">
+                Offline-First, Digitally Enabled Platform
               </p>
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <Link href="/services/quicksignup" className="w-full">
-                  <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
-                    Get Started Now <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-primary leading-tight mb-6">
+                Connecting Families, Caregivers, and Communities
+              </h1>
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8">
+                MamaPlus is an offline-first, digitally enabled childcare training and service platform designed for low-connectivity urban and peri-urban contexts. For families seeking trusted support. For caregivers seeking dignified work. For agencies seeking vetted talent. And for partners seeking last-mile reach.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Link href="/families">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-white py-5">Find a Caregiver</Button>
                 </Link>
-                <Link href="/signup" className="w-full">
-                  <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 w-full bg-transparent">
-                    Create an Account
-                  </Button>
+                <Link href="/caregivers">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-white py-5">Join as a Caregiver</Button>
+                </Link>
+                <Link href="/agencies-partners">
+                  <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 py-5 bg-transparent">Partner With Us</Button>
                 </Link>
               </div>
             </div>
-            <div className="relative rounded-2xl overflow-hidden h-48 sm:h-64 md:h-80 lg:h-96 shadow-xl">
-              {heroImages.map((image, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                    index === heroImageIndex
-                      ? 'opacity-100 scale-100'
-                      : 'opacity-0 scale-105'
-                  }`}
-                >
-                  <Image
-                    src={image.src}
-                    alt={image.alt}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
-                    <p className="text-white font-bold text-base sm:text-lg md:text-xl lg:text-2xl drop-shadow-lg">
-                      {image.caption}
-                    </p>
-                    <p className="text-white/90 text-xs sm:text-sm md:text-base mt-1 sm:mt-2 drop-shadow-lg">
-                      Trusted Childcare Platform
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {/* Navigation Dots */}
-              <div className="absolute top-4 right-4 flex gap-1.5 sm:gap-2">
-                {heroImages.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                      index === heroImageIndex
-                        ? 'w-6 sm:w-8 bg-white'
-                        : 'w-1.5 sm:w-2 bg-white/50'
-                    }`}
-                  />
-                ))}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 relative h-60 md:h-72 rounded-2xl overflow-hidden shadow-lg">
+                <Image src={visualHighlights[0].src} alt={visualHighlights[0].alt} fill className="object-cover" priority />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <p className="absolute left-4 bottom-4 text-white font-semibold">{visualHighlights[0].caption}</p>
+              </div>
+              <div className="relative h-40 rounded-xl overflow-hidden shadow">
+                <Image src={visualHighlights[1].src} alt={visualHighlights[1].alt} fill className="object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <p className="absolute left-3 bottom-3 text-white text-sm font-medium">{visualHighlights[1].caption}</p>
+              </div>
+              <div className="relative h-40 rounded-xl overflow-hidden shadow">
+                <Image src={visualHighlights[2].src} alt={visualHighlights[2].alt} fill className="object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                <p className="absolute left-3 bottom-3 text-white text-sm font-medium">{visualHighlights[2].caption}</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Training & Support Centers - Mobile Optimized */}
-      <section className="py-12 px-4 sm:py-16 md:py-20 lg:px-8 bg-white/50">
+      <section className="pb-12 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4">The MamaPlus Training & Support Centres</h2>
-            <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold max-w-2xl mx-auto px-4">
-              Where Quality Childcare Begins
-            </p>
-          </div>
-          <div className="bg-white rounded-xl p-5 sm:p-6 md:p-8 border border-border mb-8 sm:mb-10 md:mb-12">
-            <p className="text-sm sm:text-base md:text-lg text-foreground mb-3 md:mb-4">
-              The MamaPlus Training & Support Centres are the backbone of our childcare model. Working closely with County Governments and training institutions, we coordinate scalable workforce development initiatives, ensuring every caregiver and childcare provider in our network meets clear, child-centred skills aligned with national and international standards and best practices.
-            </p>
-            <p className="text-sm sm:text-base md:text-lg text-foreground mb-5 md:mb-6">
-              We run our own centres in Nairobi and Bungoma, while collaborating with others to deliver our workforce development solutions in other geographies.
-            </p>
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-              <div>
-                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-4">What We Provide</h3>
-                <ul className="space-y-2.5 sm:space-y-3">
-                  {[
-                    "Practical, hands-on caregiver training",
-                    "Certification aligned to care standards",
-                    "Ongoing mentorship and support",
-                    "Guidance on child safety, learning, nutrition, and wellbeing"
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 sm:gap-3">
-                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0 mt-0.5 fill-primary/20" />
-                      <span className="text-sm sm:text-base text-foreground">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <Link href="/services">
-                  <Button className="bg-primary hover:bg-primary/90 text-white w-full text-base py-5">
-                    Learn About Our Standards
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-5 sm:p-6 md:p-8 border border-border">
-            <div className="text-center mb-4 sm:mb-6">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2 md:mb-3">Our Impact</h2>
-            </div>
-            <p className="text-sm sm:text-base md:text-lg text-foreground text-center max-w-3xl mx-auto">
-              We upgrade skills, facilities and practices so that childcare standards and practices are aligned across homes, centres, and workplaces. This way we ensure that we are the practical engine for childcare that families can trust.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Image Gallery - MamaPlus in Action */}
-      <section className="py-12 px-4 sm:py-16 md:py-20 lg:px-8 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4">
-              MamaPlus in Action
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Empowering caregivers, supporting families, and transforming childcare across Africa
-            </p>
-          </div>
-
-          {/* Main Carousel Image */}
-          <div className="relative max-w-5xl mx-auto mb-6 sm:mb-8">
-            <div className="relative aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl">
-              {galleryImages.map((image, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                    index === currentImageIndex
-                      ? 'opacity-100 scale-100'
-                      : 'opacity-0 scale-105'
-                  }`}
-                >
-                  <Image
-                    src={image.src}
-                    alt={image.alt}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
-                    <p className="text-white font-semibold text-lg sm:text-xl md:text-2xl drop-shadow-lg">
-                      {image.caption}
-                    </p>
-                  </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-6 text-center">Featured Courses & Learning Paths</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {featuredCourses.map((course) => (
+              <article key={course.title} className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="relative h-44">
+                  <Image src={course.image} alt={course.title} fill className="object-cover" />
                 </div>
-              ))}
-            </div>
-
-            {/* Navigation Dots */}
-            <div className="flex justify-center gap-2 mt-4 sm:mt-6">
-              {galleryImages.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentImageIndex(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index === currentImageIndex
-                      ? 'w-8 bg-primary'
-                      : 'w-2 bg-primary/30 hover:bg-primary/50'
-                  }`}
-                  aria-label={`View image ${index + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Thumbnail Strip */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto">
-            {galleryImages.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`relative aspect-[4/3] rounded-lg overflow-hidden transition-all duration-300 ${
-                  index === currentImageIndex
-                    ? 'ring-4 ring-primary shadow-lg scale-105'
-                    : 'ring-2 ring-border hover:ring-primary/50 opacity-70 hover:opacity-100'
-                }`}
-              >
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  className="object-cover"
-                />
-              </button>
+                <div className="p-5">
+                  <p className="text-xs text-primary font-semibold mb-2">{course.level}</p>
+                  <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
+                  <Link href="/courses" className="inline-flex items-center text-primary font-medium hover:underline">
+                    View Course Details <ArrowRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+              </article>
             ))}
           </div>
+          <div className="text-center mt-6">
+            <Link href="/courses">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent">Explore All Courses</Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* CTA Section - Mobile Optimized */}
-      <section className="py-12 px-4 sm:py-16 md:py-20 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Ready to Advance Your Career?</h2>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-            Join thousands of caregivers building better futures for families
-          </p>
-          <Link href="/signup">
-            <Button className="bg-primary hover:bg-primary/90 text-white text-base px-8 py-5 w-full sm:w-auto">
-              Create Your Account <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-          </Link>
+      <section className="py-12 px-4 lg:px-8 bg-white/50">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6">
+          <div className="bg-white border border-border rounded-xl p-6">
+            <h3 className="text-xl font-semibold text-primary mb-3">For Families</h3>
+            <p className="text-muted-foreground mb-5">Find trusted childcare services, childcare workers and domestic help. Access maternal health information and parenting support—all in one place.</p>
+            <Link href="/families" className="inline-flex items-center text-primary font-medium hover:underline">Learn More <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          </div>
+          <div className="bg-white border border-border rounded-xl p-6">
+            <h3 className="text-xl font-semibold text-primary mb-3">For Caregivers</h3>
+            <p className="text-muted-foreground mb-5">Find dignified work opportunities. Access training, health information, and a community of peers. Build your skills and your future.</p>
+            <Link href="/caregivers" className="inline-flex items-center text-primary font-medium hover:underline">Learn More <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          </div>
+          <div className="bg-white border border-border rounded-xl p-6">
+            <h3 className="text-xl font-semibold text-primary mb-3">For Agencies & Partners</h3>
+            <p className="text-muted-foreground mb-5">Find vetted talent for placement. Reach last-mile communities. Partner with us for workforce development, data insights, and impact.</p>
+            <Link href="/agencies-partners" className="inline-flex items-center text-primary font-medium hover:underline">Learn More <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          </div>
         </div>
       </section>
 
+      <section className="py-16 px-4 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">One Platform. Three Audiences. Tailored Experiences.</h2>
+            <p className="text-muted-foreground">How the MamaPlus platform works</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white border border-border rounded-xl p-6">
+              <Users className="w-8 h-8 text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Step 1: We Onboard the Ecosystem</h3>
+              <p className="text-muted-foreground">We onboard families seeking care, caregivers seeking work, and agencies seeking talent. Each user gets a tailored experience—health content for mothers, job matching for caregivers, placement tools for agencies.</p>
+            </div>
+            <div className="bg-white border border-border rounded-xl p-6">
+              <ShieldCheck className="w-8 h-8 text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Step 2: We Build Trust & Skills</h3>
+              <p className="text-muted-foreground">Caregivers access digital literacy training, health education, and moderated peer groups. Families access verified profiles and health resources. Trust is built through transparency and community.</p>
+            </div>
+            <div className="bg-white border border-border rounded-xl p-6">
+              <Handshake className="w-8 h-8 text-primary mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Step 3: We Connect & Empower</h3>
+              <p className="text-muted-foreground">We connect caregivers to placement opportunities. We connect families to vetted support. We connect agencies and corporate partners to a trained, empowered workforce—even in last-mile communities.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 lg:px-8 bg-white/60">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-primary text-center mb-10">Platform Features Snapshot</h2>
+          <div className="overflow-x-auto bg-white border border-border rounded-xl">
+            <table className="w-full text-left">
+              <thead className="bg-primary/5">
+                <tr>
+                  <th className="px-5 py-4 font-semibold">Feature</th>
+                  <th className="px-5 py-4 font-semibold">What It Means for Users</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Offline-First', 'Access content without internet. Syncs when connection returns.'],
+                  ['Audio Narration', 'Every module available in audio—for low-literacy users and women with disabilities.'],
+                  ['Female-Only Spaces', 'Moderated peer groups where women connect safely.'],
+                  ['Device-Lending Hubs', 'Borrow phones and charge via solar at MamaPlus community hubs.'],
+                  ['Verified Profiles', 'All caregivers vetted. All families verified.'],
+                ].map(([feature, details]) => (
+                  <tr key={feature} className="border-t border-border">
+                    <td className="px-5 py-4 font-medium text-primary">{feature}</td>
+                    <td className="px-5 py-4 text-muted-foreground">{details}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 lg:px-8">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-6">
+          <blockquote className="bg-white border border-border rounded-xl p-6">
+            <p className="text-lg text-foreground mb-4">“MamaPlus helped me find work as a domestic worker. I also use the health information to care for my own child. It changed my life.”</p>
+            <footer className="text-sm text-muted-foreground">— Akinyi, Caregiver, Busia</footer>
+          </blockquote>
+          <blockquote className="bg-white border border-border rounded-xl p-6">
+            <p className="text-lg text-foreground mb-4">“We partner with MamaPlus to source trained, vetted caregivers for our placement agency. The quality is consistent, and the reach into rural communities is unmatched.”</p>
+            <footer className="text-sm text-muted-foreground">— James, Placement Agency Director, Nairobi</footer>
+          </blockquote>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 lg:px-8 bg-primary/5">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Join the MamaPlus Ecosystem Today</h2>
+          <div className="grid md:grid-cols-3 gap-4 mt-8">
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-xl font-semibold mb-2">Families</h3>
+              <p className="text-muted-foreground mb-5">Find trusted care for your loved ones.</p>
+              <Link href="/families"><Button className="w-full bg-primary hover:bg-primary/90 text-white">Find Care</Button></Link>
+            </div>
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-xl font-semibold mb-2">Caregivers</h3>
+              <p className="text-muted-foreground mb-5">Find dignified work and build your skills.</p>
+              <Link href="/caregivers"><Button className="w-full bg-primary hover:bg-primary/90 text-white">Apply Now</Button></Link>
+            </div>
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-xl font-semibold mb-2">Agencies</h3>
+              <p className="text-muted-foreground mb-5">Partner with us to build a stronger workforce.</p>
+              <Link href="/contact"><Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 bg-transparent">Contact Us</Button></Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10 px-4 lg:px-8">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+          {[
+            'Works offline in low-connectivity contexts',
+            'Built for inclusion and accessibility',
+            'Supports families, caregivers, agencies, and partners',
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-primary" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

@@ -11,7 +11,7 @@ export default function Header() {
 
   return (
     <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-border z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
         <Link href="/" className="flex items-center hover:opacity-80 transition">
           <Image
             src="/logo.png"
@@ -19,26 +19,29 @@ export default function Header() {
             width={320}
             height={106}
             priority
-            className="h-16 w-auto sm:h-20"
+            className="h-12 w-auto sm:h-14"
           />
         </Link>
         
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/services" className="text-foreground hover:text-primary transition">Services</Link>
-          <Link href="/courses" className="text-foreground hover:text-primary transition">Courses</Link>
-          <Link href="/partner" className="text-foreground hover:text-primary transition">Partner with us</Link>
+        <div className="hidden lg:flex items-center gap-8 text-lg">
+          <Link href="/" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Home</Link>
+          <Link href="/families" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Families</Link>
+          <Link href="/caregivers" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Caregivers</Link>
+          <Link href="/agencies-partners" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Agencies</Link>
+          <Link href="/our-platform" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Platform</Link>
+          <Link href="/contact" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Contact</Link>
         </div>
         
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center gap-2 sm:gap-4">
+        <div className="hidden lg:flex items-center gap-2">
           <Link href="/login">
-            <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent px-3 sm:px-4 text-xs sm:text-sm">
+            <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent px-3 text-xs h-9">
               Sign In
             </Button>
           </Link>
           <Link href="/services/quicksignup">
-            <Button className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-4 text-xs sm:text-sm">
+            <Button className="bg-primary hover:bg-primary/90 text-white px-3 text-xs h-9">
               Get Started
             </Button>
           </Link>
@@ -47,7 +50,7 @@ export default function Header() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-foreground hover:text-primary transition"
+          className="lg:hidden p-2 text-foreground hover:text-primary transition"
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -56,28 +59,49 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-border">
+        <div className="lg:hidden bg-white border-t border-border">
           <div className="px-4 py-4 space-y-3">
             <Link 
-              href="/services" 
-              className="block py-2 text-foreground hover:text-primary transition"
+              href="/" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Services
+              Home
             </Link>
             <Link 
-              href="/courses" 
-              className="block py-2 text-foreground hover:text-primary transition"
+              href="/families" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Courses
+              For Families
             </Link>
             <Link 
-              href="/partner" 
-              className="block py-2 text-foreground hover:text-primary transition"
+              href="/caregivers" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Partner with us
+              For Caregivers
+            </Link>
+            <Link 
+              href="/agencies-partners" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              For Agencies & Partners
+            </Link>
+            <Link 
+              href="/our-platform" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Our Platform
+            </Link>
+            <Link 
+              href="/contact" 
+              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
             </Link>
             <div className="pt-3 border-t border-border space-y-2">
               <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
@@ -85,7 +109,7 @@ export default function Header() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/services/quicksignup" className="block" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/signup" className="block" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-primary hover:bg-primary/90 text-white">
                   Get Started
                 </Button>

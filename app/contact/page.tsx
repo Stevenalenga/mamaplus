@@ -9,6 +9,7 @@ import { ArrowRight, Mail, Phone, MapPin, CheckCircle2 } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 
 type FormState = {
+  inquiryType: string
   name: string
   email: string
   phone: string
@@ -17,6 +18,7 @@ type FormState = {
 }
 
 const initialState: FormState = {
+  inquiryType: 'family',
   name: '',
   email: '',
   phone: '',
@@ -61,13 +63,12 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <SEOHead
-        title="Contact MamaPlus - Enquiry Page"
-        description="Send an enquiry to MamaPlus. Reach us for childcare services, caregiver support, partnerships, or general questions."
+        title="Contact MamaPlus"
+        description="Get in touch with MamaPlus for family support, caregiver onboarding, partnerships, and media inquiries."
         keywords={[
           'MamaPlus contact',
-          'MamaPlus enquiry',
-          'childcare support Kenya',
-          'caregiver services contact',
+          'caregiver support',
+          'agency partnership contact',
         ]}
         canonicalUrl="https://mamaplus.co.ke/contact"
       />
@@ -77,10 +78,26 @@ export default function ContactPage() {
           <p className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-4">
             Contact MamaPlus
           </p>
-          <h1 className="text-4xl sm:text-5xl font-black text-foreground mb-4">Send Us an Enquiry</h1>
+          <h1 className="text-4xl sm:text-5xl font-black text-foreground mb-4">Get in Touch</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            We are here to help with childcare placement, training, support programs, and partnerships.
+            Whether you are a family, caregiver, agency, or partner, we are here to support you.
           </p>
+        </div>
+      </section>
+
+      <section className="px-4 lg:px-8 pb-10">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            ['I am a Family', 'Questions about finding care or your account'],
+            ['I am a Caregiver', 'Questions about joining or training support'],
+            ['I am an Agency/Partner', 'Partnerships, placement data, and collaboration'],
+            ['Media/Other', 'Press, speaking requests, and general enquiries'],
+          ].map(([title, copy]) => (
+            <div key={title} className="bg-white rounded-xl border border-border p-4">
+              <h3 className="font-semibold text-primary mb-1">{title}</h3>
+              <p className="text-sm text-muted-foreground">{copy}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -108,13 +125,31 @@ export default function ContactPage() {
               </div>
               <p className="text-muted-foreground text-sm">Nairobi, Kenya</p>
             </div>
+            <div className="bg-white rounded-2xl border border-border p-5">
+              <h2 className="font-bold text-foreground mb-2">Hub Locations</h2>
+              <p className="text-muted-foreground text-sm">Bungoma: [Address/description]</p>
+              <p className="text-muted-foreground text-sm">Busia: [Address/description]</p>
+              <p className="text-muted-foreground text-sm">Turkana: [Address/description]</p>
+              <p className="text-muted-foreground text-sm mt-2">Hours: Monday–Friday, 9:00 AM – 5:00 PM</p>
+            </div>
           </div>
 
           <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6 sm:p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-foreground mb-2">Enquiry Form</h2>
-            <p className="text-sm text-muted-foreground mb-6">Fill in the details below and our team will respond shortly.</p>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Contact Form</h2>
+            <p className="text-sm text-muted-foreground mb-6">Choose your enquiry type and our team will route your request quickly.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <select
+                value={formData.inquiryType}
+                onChange={(event) => setFormData((prev) => ({ ...prev, inquiryType: event.target.value }))}
+                className="w-full border rounded-md px-3 py-2 bg-background"
+              >
+                <option value="family">I am a Family</option>
+                <option value="caregiver">I am a Caregiver</option>
+                <option value="agency-partner">I am an Agency/Partner</option>
+                <option value="media-other">Media/Other</option>
+              </select>
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
                   value={formData.name}
@@ -172,9 +207,35 @@ export default function ContactPage() {
               </Button>
             </form>
 
-            <p className="text-xs text-muted-foreground mt-6">
-              Looking to sign up directly? Visit the <Link href="/signup" className="text-primary font-medium hover:underline">registration page</Link>.
-            </p>
+            <div className="grid sm:grid-cols-2 gap-3 mt-6 text-sm">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">Facebook</a>
+              <a href="https://x.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">Twitter/X</a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">LinkedIn</a>
+              <a href="https://youtube.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">YouTube</a>
+            </div>
+
+            <div className="mt-8 border-t pt-6">
+              <h3 className="text-lg font-semibold mb-2">Join Our Newsletter</h3>
+              <p className="text-sm text-muted-foreground mb-3">Stay updated on new features, training opportunities, and impact stories.</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input placeholder="Email address" />
+                <Button className="bg-primary hover:bg-primary/90 text-white">Subscribe</Button>
+              </div>
+            </div>
+
+            <div className="mt-8 border-t pt-6">
+              <h3 className="text-lg font-semibold mb-3">Map</h3>
+              <div className="rounded-xl overflow-hidden border border-border">
+                <iframe
+                  title="MamaPlus Locations"
+                  src="https://www.google.com/maps?q=Nairobi%20Kenya&output=embed"
+                  className="w-full h-72"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-6">Looking to sign up directly? Visit the <Link href="/signup" className="text-primary font-medium hover:underline">registration page</Link>.</p>
           </div>
         </div>
       </section>

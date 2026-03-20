@@ -105,6 +105,26 @@ export default function ServicesPage() {
       color: 'from-[#ee5f5e] to-[#c44b4a]',
       lightBg: 'bg-primary/10',
       accent: 'text-primary',
+      badge: 'Women-Centered',
+      image: '/mamaplusservices/crowd2.jpeg',
+      title: 'Female-Only Cohorts & Learning Sessions',
+      description: 'We run female-only caregiver cohorts and safe-session learning spaces designed around women\'s realities, confidence building, and practical care leadership.',
+      features: [
+        'Female-only classroom and peer-learning cohorts',
+        'Safe moderated sessions focused on women caregivers',
+        'Facilitators trained in gender-responsive learning methods',
+        'Modules on confidence, communication, and workplace dignity',
+        'Targeted support for young mothers and women re-entering work',
+      ],
+      cta: 'Join a Women-Only Cohort',
+      stat: '300+',
+      statLabel: 'Women in Cohorts',
+    },
+    {
+      icon: Users,
+      color: 'from-[#ee5f5e] to-[#c44b4a]',
+      lightBg: 'bg-primary/10',
+      accent: 'text-primary',
       badge: null,
       image: '/mamaplus images/growpep.jpeg',
       title: "Support Circles for Childcare Centres",
@@ -333,7 +353,7 @@ export default function ServicesPage() {
           <AnimatedSection className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">Our Integrated Services</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Six pillars supporting every part of the childcare journey
+              Seven pillars supporting every part of the childcare journey
             </p>
           </AnimatedSection>
 
