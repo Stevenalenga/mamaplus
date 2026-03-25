@@ -15,15 +15,20 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
-  password      String    // Hashed password
+  password      String    // Hashed password (empty string for OAuth users)
   role          String    @default("PENDING") // PENDING, USER, AGENCY, INSTRUCTOR, ADMIN_ASSISTANT, ADMIN
   gender        String?   // MALE, FEMALE (set during onboarding for caregivers)
   phoneNumber   String?
-  avatar        String?   // Profile picture URL
-  isVerified    Boolean   @default(false)
+  avatar        String?   // Profile picture URL (auto-populated from OAuth providers)
+  isVerified    Boolean   @default(false) // Auto-set to true for OAuth users
   verificationToken String?
   resetToken    String?
   resetTokenExpiry DateTime?
+  
+  // OAuth provider tracking (optional fields)
+  oauthProvider String?   // google, azure-ad, etc. (first provider used)
+  oauthId       String?   // Provider's user ID
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   

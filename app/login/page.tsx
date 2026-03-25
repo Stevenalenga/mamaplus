@@ -134,9 +134,20 @@ export default function LoginPage() {
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    // Placeholder: in future wire up OAuth flows
-    toast.info(`${provider} authentication coming soon!`)
+  const handleSocialLogin = async (provider: string) => {
+    try {
+      setIsLoading(true)
+      // Use 'azure-ad' as the provider name for Microsoft
+      const providerName = provider === 'microsoft' ? 'azure-ad' : provider
+      await signIn(providerName, {
+        callbackUrl: '/dashboard/user',
+        redirect: true,
+      })
+    } catch (error) {
+      console.error(`${provider} login error:`, error)
+      toast.error(`Failed to sign in with ${provider}`)
+      setIsLoading(false)
+    }
   }
 
   // Show loading state while checking authentication status
@@ -265,7 +276,12 @@ export default function LoginPage() {
         {/* Social Sign In */}
         <div className="space-y-3 mb-6">
           {/* Google */}
-          <button onClick={() => handleSocialLogin('google')} className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
+          <button 
+            type="button"
+            onClick={() => handleSocialLogin('google')} 
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 c0-3.331,2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.461,2.268,15.365,1.25,12.545,1.25 c-6.209,0-11.25,5.041-11.25,11.25c0,6.209,5.041,11.25,11.25,11.25c6.209,0,11.25-5.041,11.25-11.25 C23.795,11.6,23.7,10.999,23.589,10.403H12.545z"/>
             </svg>
@@ -273,7 +289,12 @@ export default function LoginPage() {
           </button>
 
           {/* Microsoft */}
-          <button onClick={() => handleSocialLogin('microsoft')} className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground">
+          <button 
+            type="button"
+            onClick={() => handleSocialLogin('microsoft')} 
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#00A4EF" d="M0 0h11v11H0z"/>
               <path fill="#7FBA00" d="M13 0h11v11H13z"/>
