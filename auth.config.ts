@@ -30,6 +30,7 @@ export const authConfig: NextAuthConfig = {
               name: true,
               password: true,
               role: true,
+              gender: true,
               phoneNumber: true,
               avatar: true,
               isVerified: true
@@ -57,6 +58,7 @@ export const authConfig: NextAuthConfig = {
             email: user.email,
             name: user.name,
             role: user.role,
+            gender: user.gender,
             phoneNumber: user.phoneNumber,
             avatar: user.avatar,
             isVerified: user.isVerified
@@ -74,16 +76,28 @@ export const authConfig: NextAuthConfig = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       // Add user info to token on sign in
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.role = (user as any).role
+        token.gender = (user as any).gender ?? null
         token.phoneNumber = (user as any).phoneNumber
         token.avatar = (user as any).avatar
         token.isVerified = (user as any).isVerified
+      }
+      // Re-fetch role and gender from DB when session is updated (e.g. after onboarding)
+      if (trigger === 'update') {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, gender: true },
+        })
+        if (dbUser) {
+          token.role = dbUser.role
+          token.gender = dbUser.gender ?? null
+        }
       }
       return token
     },
@@ -94,6 +108,7 @@ export const authConfig: NextAuthConfig = {
         session.user.email = token.email as string
         session.user.name = token.name as string
         ;(session.user as any).role = token.role
+        ;(session.user as any).gender = token.gender
         ;(session.user as any).phoneNumber = token.phoneNumber
         ;(session.user as any).avatar = token.avatar
         ;(session.user as any).isVerified = token.isVerified
@@ -103,7 +118,7 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
 }

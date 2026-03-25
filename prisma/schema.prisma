@@ -16,7 +16,8 @@ model User {
   email         String    @unique
   name          String?
   password      String    // Hashed password
-  role          String    @default("USER") // USER, INSTRUCTOR, ADMIN_ASSISTANT, ADMIN
+  role          String    @default("PENDING") // PENDING, USER, AGENCY, INSTRUCTOR, ADMIN_ASSISTANT, ADMIN
+  gender        String?   // MALE, FEMALE (set during onboarding for caregivers)
   phoneNumber   String?
   avatar        String?   // Profile picture URL
   isVerified    Boolean   @default(false)
@@ -32,6 +33,10 @@ model User {
   reviews       Review[]
   progress      Progress[]
   certificates  Certificate[]
+  
+  // Agency relations
+  recruitedCaregivers AgencyCaregiver[] @relation("AgencyRecruits")
+  agencyRecruitments  AgencyCaregiver[] @relation("CaregiverRecruitedBy")
   
   @@index([email])
   @@map("users")
@@ -217,4 +222,28 @@ model Certificate {
   
   @@index([userId])
   @@map("certificates")
+}
+
+// Agency-Caregiver relationship model
+model AgencyCaregiver {
+  id            String    @id @default(cuid())
+  agencyId      String    // Agency user ID
+  caregiverId   String    // Caregiver user ID
+  status        String    @default("ACTIVE") // ACTIVE, INACTIVE, COMPLETED
+  rating        Int?      // 1-5 stars (agency rates the caregiver)
+  reviewComment String?   // Agency's review of the caregiver
+  recruiterNotes String?  // Internal notes by the agency
+  recruitedAt   DateTime  @default(now())
+  completedAt   DateTime? // When the placement ended
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  agency        User      @relation("AgencyRecruits", fields: [agencyId], references: [id], onDelete: Cascade)
+  caregiver     User      @relation("CaregiverRecruitedBy", fields: [caregiverId], references: [id], onDelete: Cascade)
+  
+  @@unique([agencyId, caregiverId])
+  @@index([agencyId])
+  @@index([caregiverId])
+  @@map("agency_caregivers")
 }

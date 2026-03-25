@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server'
 
 // JWT secret key - should be set in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = '7d' // Token expires in 7 days
+const JWT_EXPIRES_IN = '24h' // Token expires in 24 hours
 
 export interface JWTPayload {
   userId: string
@@ -80,7 +80,7 @@ export async function setAuthCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+    maxAge: 60 * 60 * 24, // 24 hours in seconds
     path: '/'
   })
 }

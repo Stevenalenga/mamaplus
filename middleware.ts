@@ -4,7 +4,9 @@ import { auth } from '@/auth'
 
 // Role → dashboard path mapping
 const ROLE_DASHBOARD: Record<string, string> = {
+  PENDING: '/onboarding',
   USER: '/dashboard/user',
+  AGENCY: '/dashboard/agency',
   INSTRUCTOR: '/dashboard/educator',
   ADMIN_ASSISTANT: '/dashboard/admin-assistant',
   ADMIN: '/dashboard/admin',
@@ -16,6 +18,7 @@ const DASHBOARD_ACCESS: Record<string, string[]> = {
   '/dashboard/admin-assistant': ['ADMIN_ASSISTANT', 'ADMIN'],
   '/dashboard/educator': ['INSTRUCTOR', 'ADMIN'],
   '/dashboard/user': ['USER'],
+  '/dashboard/agency': ['AGENCY'],
 }
 
 // Routes that require authentication
@@ -34,7 +37,27 @@ export async function middleware(request: NextRequest) {
   // Get session using NextAuth
   const session = await auth()
   const user = session?.user
-  const role = (user as any)?.role || 'USER'
+  const role = (user as any)?.role || 'PENDING'
+  const gender = (user as any)?.gender
+  
+  // Onboarding is complete if:
+  // 1. Role is not PENDING, AND
+  // 2. If role is USER (caregiver), gender must be set
+  const isOnboardingComplete = 
+    role !== 'PENDING' && 
+    (role !== 'USER' || (role === 'USER' && gender !== null && gender !== undefined))
+
+  // ── /onboarding ──────────────────────────────────────────────────────────
+  if (pathname.startsWith('/onboarding')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login?error=auth_required', request.url))
+    }
+    // Already onboarded: send to real dashboard
+    if (isOnboardingComplete) {
+      return NextResponse.redirect(new URL(getDashboard(role), request.url))
+    }
+    return NextResponse.next()
+  }
 
   // Check if current route is protected
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
@@ -46,7 +69,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Redirect to dashboard if accessing auth routes while authenticated
+  // Users who haven't completed onboarding trying to access dashboard → send to onboarding
+  if (isProtectedRoute && user && !isOnboardingComplete) {
+    return NextResponse.redirect(new URL('/onboarding', request.url))
+  }
+
+  // Redirect to dashboard/onboarding if accessing auth routes while authenticated
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL(getDashboard(role), request.url))
   }

@@ -17,7 +17,6 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [showPassword, setShowPassword] = useState(false)
-  const [userType, setUserType] = useState<'educator' | 'caregiver'>('caregiver')
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -28,15 +27,19 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (status === 'loading') return
-    
+
     if (status === 'authenticated' && session?.user) {
       const userRole = (session.user as any).role
-      if (userRole === 'ADMIN') {
+      if (userRole === 'PENDING') {
+        window.location.href = '/onboarding'
+      } else if (userRole === 'ADMIN') {
         window.location.href = '/dashboard/admin'
       } else if (userRole === 'ADMIN_ASSISTANT') {
         window.location.href = '/dashboard/admin-assistant'
       } else if (userRole === 'INSTRUCTOR') {
         window.location.href = '/dashboard/educator'
+      } else if (userRole === 'AGENCY') {
+        window.location.href = '/dashboard/agency'
       } else {
         window.location.href = '/dashboard/user'
       }
@@ -99,22 +102,25 @@ export default function LoginPage() {
 
       if (result?.ok) {
         toast.success('Login successful! Redirecting...')
-        
+
         // Small delay to ensure session is set before redirect
         await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // Fetch the session to get user role
+
+        // Fetch the session to determine where to send the user
         const sessionResponse = await fetch('/api/auth/session')
-        const session = await sessionResponse.json()
-        
-        // Redirect based on user role
-        const userRole = session?.user?.role
-        if (userRole === 'ADMIN') {
+        const sessionData = await sessionResponse.json()
+        const userRole = sessionData?.user?.role
+
+        if (userRole === 'PENDING') {
+          window.location.href = '/onboarding'
+        } else if (userRole === 'ADMIN') {
           window.location.href = '/dashboard/admin'
         } else if (userRole === 'ADMIN_ASSISTANT') {
           window.location.href = '/dashboard/admin-assistant'
         } else if (userRole === 'INSTRUCTOR') {
           window.location.href = '/dashboard/educator'
+        } else if (userRole === 'AGENCY') {
+          window.location.href = '/dashboard/agency'
         } else {
           window.location.href = '/dashboard/user'
         }
@@ -126,16 +132,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleAdminLogin = async () => {
-    // For testing: use a specific admin account or same login flow
-    setFormData({
-      email: 'admin@mamaplus.co.ke',
-      password: 'admin123',
-      rememberMe: false
-    })
-    toast.info('Enter admin credentials and click Sign In')
   }
 
   const handleSocialLogin = (provider: string) => {
@@ -171,37 +167,6 @@ export default function LoginPage() {
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">Welcome Back</h1>
           <p className="text-secondary font-semibold">Sign in to access your caregiver portal</p>
-        </div>
-
-        {/* User Type Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-foreground mb-3">I am a:</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setUserType('caregiver')}
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
-                userType === 'caregiver'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              Caregiver
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType('educator')}
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
-                userType === 'educator'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              Educator
-            </button>
-          </div>
         </div>
 
         {/* Login Form */}
@@ -282,14 +247,7 @@ export default function LoginPage() {
             )}
           </Button>
 
-          <Button 
-            type="button" 
-            onClick={handleAdminLogin} 
-            disabled={isLoading}
-            className="w-full bg-muted text-foreground font-semibold py-3 disabled:opacity-50"
-          >
-            Sign In as Admin (placeholder)
-          </Button>
+
         </form>
 
         {/* Divider */}

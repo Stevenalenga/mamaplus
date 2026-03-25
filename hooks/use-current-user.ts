@@ -8,6 +8,7 @@ export interface User {
   email: string
   name: string | null
   role: string
+  gender: string | null
   phoneNumber: string | null
   avatar: string | null
   isVerified: boolean
@@ -37,7 +38,8 @@ export function useCurrentUser(): UseCurrentUserReturn {
     id: session.user.id as string,
     email: session.user.email as string,
     name: session.user.name || null,
-    role: (session.user as any).role || 'USER',
+    role: (session.user as any).role || 'PENDING',
+    gender: (session.user as any).gender || null,
     phoneNumber: (session.user as any).phoneNumber || null,
     avatar: (session.user as any).avatar || session.user.image || null,
     isVerified: (session.user as any).isVerified || false,

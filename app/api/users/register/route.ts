@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/db-utils'
 import { generateTokenEdge, setAuthCookie } from '@/lib/auth'
-import { ROLES, isValidSelfRegisterRole } from '@/lib/roles'
+import { ROLES } from '@/lib/roles'
 
 /**
  * POST /api/users/register
@@ -10,7 +10,7 @@ import { ROLES, isValidSelfRegisterRole } from '@/lib/roles'
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, phoneNumber, role: requestedRole } = await request.json()
+    const { email, password, name, phoneNumber } = await request.json()
 
     // Validate input
     if (!email || !password) {
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
     console.log('Creating new user:', email)
     const hashedPassword = await hashPassword(password)
 
-    // Determine role (only USER and INSTRUCTOR allowed at self-registration)
-    const role = requestedRole && isValidSelfRegisterRole(requestedRole) ? requestedRole : ROLES.USER
+    // All new self-registered users start as PENDING until they complete onboarding
+    const role = ROLES.PENDING
 
     // Create user
     const user = await prisma.user.create({

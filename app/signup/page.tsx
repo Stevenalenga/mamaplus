@@ -17,7 +17,6 @@ export default function SignupPage() {
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [showPassword, setShowPassword] = useState(false)
-  const [userType, setUserType] = useState<'educator' | 'caregiver'>('caregiver')
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
@@ -106,7 +105,6 @@ export default function SignupPage() {
           name: formData.fullName.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          role: userType === 'educator' ? 'INSTRUCTOR' : 'USER',
         }),
       })
 
@@ -144,24 +142,8 @@ export default function SignupPage() {
       }
 
       if (loginResult?.ok) {
-        // Small delay to ensure session is set
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // Fetch the session to get user role
-        const sessionResponse = await fetch('/api/auth/session')
-        const session = await sessionResponse.json()
-        
-        // Redirect based on user role using full page navigation
-        const userRole = session?.user?.role
-        if (userRole === 'ADMIN') {
-          window.location.href = '/dashboard/admin'
-        } else if (userRole === 'ADMIN_ASSISTANT') {
-          window.location.href = '/dashboard/admin-assistant'
-        } else if (userRole === 'INSTRUCTOR') {
-          window.location.href = '/dashboard/educator'
-        } else {
-          window.location.href = '/dashboard/user'
-        }
+        // New accounts start as PENDING — go to onboarding to select role
+        window.location.href = '/onboarding'
       }
       
     } catch (err: any) {
@@ -206,37 +188,6 @@ export default function SignupPage() {
           </Link>
           <h1 className="text-3xl font-bold text-primary mb-2">Create Account</h1>
           <p className="text-secondary font-semibold">Start your journey in professional caregiving</p>
-        </div>
-
-        {/* User Type Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-foreground mb-3">I am a:</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setUserType('caregiver')}
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
-                userType === 'caregiver'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              Caregiver
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType('educator')}
-              disabled={isLoading}
-              className={`px-4 py-3 rounded-lg border-2 font-medium transition ${
-                userType === 'educator'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-white text-muted-foreground hover:border-primary/50'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              Educator
-            </button>
-          </div>
         </div>
 
         {/* Sign up Form */}
