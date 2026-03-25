@@ -116,7 +116,8 @@ export default function ContactPage() {
                 <Phone className="w-5 h-5 text-primary" />
                 <h2 className="font-bold text-foreground">Phone</h2>
               </div>
-              <p className="text-muted-foreground text-sm">+254 700 000 000</p>
+              <p className="text-muted-foreground text-sm">+254 769 886655 (Nairobi, Kenya)</p>
+              <p className="text-muted-foreground text-sm mt-1">+254 769 886644 (Bungoma, Kenya)</p>
             </div>
             <div className="bg-white rounded-2xl border border-border p-5">
               <div className="flex items-center gap-3 mb-2">
@@ -127,9 +128,7 @@ export default function ContactPage() {
             </div>
             <div className="bg-white rounded-2xl border border-border p-5">
               <h2 className="font-bold text-foreground mb-2">Hub Locations</h2>
-              <p className="text-muted-foreground text-sm">Bungoma: [Address/description]</p>
-              <p className="text-muted-foreground text-sm">Busia: [Address/description]</p>
-              <p className="text-muted-foreground text-sm">Turkana: [Address/description]</p>
+              <p className="text-muted-foreground text-sm">Bungoma: +254 769 886644</p>
               <p className="text-muted-foreground text-sm mt-2">Hours: Monday–Friday, 9:00 AM – 5:00 PM</p>
             </div>
           </div>
