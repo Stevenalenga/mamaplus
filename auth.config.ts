@@ -223,4 +223,6 @@ export const authConfig: NextAuthConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
+  basePath: '/api/auth',
+  trustHost: true,
 }

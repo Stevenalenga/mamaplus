@@ -30,22 +30,22 @@ export default function EducatorHeader({ currentPage = null }: EducatorHeaderPro
   const [notifications, setNotifications] = useState<Notification[]>([
     { 
       id: '1', 
-      title: 'Draft Saved', 
-      message: 'Continue building your course anytime', 
-      time: '1 hour ago', 
+      title: 'New Student Enrollment', 
+      message: 'A student has enrolled in your Maternal Health Basics course', 
+      time: '2 hours ago', 
       read: false 
     },
     { 
       id: '2', 
-      title: 'Course Published', 
-      message: 'Published courses become visible to users', 
+      title: 'Course Milestone Completed', 
+      message: '5 students completed the first milestone in Infant Nutrition', 
       time: '1 day ago', 
       read: false 
     },
     { 
       id: '3', 
-      title: 'Welcome Educator', 
-      message: 'Welcome to MamaPlus educator portal', 
+      title: 'Welcome to MamaPlus Educators', 
+      message: 'Thank you for joining our educator community', 
       time: '3 days ago', 
       read: true 
     },
@@ -75,7 +75,7 @@ export default function EducatorHeader({ currentPage = null }: EducatorHeaderPro
             <Image src="/logo.png" alt="MamaPlus" width={160} height={54} className="object-contain" />
           </Link>
           <Link href="/dashboard/educator" className={getLinkClasses('home')}>
-            Home
+            Dashboard
           </Link>
           <Link href="/courses" className={getLinkClasses('courses')}>
             Browse Courses
