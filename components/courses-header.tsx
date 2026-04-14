@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -20,6 +20,7 @@ type Notification = {
 }
 
 export default function CoursesHeader() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -63,13 +64,14 @@ export default function CoursesHeader() {
           <Image
             src="/logo.png"
             alt="MamaPlus"
-            width={320}
-            height={106}
+            width={120}
+            height={40}
             priority
+            className="object-contain sm:w-[240px] sm:h-[80px]"
           />
         </Link>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications Bell */}
           <Popover>
             <PopoverTrigger asChild>
@@ -126,18 +128,48 @@ export default function CoursesHeader() {
             </PopoverContent>
           </Popover>
 
-          <Link href="/login">
-            <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button className="bg-primary hover:bg-primary/90 text-white">
-              Get Started
-            </Button>
-          </Link>
+          <div className="hidden sm:flex items-center gap-2">
+            <Link href="/login">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent">
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="bg-primary hover:bg-primary/90 text-white">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="sm:hidden p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden border-t bg-white">
+          <div className="px-4 py-4 space-y-2">
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 bg-transparent">
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

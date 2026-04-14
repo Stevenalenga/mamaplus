@@ -1,17 +1,27 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { Calendar, MapPin, Clock, DollarSign, Users, CheckCircle, ArrowRight, Bell } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Calendar, MapPin, Clock, DollarSign, Users, CheckCircle, ArrowRight, Bell, ShoppingCart, CreditCard, Smartphone, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+  DrawerClose,
+  DrawerTrigger
+} from '@/components/ui/drawer'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CoursesHeader from '@/components/courses-header'
 import Footer from '@/components/footer'
 import { useCurrentUser } from '@/hooks/use-current-user'
+import { ROLES } from '@/lib/roles'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import {
   Popover,
@@ -211,21 +221,175 @@ const courses: Course[] = [
   }
 ]
 
-export default function CoursesPage() {
+function CoursesPageInner() {
   const router = useRouter()
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showPaymentInfo, setShowPaymentInfo] = useState(false)
   const [publishedEducatorCourses, setPublishedEducatorCourses] = useState<Course[]>([])
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
   const { user } = useCurrentUser()
+  const isEducator = user?.role === ROLES.INSTRUCTOR
   const [notifications, setNotifications] = useState([
     { id: '1', title: 'New Course Available', message: 'Maternal Health Basics course is now available', time: '2 hours ago', read: false },
     { id: '2', title: 'Certificate Ready', message: 'Your certificate for Infant Nutrition is ready to download', time: '1 day ago', read: false },
     { id: '3', title: 'Welcome to MamaPlus', message: 'Thank you for joining our caregiving community', time: '3 days ago', read: true },
   ])
+  // Cart state
+  const [cart, setCart] = useState<Course[]>([])
+  const [cartOpen, setCartOpen] = useState(false)
+  const searchParams = useSearchParams()
   const unreadCount = notifications.filter(n => !n.read).length
   const markAsRead = (id: string) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
   const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
+
+  // Payment status banner (set by Paystack callback redirect)
+  const paymentStatusParam = searchParams.get('payment')
+  const paymentReferenceParam = searchParams.get('reference')
+
+  // Cart handlers
+  const addToCart = (course: Course) => {
+    if (cart.find((c) => c.id === course.id)) {
+      toast.info('Course already in cart.')
+      return
+    }
+    setCart([...cart, course])
+    toast.success('Added to cart!')
+  }
+
+  const removeFromCart = (courseId: string) => {
+    setCart(cart.filter((c) => c.id !== courseId))
+    toast.info('Removed from cart.')
+  }
+
+  // Checkout state
+  const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'pending' | 'success'>('cart')
+  const [checkoutName, setCheckoutName] = useState('')
+  const [checkoutEmail, setCheckoutEmail] = useState('')
+  const [checkoutPhone, setCheckoutPhone] = useState('')
+  // 'mpesa' | 'airtel' | 'card'
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa' | 'airtel'>('mpesa')
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [pendingReference, setPendingReference] = useState('')
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollAttemptsRef = useRef(0)
+
+  // Pre-fill from session when checkout opens
+  useEffect(() => {
+    if (user) {
+      setCheckoutName(user.name ?? '')
+      setCheckoutEmail(user.email ?? '')
+      setCheckoutPhone(user.phoneNumber ?? '')
+    }
+  }, [user])
+
+  // Determine cart currency: KES if any course is KES, else USD
+  const cartCurrencies = [...new Set(cart.map(c => c.currency))]
+  const isMultiCurrency = cartCurrencies.length > 1
+  const cartCurrency = isMultiCurrency ? 'KES' : (cartCurrencies[0] ?? 'KES')
+  const cartTotal = cart.reduce((sum, c) => sum + (c.costNumeric || 0), 0)
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    pollAttemptsRef.current = 0
+  }, [])
+
+  useEffect(() => () => stopPolling(), [stopPolling])
+
+  const handleCheckout = () => {
+    if (!user) {
+      toast.info('Please sign in to purchase courses.')
+      router.push('/login?message=account_required')
+      return
+    }
+    setCheckoutError('')
+    setCheckoutStep('checkout')
+  }
+
+  const pollPaymentStatus = useCallback((reference: string) => {
+    const MAX_ATTEMPTS = 40 // ~2 minutes at 3s intervals
+    pollAttemptsRef.current = 0
+
+    pollIntervalRef.current = setInterval(async () => {
+      pollAttemptsRef.current += 1
+
+      if (pollAttemptsRef.current > MAX_ATTEMPTS) {
+        stopPolling()
+        setCheckoutLoading(false)
+        setCheckoutError('Payment confirmation timed out. Please check your phone or try again.')
+        return
+      }
+
+      try {
+        const res = await fetch(`/api/paystack/verify?reference=${reference}`)
+        const json = await res.json()
+        const txStatus = json.data?.status
+
+        if (txStatus === 'success') {
+          stopPolling()
+          setCheckoutLoading(false)
+          setCheckoutStep('success')
+          setCart([])
+          toast.success('Payment confirmed! Courses unlocked.')
+        } else if (txStatus === 'failed' || txStatus === 'abandoned') {
+          stopPolling()
+          setCheckoutLoading(false)
+          setCheckoutError('Payment failed or was cancelled. Please try again.')
+        }
+        // 'pending' → keep polling
+      } catch {
+        // network hiccup, keep polling
+      }
+    }, 3000)
+  }, [stopPolling])
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCheckoutError('')
+    setCheckoutLoading(true)
+
+    try {
+      const res = await fetch('/api/paystack/initialize-cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: checkoutEmail,
+          name: checkoutName,
+          phone: checkoutPhone,
+          courseIds: cart.map(c => c.id),
+          amount: cartTotal,
+          currency: paymentMethod === 'card' ? (cartCurrency === 'USD' ? 'USD' : 'KES') : 'KES',
+          paymentMethod,
+          userId: user?.id,
+        }),
+      })
+      const json = await res.json()
+
+      if (!res.ok || !json.success) {
+        setCheckoutError(json.message || 'Unable to initialise payment. Please try again.')
+        setCheckoutLoading(false)
+        return
+      }
+
+      const { authorization_url, reference } = json.data
+
+      if (paymentMethod === 'card') {
+        // Redirect to Paystack hosted checkout
+        window.location.href = authorization_url
+      } else {
+        // M-Pesa / Airtel: STK push sent — poll for completion
+        setPendingReference(reference)
+        setCheckoutStep('pending')
+        pollPaymentStatus(reference)
+      }
+    } catch {
+      setCheckoutError('Network error. Please check your connection and try again.')
+      setCheckoutLoading(false)
+    }
+  }
 
   useEffect(() => {
     async function loadPublishedCourses() {
@@ -333,12 +497,16 @@ export default function CoursesPage() {
         <nav className="bg-white border-b shadow-sm">
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <Link href="/dashboard/user" className="flex items-center hover:opacity-80 transition">
+              <Link href={isEducator ? '/dashboard/educator' : '/dashboard/user'} className="flex items-center hover:opacity-80 transition">
                 <Image src="/logo.png" alt="MamaPlus" width={240} height={240} className="object-contain" />
               </Link>
-              <Link href="/dashboard/user" className="text-sm text-muted-foreground hover:text-primary">Home</Link>
+              <Link href={isEducator ? '/dashboard/educator' : '/dashboard/user'} className="text-sm text-muted-foreground hover:text-primary">Home</Link>
               <Link href="/courses" className="text-sm font-semibold text-primary border-b-2 border-primary">Browse Courses</Link>
-              <Link href="/dashboard/user/profile" className="text-sm text-muted-foreground hover:text-primary">My Profile</Link>
+              {isEducator ? (
+                <Link href="/dashboard/educator" className="text-sm text-muted-foreground hover:text-primary">Upload Course</Link>
+              ) : (
+                <Link href="/dashboard/user/profile" className="text-sm text-muted-foreground hover:text-primary">My Profile</Link>
+              )}
             </div>
             <div className="flex items-center gap-4">
               {/* Notifications Bell */}
@@ -408,6 +576,31 @@ export default function CoursesPage() {
         </div>
       </div>
 
+      {/* Payment Status Banner */}
+      {paymentStatusParam === 'success' && (
+        <div className="bg-green-50 border-b border-green-200 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-green-800 text-sm font-medium">
+              Payment successful! Your courses have been unlocked.
+              {paymentReferenceParam && <span className="ml-1 text-green-600">(Ref: {paymentReferenceParam})</span>}
+            </p>
+          </div>
+        </div>
+      )}
+      {(paymentStatusParam === 'failed' || paymentStatusParam === 'error') && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center gap-3">
+            <X className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-800 text-sm font-medium">
+              {paymentStatusParam === 'failed'
+                ? 'Payment was not completed. Please try again.'
+                : 'Something went wrong with your payment. Please try again.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Course Grid */}
@@ -428,7 +621,7 @@ export default function CoursesPage() {
                 </div>
                 <CardDescription className="text-base">{course.overview}</CardDescription>
               </CardHeader>
-              
+
               <CardContent className="space-y-6">
                 {/* Quick Info */}
                 <div className="grid grid-cols-2 gap-4">
@@ -512,17 +705,287 @@ export default function CoursesPage() {
                 </div>
               </CardContent>
 
-              <CardFooter>
-                <Button 
-                  className="w-full"
-                  onClick={() => handleEnroll(course)}
-                  disabled={enrollingCourseId === course.id}
-                >
-                  {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'} <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+              <CardFooter className="flex gap-2">
+                {isEducator ? (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/educator')}
+                  >
+                    Upload a Course <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="secondary"
+                      className="w-1/2"
+                      onClick={() => addToCart(course)}
+                      disabled={!!cart.find((c) => c.id === course.id)}
+                    >
+                      {cart.find((c) => c.id === course.id) ? 'In Cart' : 'Add to Cart'}
+                    </Button>
+                    <Button
+                      className="w-1/2"
+                      onClick={() => handleEnroll(course)}
+                      disabled={enrollingCourseId === course.id}
+                    >
+                      {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'} <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </>
+                )}
               </CardFooter>
             </Card>
           ))}
+                {/* Floating Cart Button — hidden for educators */}
+                {!isEducator && <Drawer open={cartOpen} onOpenChange={(open) => {
+                  setCartOpen(open)
+                  if (!open) { stopPolling(); setCheckoutStep('cart'); setCheckoutError('') }
+                }}>
+                  <DrawerTrigger asChild>
+                    <button
+                      onClick={() => setCartOpen(true)}
+                      className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-primary text-white shadow-xl px-5 py-3 rounded-full font-semibold hover:bg-primary/90 transition"
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      Cart
+                      {cart.length > 0 && (
+                        <span className="bg-white text-primary text-xs font-bold rounded-full px-2 py-0.5">{cart.length}</span>
+                      )}
+                    </button>
+                  </DrawerTrigger>
+
+                  <DrawerContent>
+                    <div className="mx-auto w-full max-w-md flex flex-col max-h-[90vh]">
+                      <DrawerHeader className="border-b pb-3">
+                        <DrawerTitle className="text-xl">
+                          {checkoutStep === 'cart' && 'Your Cart'}
+                          {checkoutStep === 'checkout' && 'Checkout'}
+                          {checkoutStep === 'pending' && 'Awaiting Payment'}
+                          {checkoutStep === 'success' && 'Payment Confirmed'}
+                        </DrawerTitle>
+                      </DrawerHeader>
+
+                      <div className="p-4 overflow-y-auto flex-1 space-y-4">
+
+                        {/* ── STEP 1: Cart review ── */}
+                        {checkoutStep === 'cart' && (
+                          <>
+                            {cart.length === 0 ? (
+                              <div className="text-center py-12 text-muted-foreground">
+                                <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                <p>Your cart is empty.</p>
+                                <p className="text-xs mt-1">Browse courses below and click &quot;Add to Cart&quot;.</p>
+                              </div>
+                            ) : (
+                              <>
+                                {isMultiCurrency && (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+                                    ⚠️ Your cart contains courses in multiple currencies. The total shown is approximate. Consider purchasing KES and USD courses separately for accurate billing.
+                                  </div>
+                                )}
+                                <ul className="divide-y">
+                                  {cart.map((course) => (
+                                    <li key={course.id} className="flex items-start justify-between py-3 gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-sm leading-tight">{course.title}</div>
+                                        <div className="text-sm text-primary font-medium mt-0.5">{course.cost}</div>
+                                        <div className="text-xs text-muted-foreground">{course.duration} · {course.location}</div>
+                                      </div>
+                                      <button
+                                        onClick={() => removeFromCart(course.id)}
+                                        className="text-gray-400 hover:text-red-500 transition p-1 flex-shrink-0"
+                                        title="Remove"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div className="flex justify-between items-center pt-3 border-t">
+                                  <span className="font-semibold">Total</span>
+                                  <span className="font-bold text-lg text-primary">{cartCurrency === 'KES' ? 'KES ' : '$'}{cartTotal.toLocaleString()}</span>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
+
+                        {/* ── STEP 2: Checkout form ── */}
+                        {checkoutStep === 'checkout' && (
+                          <form id="checkout-form" className="space-y-4" onSubmit={handlePlaceOrder}>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Full Name</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                required
+                                value={checkoutName}
+                                onChange={e => setCheckoutName(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Email</label>
+                              <input
+                                type="email"
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                required
+                                value={checkoutEmail}
+                                onChange={e => setCheckoutEmail(e.target.value)}
+                              />
+                            </div>
+
+                            {/* Payment method selector */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Payment Method</label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {(['mpesa', 'airtel', 'card'] as const).map((method) => (
+                                  <button
+                                    key={method}
+                                    type="button"
+                                    onClick={() => setPaymentMethod(method)}
+                                    className={`flex flex-col items-center gap-1 border-2 rounded-lg p-3 text-xs font-medium transition ${
+                                      paymentMethod === method
+                                        ? 'border-primary bg-primary/5 text-primary'
+                                        : 'border-gray-200 text-gray-600 hover:border-primary/40'
+                                    }`}
+                                  >
+                                    {method === 'mpesa' && <><Smartphone className="w-5 h-5" />M-Pesa</>}
+                                    {method === 'airtel' && <><Smartphone className="w-5 h-5" />Airtel</>}
+                                    {method === 'card' && <><CreditCard className="w-5 h-5" />Card</>}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Phone number (M-Pesa / Airtel only) */}
+                            {(paymentMethod === 'mpesa' || paymentMethod === 'airtel') && (
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  {paymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} Phone Number
+                                </label>
+                                <input
+                                  type="tel"
+                                  placeholder="254712345678"
+                                  className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                  required
+                                  value={checkoutPhone}
+                                  onChange={e => setCheckoutPhone(e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Format: 254XXXXXXXXX or 07XXXXXXXX</p>
+                                <div className="mt-2 bg-green-50 border border-green-200 rounded p-2 text-xs text-green-800">
+                                  You will receive an STK push on your phone. Enter your PIN to complete payment.
+                                </div>
+                              </div>
+                            )}
+
+                            {paymentMethod === 'card' && (
+                              <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-800">
+                                <CreditCard className="w-4 h-4 inline mr-1" />
+                                You will be redirected to a secure Paystack checkout page to complete your payment.
+                              </div>
+                            )}
+
+                            {checkoutError && (
+                              <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+                                {checkoutError}
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-center pt-3 border-t">
+                              <span className="font-semibold text-sm">Total</span>
+                              <span className="font-bold text-primary">{cartCurrency === 'KES' ? 'KES ' : '$'}{cartTotal.toLocaleString()}</span>
+                            </div>
+                          </form>
+                        )}
+
+                        {/* ── STEP 3: M-Pesa pending ── */}
+                        {checkoutStep === 'pending' && (
+                          <div className="text-center space-y-4 py-6">
+                            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
+                            <div className="font-semibold text-base">STK Push Sent!</div>
+                            <p className="text-sm text-muted-foreground">
+                              Check your phone and enter your {paymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} PIN to complete the payment.
+                            </p>
+                            {pendingReference && (
+                              <p className="text-xs text-muted-foreground">Reference: {pendingReference}</p>
+                            )}
+                            {checkoutError && (
+                              <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+                                {checkoutError}
+                                <button
+                                  className="block mt-2 text-primary underline text-xs"
+                                  onClick={() => { setCheckoutError(''); setCheckoutStep('checkout') }}
+                                >
+                                  Try again
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── STEP 4: Success ── */}
+                        {checkoutStep === 'success' && (
+                          <div className="text-center space-y-4 py-6">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                              <CheckCircle className="w-8 h-8 text-green-600" />
+                            </div>
+                            <div className="font-bold text-lg">Payment Confirmed!</div>
+                            <p className="text-sm text-muted-foreground">
+                              Your courses are now unlocked. Head to your dashboard to start learning.
+                            </p>
+                            <Button
+                              className="w-full"
+                              onClick={() => { setCartOpen(false); router.push('/dashboard/user') }}
+                            >
+                              Go to My Dashboard
+                            </Button>
+                          </div>
+                        )}
+
+                      </div>
+
+                      <DrawerFooter className="border-t pt-3">
+                        {checkoutStep === 'cart' && (
+                          <Button className="w-full" onClick={handleCheckout} disabled={cart.length === 0}>
+                            Proceed to Checkout
+                          </Button>
+                        )}
+                        {checkoutStep === 'checkout' && (
+                          <>
+                            <Button
+                              form="checkout-form"
+                              type="submit"
+                              className="w-full"
+                              disabled={checkoutLoading}
+                            >
+                              {checkoutLoading ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                              ) : paymentMethod === 'card' ? (
+                                <><CreditCard className="w-4 h-4 mr-2" />Pay with Card</>
+                              ) : (
+                                <><Smartphone className="w-4 h-4 mr-2" />Send STK Push</>
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full"
+                              type="button"
+                              onClick={() => { setCheckoutError(''); setCheckoutStep('cart') }}
+                              disabled={checkoutLoading}
+                            >
+                              ← Back to Cart
+                            </Button>
+                          </>
+                        )}
+                        {checkoutStep !== 'success' && checkoutStep !== 'pending' && (
+                          <DrawerClose asChild>
+                            <Button variant="ghost" className="w-full">Close</Button>
+                          </DrawerClose>
+                        )}
+                      </DrawerFooter>
+                    </div>
+                  </DrawerContent>
+                </Drawer>}
         </div>
 
         {/* Why Choose MamaPlus Section */}
@@ -660,5 +1123,13 @@ export default function CoursesPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function CoursesPage() {
+  return (
+    <Suspense>
+      <CoursesPageInner />
+    </Suspense>
   )
 }

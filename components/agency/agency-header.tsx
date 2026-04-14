@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, Menu, X } from 'lucide-react'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import {
@@ -11,6 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
 
 type Notification = {
   id: string
@@ -26,6 +27,7 @@ type AgencyHeaderProps = {
 
 export default function AgencyHeader({ currentPage = null }: AgencyHeaderProps) {
   const { user } = useCurrentUser()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const [notifications, setNotifications] = useState<Notification[]>([
     { 
@@ -68,24 +70,29 @@ export default function AgencyHeader({ currentPage = null }: AgencyHeaderProps) 
   }
 
   return (
-    <nav className="bg-white border-b shadow-sm">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+    <nav className="bg-white border-b shadow-sm sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4 sm:gap-6">
           <Link href="/dashboard/agency" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="MamaPlus" width={160} height={54} className="object-contain" />
+            <Image src="/logo.png" alt="MamaPlus" width={120} height={40} className="object-contain sm:w-[160px] sm:h-[54px]" />
           </Link>
-          <Link href="/dashboard/agency" className={getLinkClasses('home')}>
-            Home
-          </Link>
-          <Link href="/dashboard/agency/profile" className={getLinkClasses('profile')}>
-            My Profile
-          </Link>
-          <Link href="/courses" className={getLinkClasses('courses')}>
-            Browse Courses
-          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/dashboard/agency" className={getLinkClasses('home')}>
+              Home
+            </Link>
+            <Link href="/dashboard/agency/profile" className={getLinkClasses('profile')}>
+              My Profile
+            </Link>
+            <Link href="/courses" className={getLinkClasses('courses')}>
+              Browse Courses
+            </Link>
+            <Link href="/dashboard/agency/search" className={getLinkClasses('search')}>
+              Sponsor Caregiver
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications */}
           <Popover>
             <PopoverTrigger asChild>
@@ -140,13 +147,71 @@ export default function AgencyHeader({ currentPage = null }: AgencyHeaderProps) 
           </Popover>
 
           {user && (
-            <span className="text-sm text-muted-foreground hidden sm:block">
+            <span className="text-sm text-muted-foreground hidden lg:block">
               {user.name || user.email}
             </span>
           )}
-          <LogoutButton variant="ghost" size="sm" />
+          <div className="hidden md:block">
+            <LogoutButton variant="ghost" size="sm" />
+          </div>
+          
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t bg-white">
+          <div className="px-4 py-2 space-y-1">
+            <Link
+              href="/dashboard/agency"
+              className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              href="/dashboard/agency/profile"
+              className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              My Profile
+            </Link>
+            <Link
+              href="/courses"
+              className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Browse Courses
+            </Link>
+            <Link
+              href="/dashboard/agency/search"
+              className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sponsor Caregiver
+            </Link>
+            <div className="pt-2 border-t">
+              {user && (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  {user.name || user.email}
+                </div>
+              )}
+              <div className="px-3">
+                <LogoutButton variant="ghost" size="sm" className="w-full justify-start" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }
