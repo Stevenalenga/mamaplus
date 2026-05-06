@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ROLES, getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 import { AdminHeader } from '@/components/admin/admin-header'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 type Resource = {
   id: string
@@ -271,18 +272,6 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">Students completed</p>
           </div>
 
-          {/* Total Revenue */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-amber-600">$12,456</p>
-            <p className="text-xs text-muted-foreground mt-1">Total earnings</p>
-          </div>
-
           {/* Average Progress */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-2">
@@ -293,6 +282,67 @@ export default function AdminDashboardPage() {
             </div>
             <p className="text-3xl font-bold text-orange-600">68%</p>
             <p className="text-xs text-muted-foreground mt-1">Completion rate</p>
+          </div>
+        </div>
+
+        {/* Revenue Breakdown */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xl font-semibold">Revenue Breakdown</h2>
+            <span className="text-2xl font-bold text-amber-600">$12,456</span>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">Total earnings split by revenue source</p>
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="w-full md:w-64 h-64 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Schools', value: 5200 },
+                      { name: 'Educators', value: 3680 },
+                      { name: 'Students', value: 3576 },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    <Cell fill="#7c3aed" />
+                    <Cell fill="#4f46e5" />
+                    <Cell fill="#2563eb" />
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-3 w-full">
+              {[
+                { label: 'Schools', value: 5200, total: 12456, color: 'bg-violet-600', text: 'text-violet-600' },
+                { label: 'Educators', value: 3680, total: 12456, color: 'bg-indigo-600', text: 'text-indigo-600' },
+                { label: 'Students', value: 3576, total: 12456, color: 'bg-blue-600', text: 'text-blue-600' },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-3 h-3 rounded-full ${item.color} flex-shrink-0`}></span>
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-semibold ${item.text}`}>${item.value.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground w-10 text-right">{Math.round((item.value / item.total) * 100)}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div
+                      className={`${item.color} h-2 rounded-full transition-all`}
+                      style={{ width: `${Math.round((item.value / item.total) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

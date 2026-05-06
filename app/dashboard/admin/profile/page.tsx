@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
+import Cropper from 'react-easy-crop'
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 import { AdminHeader } from '@/components/admin/admin-header'
 
@@ -37,6 +37,23 @@ const dummyStats: CourseStats = {
   totalRevenue: 12456.78
 }
 
+async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> {
+  const image = new window.Image()
+  image.src = imageSrc
+  await new Promise<void>(resolve => { image.onload = () => resolve() })
+  const canvas = document.createElement('canvas')
+  canvas.width = pixelCrop.width
+  canvas.height = pixelCrop.height
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height)
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Canvas is empty')), 'image/jpeg', 0.95)
+  })
+}
+
 export default function AdminProfilePage() {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -46,6 +63,13 @@ export default function AdminProfilePage() {
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
   const [uploadingPicture, setUploadingPicture] = useState(false)
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null)
+  const [pendingBlob, setPendingBlob] = useState<Blob | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
 
@@ -135,24 +159,62 @@ export default function AdminProfilePage() {
     setIsEditing(false)
   }
 
-  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { alert('File size must be less than 5MB'); return }
+    const objectUrl = URL.createObjectURL(file)
+    setImageToCrop(objectUrl)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCropModalOpen(true)
+    e.target.value = ''
+  }
 
+  const handleCropComplete = (_: unknown, pixels: { x: number; y: number; width: number; height: number }) => {
+    setCroppedAreaPixels(pixels)
+  }
+
+  const handleConfirmCrop = async () => {
+    if (!imageToCrop || !croppedAreaPixels) return
+    try {
+      const blob = await getCroppedImg(imageToCrop, croppedAreaPixels)
+      const previewUrl = URL.createObjectURL(blob)
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview)
+      setPendingBlob(blob)
+      setPendingPreview(previewUrl)
+      setCropModalOpen(false)
+      URL.revokeObjectURL(imageToCrop)
+      setImageToCrop(null)
+    } catch {
+      alert('Failed to crop image')
+    }
+  }
+
+  const handleSavePhoto = async () => {
+    if (!pendingBlob) return
     setUploadingPicture(true)
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', pendingBlob, 'avatar.jpg')
       const res = await fetch('/api/users/me/avatar', { method: 'POST', body: formData })
       const data = await res.json()
       if (!res.ok || !data.success) { alert(data.message || 'Upload failed'); return }
       setProfile(prev => ({ ...prev, profilePicture: data.data.avatarUrl }))
+      if (pendingPreview) { URL.revokeObjectURL(pendingPreview); setPendingPreview(null) }
+      setPendingBlob(null)
+      setSaveSuccess('Profile picture updated successfully')
     } catch {
       alert('Failed to upload profile picture')
     } finally {
       setUploadingPicture(false)
     }
+  }
+
+  const discardPendingPhoto = () => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview)
+    setPendingPreview(null)
+    setPendingBlob(null)
   }
 
   const removeProfilePicture = async () => {
@@ -225,15 +287,16 @@ export default function AdminProfilePage() {
 
           {/* Profile Picture Section */}
           <div className="flex items-center gap-6 mb-6 pb-6 border-b">
-            <div className="relative">
-              {profile.profilePicture ? (
-                <Image 
-                  src={profile.profilePicture} 
-                  alt="Profile" 
-                  width={120} 
-                  height={120} 
-                  className="rounded-full object-cover border-4 border-primary/20"
-                />
+            <div className="relative flex-shrink-0">
+              {pendingPreview ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={pendingPreview} alt="Preview" className="rounded-full object-cover border-4 border-amber-400 w-[120px] h-[120px]" />
+                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full whitespace-nowrap">Preview</span>
+                </div>
+              ) : profile.profilePicture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.profilePicture} alt="Profile" className="rounded-full object-cover border-4 border-primary/20 w-[120px] h-[120px]" />
               ) : (
                 <div className="w-[120px] h-[120px] rounded-full bg-gray-200 flex items-center justify-center border-4 border-primary/20">
                   <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -244,27 +307,35 @@ export default function AdminProfilePage() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">Profile Picture</h3>
-              <p className="text-sm text-gray-600 mb-3">Upload a photo to personalize your profile</p>
-              <div className="flex gap-2">
-                <label className="px-4 py-2 bg-primary text-white rounded text-sm cursor-pointer hover:bg-primary/90 inline-block">
-                  {uploadingPicture ? 'Uploading...' : 'Upload Photo'}
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleProfilePictureChange}
-                    disabled={uploadingPicture}
-                    className="hidden"
-                  />
-                </label>
-                {profile.profilePicture && (
-                  <button 
-                    onClick={removeProfilePicture}
-                    className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                  >
-                    Remove
+              <p className="text-sm text-gray-600 mb-3">
+                {pendingPreview ? 'Looking good! Save the photo to apply it to your profile.' : 'Upload a photo to personalize your profile'}
+              </p>
+              {pendingPreview ? (
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={handleSavePhoto} disabled={uploadingPicture} className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50">
+                    {uploadingPicture ? 'Saving...' : 'Save Photo'}
                   </button>
-                )}
-              </div>
+                  <label className="px-4 py-2 bg-primary text-white rounded text-sm cursor-pointer hover:bg-primary/90 inline-block">
+                    Re-crop
+                    <input type="file" accept="image/*" onChange={handleProfilePictureChange} disabled={uploadingPicture} className="hidden" />
+                  </label>
+                  <button onClick={discardPendingPhoto} className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">
+                    Discard
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <label className="px-4 py-2 bg-primary text-white rounded text-sm cursor-pointer hover:bg-primary/90 inline-block">
+                    Upload Photo
+                    <input type="file" accept="image/*" onChange={handleProfilePictureChange} className="hidden" />
+                  </label>
+                  {profile.profilePicture && (
+                    <button onClick={removeProfilePicture} className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                      Remove
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-gray-500 mt-2">Maximum file size: 5MB. Accepted formats: JPG, PNG, GIF, WebP</p>
             </div>
           </div>
@@ -380,6 +451,66 @@ export default function AdminProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {cropModalOpen && imageToCrop && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <h3 className="text-lg font-semibold">Crop Photo</h3>
+              <button
+                onClick={() => { setCropModalOpen(false); URL.revokeObjectURL(imageToCrop); setImageToCrop(null) }}
+                className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
+              >&times;</button>
+            </div>
+            <div className="relative w-full bg-gray-900" style={{ height: 340 }}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={handleCropComplete}
+              />
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-3 mb-4">
+                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                </svg>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  value={zoom}
+                  onChange={e => setZoom(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <span className="text-xs text-gray-500 w-10 text-right">{zoom.toFixed(1)}x</span>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">Drag to reposition · scroll or use the slider to zoom</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => { setCropModalOpen(false); URL.revokeObjectURL(imageToCrop); setImageToCrop(null) }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmCrop}
+                  className="px-4 py-2 bg-primary text-white rounded text-sm hover:bg-primary/90"
+                >
+                  Confirm Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
