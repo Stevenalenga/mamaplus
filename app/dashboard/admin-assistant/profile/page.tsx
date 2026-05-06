@@ -17,6 +17,7 @@ type AdminAssistantProfile = {
   name: string
   email: string
   profilePicture?: string
+  isOAuthUser?: boolean
 }
 
 const defaultProfile: AdminAssistantProfile = {
@@ -33,6 +34,17 @@ export default function AdminAssistantProfilePage() {
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
   const [uploadingPicture, setUploadingPicture] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+
+  // Password change state
+  const [showPasswordSection, setShowPasswordSection] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
+  const [savingPassword, setSavingPassword] = useState(false)
   const [notifications, setNotifications] = useState([
     { id: '1', title: 'New Enrollment', message: 'A new student enrolled', time: '2 hours ago', read: false },
     { id: '2', title: 'Course Update', message: 'Maternal Health course was updated', time: '1 day ago', read: false },
@@ -62,6 +74,7 @@ export default function AdminAssistantProfilePage() {
               name: dbUser.name || '',
               email: dbUser.email || '',
               profilePicture: dbUser.avatar || '',
+              isOAuthUser: !dbUser.password || dbUser.password === '',
             }
             setProfile(dbProfile)
             setEditedName(dbProfile.name)
@@ -85,34 +98,71 @@ export default function AdminAssistantProfilePage() {
     fetchProfile()
   }, [status, session])
 
-  const saveProfile = () => {
-    const updated = { ...profile, name: editedName, email: editedEmail }
-    setProfile(updated)
-    try { localStorage.setItem('admin-assistant:profile', JSON.stringify(updated)) } catch {}
+  const saveProfile = async () => {
+    setSaveError(null)
+    setSaveSuccess(null)
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editedName, email: editedEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) { setSaveError(data.message || 'Failed to save profile'); return }
+      setProfile(prev => ({ ...prev, name: editedName, email: editedEmail }))
+      setSaveSuccess('Profile saved successfully')
+    } catch {
+      setSaveError('Failed to save profile')
+    }
     setIsEditing(false)
   }
 
-  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) { alert('File size must be less than 2MB'); return }
-
+    if (file.size > 5 * 1024 * 1024) { alert('File size must be less than 5MB'); return }
     setUploadingPicture(true)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const base64String = reader.result as string
-      const updated = { ...profile, profilePicture: base64String }
-      setProfile(updated)
-      try { localStorage.setItem('admin-assistant:profile', JSON.stringify(updated)) } catch {}
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/users/me/avatar', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok || !data.success) { alert(data.message || 'Upload failed'); return }
+      setProfile(prev => ({ ...prev, profilePicture: data.data.avatarUrl }))
+    } catch {
+      alert('Failed to upload profile picture')
+    } finally {
       setUploadingPicture(false)
     }
-    reader.readAsDataURL(file)
   }
 
-  const removeProfilePicture = () => {
-    const updated = { ...profile, profilePicture: '' }
-    setProfile(updated)
-    try { localStorage.setItem('admin-assistant:profile', JSON.stringify(updated)) } catch {}
+  const removeProfilePicture = async () => {
+    try { await fetch('/api/users/me/avatar', { method: 'DELETE' }) } catch {}
+    setProfile(prev => ({ ...prev, profilePicture: '' }))
+  }
+
+  const handlePasswordChange = async () => {
+    setPasswordError(null)
+    setPasswordSuccess(null)
+    if (!newPassword || !currentPassword) { setPasswordError('Please fill in all password fields'); return }
+    if (newPassword !== confirmPassword) { setPasswordError('New passwords do not match'); return }
+    if (newPassword.length < 8) { setPasswordError('New password must be at least 8 characters'); return }
+    setSavingPassword(true)
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) { setPasswordError(data.message || 'Failed to update password'); return }
+      setPasswordSuccess('Password updated successfully')
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
+    } catch {
+      setPasswordError('Failed to update password')
+    } finally {
+      setSavingPassword(false)
+    }
   }
 
   const handleLogout = async () => {
@@ -231,14 +281,17 @@ export default function AdminAssistantProfilePage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Personal Information</h2>
             {!isEditing ? (
-              <button onClick={() => setIsEditing(true)} className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90">Edit</button>
+              <button onClick={() => { setIsEditing(true); setSaveError(null); setSaveSuccess(null) }} className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90">Edit</button>
             ) : (
               <div className="flex gap-2">
                 <button onClick={saveProfile} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">Save</button>
-                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</button>
+                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email); setSaveError(null) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</button>
               </div>
             )}
           </div>
+
+          {saveError && <div className="mb-4 rounded bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm">{saveError}</div>}
+          {saveSuccess && <div className="mb-4 rounded bg-green-50 border border-green-200 text-green-700 px-4 py-2 text-sm">{saveSuccess}</div>}
 
           {/* Profile Picture Section */}
           <div className="flex items-center gap-6 mb-6 pb-6 border-b">
@@ -246,7 +299,7 @@ export default function AdminAssistantProfilePage() {
               {profile.profilePicture ? (
                 <Image src={profile.profilePicture} alt="Profile" width={120} height={120} className="rounded-full object-cover border-4 border-primary/20" />
               ) : (
-                <div className="w-30 h-30 rounded-full bg-gray-200 flex items-center justify-center border-4 border-primary/20">
+                <div className="w-[120px] h-[120px] rounded-full bg-gray-200 flex items-center justify-center border-4 border-primary/20">
                   <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                   </svg>
@@ -265,7 +318,7 @@ export default function AdminAssistantProfilePage() {
                   <button onClick={removeProfilePicture} className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">Remove</button>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Maximum file size: 2MB. Accepted formats: JPG, PNG, GIF</p>
+              <p className="text-xs text-gray-500 mt-2">Maximum file size: 5MB. Accepted formats: JPG, PNG, GIF, WebP</p>
             </div>
           </div>
 
@@ -287,6 +340,43 @@ export default function AdminAssistantProfilePage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Change Password */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Change Password</h2>
+            <button
+              onClick={() => { setShowPasswordSection(v => !v); setPasswordError(null); setPasswordSuccess(null) }}
+              className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90"
+            >
+              {showPasswordSection ? 'Close' : 'Change Password'}
+            </button>
+          </div>
+          {profile.isOAuthUser && (
+            <p className="text-sm text-muted-foreground">Password changes are not available for accounts signed in with Google or Microsoft.</p>
+          )}
+          {!profile.isOAuthUser && showPasswordSection && (
+            <div className="space-y-3 max-w-md">
+              {passwordError && <div className="rounded bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm">{passwordError}</div>}
+              {passwordSuccess && <div className="rounded bg-green-50 border border-green-200 text-green-700 px-4 py-2 text-sm">{passwordSuccess}</div>}
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Current Password</label>
+                <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border px-3 py-2 rounded" autoComplete="current-password" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">New Password</label>
+                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border px-3 py-2 rounded" autoComplete="new-password" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Confirm New Password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border px-3 py-2 rounded" autoComplete="new-password" />
+              </div>
+              <button onClick={handlePasswordChange} disabled={savingPassword} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50">
+                {savingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

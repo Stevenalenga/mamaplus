@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import {
-  uploadToCloudinary,
+  uploadToStorage,
   validateFileSize,
   validateFileType,
   type UploadType,
-} from '@/lib/cloudinary'
+} from '@/lib/storage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/upload
- * Upload a file to Cloudinary
+ * Upload a file to VPS storage
  * Requires authentication and instructor/admin role
  */
 export async function POST(request: NextRequest) {
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     const base64 = `data:${file.type};base64,${buffer.toString('base64')}`
 
-    // Upload to Cloudinary
-    const result = await uploadToCloudinary(base64, type, { folder })
+    // Upload to VPS storage
+    const result = await uploadToStorage(base64, type, { folder })
 
     if (!result.success) {
       return NextResponse.json(
