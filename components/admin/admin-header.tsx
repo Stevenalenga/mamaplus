@@ -9,7 +9,7 @@ import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 type AdminHeaderProps = {
-  active: 'home' | 'profile' | 'school-manager'
+  active: 'home' | 'profile' | 'school-manager' | 'course-management'
 }
 
 export function AdminHeader({ active }: AdminHeaderProps) {
@@ -37,6 +37,12 @@ export function AdminHeader({ active }: AdminHeaderProps) {
               Home
             </Link>
             <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
+            <Link
+              href="/dashboard/admin/course-management"
+              className={active === 'course-management' ? 'text-sm font-semibold text-primary border-b-2 border-primary' : 'text-sm text-muted-foreground hover:text-primary'}
+            >
+              Course Management
+            </Link>
             <Link
               href="/dashboard/admin/school-manager"
               className={active === 'school-manager' ? 'text-sm font-semibold text-primary border-b-2 border-primary' : 'text-sm text-muted-foreground hover:text-primary'}
@@ -91,6 +97,13 @@ export function AdminHeader({ active }: AdminHeaderProps) {
               onClick={() => setMobileMenuOpen(false)}
             >
               Browse Courses
+            </Link>
+            <Link
+              href="/dashboard/admin/course-management"
+              className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Course Management
             </Link>
             <Link
               href="/dashboard/admin/school-manager"
