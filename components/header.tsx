@@ -5,9 +5,17 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  const navClass = (href: string) => {
+    const base = 'hover:text-primary transition whitespace-nowrap font-bold'
+    const active = pathname && (pathname === href || (href === '/blog' && pathname.startsWith('/blog')))
+    return `${active ? 'text-primary' : 'text-foreground'} ${base}`
+  }
 
   return (
     <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-border z-50">
@@ -25,12 +33,13 @@ export default function Header() {
         
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8 text-lg">
-          <Link href="/" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Home</Link>
-          <Link href="/families" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Families</Link>
-          <Link href="/caregivers" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Caregivers</Link>
-          <Link href="/agencies-partners" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Agencies</Link>
-          <Link href="/our-platform" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Platform</Link>
-          <Link href="/contact" className="text-foreground hover:text-primary transition whitespace-nowrap font-bold">Contact</Link>
+          <Link href="/" className={navClass('/')}>Home</Link>
+          <Link href="/families" className={navClass('/families')}>Families</Link>
+          <Link href="/caregivers" className={navClass('/caregivers')}>Caregivers</Link>
+          <Link href="/agencies-partners" className={navClass('/agencies-partners')}>Agencies</Link>
+          <Link href="/our-platform" className={navClass('/our-platform')}>Platform</Link>
+          <Link href="/blog" className={navClass('/blog')}>Blog</Link>
+          <Link href="/contact" className={navClass('/contact')}>Contact</Link>
         </div>
         
         {/* Desktop Auth Buttons */}
@@ -61,44 +70,51 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-border">
           <div className="px-4 py-4 space-y-3">
-            <Link 
-              href="/" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/"
+              className={`${navClass('/')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
             </Link>
-            <Link 
-              href="/families" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/families"
+              className={`${navClass('/families')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               For Families
             </Link>
-            <Link 
-              href="/caregivers" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/caregivers"
+              className={`${navClass('/caregivers')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               For Caregivers
             </Link>
-            <Link 
-              href="/agencies-partners" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/agencies-partners"
+              className={`${navClass('/agencies-partners')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               For Agencies & Partners
             </Link>
-            <Link 
-              href="/our-platform" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/our-platform"
+              className={`${navClass('/our-platform')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Our Platform
             </Link>
-            <Link 
-              href="/contact" 
-              className="block py-2 text-lg font-bold text-foreground hover:text-primary transition"
+            <Link
+              href="/blog"
+              className={`${navClass('/blog')} block py-2 text-lg`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+            </Link>
+            <Link
+              href="/contact"
+              className={`${navClass('/contact')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Contact

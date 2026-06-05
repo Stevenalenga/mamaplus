@@ -1,14 +1,14 @@
-'use client'
-
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Calendar, Clock, Tag } from 'lucide-react'
-import { getBlogPosts } from '@/lib/blog'
+import { getBlogPosts, getBlogPostsByCategory } from '@/lib/blog'
 import SEOHead from '@/components/seo-head'
 
-export default function BlogPage() {
-  const posts = getBlogPosts()
-  
+export default function BlogPage({ searchParams }: { searchParams?: { category?: string | string[] } }) {
+  const category = searchParams?.category
+  const posts = category ? getBlogPostsByCategory(category) : getBlogPosts()
+  const categories = [...new Set(getBlogPosts().map((post) => post.category))]
+
   const blogSchema = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
@@ -16,8 +16,6 @@ export default function BlogPage() {
     description: 'Childcare tips, parenting advice, and caregiver career guidance from MamaPlus Kenya',
     url: 'https://mamaplus.co.ke/blog',
   }
-
-  const categories = [...new Set(posts.map(post => post.category))]
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +33,6 @@ export default function BlogPage() {
         schema={blogSchema}
       />
 
-      {/* Hero Section */}
       <section className="pt-20 pb-10 px-4 sm:pt-24 sm:pb-12 md:pt-32 md:pb-16 lg:px-8 bg-gradient-to-br from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
@@ -47,7 +44,6 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Categories */}
       <section className="py-6 px-4 lg:px-8 border-b border-border bg-white/50">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
@@ -63,45 +59,44 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Blog Posts Grid */}
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {posts.map((post) => (
               <article key={post.slug} className="bg-white rounded-xl border border-border overflow-hidden hover:border-primary/50 transition group">
-                {/* Image Placeholder */}
-                <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <Tag className="w-12 h-12 text-primary/40" />
-                </div>
-                
-                {/* Content */}
+                {post.image ? (
+                  <div className="aspect-video overflow-hidden bg-slate-100">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <Tag className="w-12 h-12 text-primary/40" />
+                  </div>
+                )}
+
                 <div className="p-5 sm:p-6">
-                  {/* Category Badge */}
                   <div className="mb-3">
                     <span className="inline-block bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
                       {post.category}
                     </span>
                   </div>
 
-                  {/* Title */}
                   <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 group-hover:text-primary transition line-clamp-2">
                     {post.title}
                   </h2>
 
-                  {/* Description */}
                   <p className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-2">
                     {post.description}
                   </p>
 
-                  {/* Meta Info */}
                   <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(post.publishedAt).toLocaleDateString('en-KE', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}</span>
+                      <span>{new Date(post.publishedAt).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
@@ -109,7 +104,6 @@ export default function BlogPage() {
                     </div>
                   </div>
 
-                  {/* Read More Link */}
                   <Link href={`/blog/${post.slug}`}>
                     <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 bg-transparent">
                       Read More <ArrowRight className="ml-2 w-4 h-4" />
@@ -122,7 +116,6 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Stay Updated</h2>

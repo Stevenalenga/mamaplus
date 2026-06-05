@@ -1,21 +1,13 @@
-'use client'
-
-import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Calendar, Clock, User, Tag as TagIcon } from 'lucide-react'
 import { getBlogPost, getBlogPosts } from '@/lib/blog'
 import SEOHead from '@/components/seo-head'
 
-export default function BlogPostPage() {
-  const params = useParams()
-  const slug = params.slug as string
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string | string[] }> }) {
+  const { slug } = await params
   const post = getBlogPost(slug)
   const allPosts = getBlogPosts()
-  const relatedPosts = allPosts.filter(p => 
-    p.slug !== slug && 
-    (p.category === post?.category || p.tags.some(tag => post?.tags.includes(tag)))
-  ).slice(0, 3)
 
   if (!post) {
     return (
@@ -32,6 +24,14 @@ export default function BlogPostPage() {
       </div>
     )
   }
+
+  const relatedPosts = allPosts
+    .filter(
+      (p) =>
+        p.slug !== post.slug &&
+        (p.category === post.category || p.tags.some((tag) => post.tags.includes(tag)))
+    )
+    .slice(0, 3)
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -65,7 +65,6 @@ export default function BlogPostPage() {
         schema={articleSchema}
       />
 
-      {/* Back Button */}
       <section className="pt-20 sm:pt-24 px-4 lg:px-8 bg-white/50">
         <div className="max-w-4xl mx-auto py-4">
           <Link href="/blog">
@@ -76,22 +75,18 @@ export default function BlogPostPage() {
         </div>
       </section>
 
-      {/* Article Header */}
       <article className="py-8 px-4 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          {/* Category Badge */}
           <div className="mb-4">
             <span className="inline-block bg-primary/10 text-primary text-sm font-semibold px-4 py-2 rounded-full">
               {post.category}
             </span>
           </div>
 
-          {/* Title */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-6 leading-tight">
             {post.title}
           </h1>
 
-          {/* Meta Info */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-muted-foreground mb-8 pb-8 border-b border-border">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4" />
@@ -99,11 +94,7 @@ export default function BlogPostPage() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(post.publishedAt).toLocaleDateString('en-KE', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}</span>
+              <span>{new Date(post.publishedAt).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -111,24 +102,31 @@ export default function BlogPostPage() {
             </div>
           </div>
 
-          {/* Featured Image Placeholder */}
-          <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl mb-8 flex items-center justify-center">
-            <TagIcon className="w-20 h-20 text-primary/40" />
-          </div>
+          {post.image ? (
+            <div className="aspect-video overflow-hidden rounded-xl mb-8 bg-slate-100">
+              <img
+                src={post.image}
+                alt={post.title}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl mb-8 flex items-center justify-center">
+              <TagIcon className="w-20 h-20 text-primary/40" />
+            </div>
+          )}
 
-          {/* Article Content */}
           <div className="prose prose-lg max-w-none">
             <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {post.content}
             </div>
           </div>
 
-          {/* Tags */}
           <div className="mt-8 pt-8 border-t border-border">
             <div className="flex flex-wrap items-center gap-2">
               <TagIcon className="w-5 h-5 text-muted-foreground" />
               {post.tags.map((tag) => (
-                <span 
+                <span
                   key={tag}
                   className="inline-block bg-secondary/10 text-secondary text-sm px-3 py-1 rounded-full"
                 >
@@ -140,7 +138,6 @@ export default function BlogPostPage() {
         </div>
       </article>
 
-      {/* Related Posts */}
       {relatedPosts.length > 0 && (
         <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-white/50">
           <div className="max-w-7xl mx-auto">
@@ -174,7 +171,6 @@ export default function BlogPostPage() {
         </section>
       )}
 
-      {/* CTA Section */}
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Ready to Get Started?</h2>
