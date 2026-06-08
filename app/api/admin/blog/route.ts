@@ -4,6 +4,14 @@ import { NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { addBlogPost, updateBlogPost, deleteBlogPost } from '@/lib/blog'
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '8mb',
+    },
+  },
+}
+
 const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
 
 function parseTags(tags: unknown): string[] {

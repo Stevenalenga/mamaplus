@@ -52,6 +52,16 @@ export function AdminBlogEditor({ existingPosts }: AdminBlogEditorProps) {
       return
     }
 
+    const maxFileSize = 5 * 1024 * 1024 // 5 MB
+    if (file.size > maxFileSize) {
+      setStatus({
+        type: 'error',
+        message: 'Image is too large. Please use a file smaller than 5 MB or provide an image URL.',
+      })
+      setLocalImageData(null)
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       if (typeof reader.result === 'string') {

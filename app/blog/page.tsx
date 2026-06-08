@@ -4,6 +4,8 @@ import { ArrowRight, Calendar, Clock, Tag } from 'lucide-react'
 import { getBlogPosts, getBlogPostsByCategory } from '@/lib/blog'
 import SEOHead from '@/components/seo-head'
 
+export const dynamic = 'force-dynamic'
+
 export default function BlogPage({ searchParams }: { searchParams?: { category?: string | string[] } }) {
   const category = searchParams?.category
   const posts = category ? getBlogPostsByCategory(category) : getBlogPosts()

@@ -4,6 +4,8 @@ import { ArrowLeft, Calendar, Clock, User, Tag as TagIcon } from 'lucide-react'
 import { getBlogPost, getBlogPosts } from '@/lib/blog'
 import SEOHead from '@/components/seo-head'
 
+export const dynamic = 'force-dynamic'
+
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string | string[] }> }) {
   const { slug } = await params
   const post = getBlogPost(slug)
