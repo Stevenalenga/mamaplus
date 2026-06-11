@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import { ROLE_DISPLAY_NAMES, ROLE_DASHBOARD_LABELS } from '../constants'
 
@@ -50,11 +50,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: 24,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    marginBottom: 24
+    marginBottom: 24,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)'
+      },
+      default: {
+        shadowColor: '#0f172a',
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4
+      }
+    })
   },
   title: {
     fontSize: 28,

@@ -53,6 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const signInWithSocial = async (auth: AuthPayload) => {
+    await saveAuthData(auth)
+    setUser(auth.user)
+    setToken(auth.token)
+  }
+
   const signOut = async () => {
     await clearAuthData()
     setUser(null)
@@ -60,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, token, isLoading, signIn, signUp, signOut }),
+    () => ({ user, token, isLoading, signIn, signUp, signInWithSocial, signOut }),
     [user, token, isLoading]
   )
 

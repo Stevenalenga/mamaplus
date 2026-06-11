@@ -14,11 +14,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { RootStackParamList } from '../types'
-import * as Google from 'expo-auth-session/providers/google'
-import * as AuthSession from 'expo-auth-session'
-import * as WebBrowser from 'expo-web-browser'
-import Constants from 'expo-constants'
-import { socialSignIn } from '../api/client'
+import SocialAuthSection from '../components/SocialAuthSection'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>
 
@@ -39,82 +35,6 @@ export default function LoginScreen({ navigation }: Props) {
     } finally {
       setLoading(false)
     }
-  }
-
-  // Configure WebBrowser for AuthSession
-  useEffect(() => {
-    WebBrowser.maybeCompleteAuthSession()
-  }, [])
-
-  // Google auth request
-  const googleExtra = (Constants.expoConfig?.extra as any) || {}
-  const googleClientId = googleExtra.expoGoogleClientId || undefined
-  const googleWebClientId = googleExtra.expoGoogleWebClientId || undefined
-
-  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-    clientId: googleClientId,
-    webClientId: googleWebClientId,
-    scopes: ['openid', 'profile', 'email']
-  })
-
-  useEffect(() => {
-    async function handle() {
-      if (googleResponse && googleResponse.type === 'success') {
-        const { id_token } = (googleResponse as any).params
-        try {
-          const res = await socialSignIn('google', { idToken: id_token })
-          const auth = res.data
-          await saveAndSet(auth)
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Google sign-in failed')
-        }
-      }
-    }
-    handle()
-  }, [googleResponse])
-
-  // Microsoft auth using generic AuthSession with discovery
-  const msDiscovery = {
-    authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token'
-  }
-
-  const redirectUri = AuthSession.makeRedirectUri()
-
-  const [msRequest, msResponse, promptMsAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: (Constants.expoConfig?.extra as any)?.expoMicrosoftClientId || undefined,
-      scopes: ['openid', 'profile', 'User.Read'],
-      redirectUri,
-      responseType: 'token'
-    },
-    msDiscovery
-  )
-
-  useEffect(() => {
-    async function handleMs() {
-      if (msResponse && msResponse.type === 'success') {
-        const { access_token } = (msResponse as any).params
-        try {
-          const res = await socialSignIn('microsoft', { accessToken: access_token })
-          const auth = res.data
-          await saveAndSet(auth)
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Microsoft sign-in failed')
-        }
-      }
-    }
-    handleMs()
-  }, [msResponse])
-
-  // helper to save auth from social login by calling internal AuthContext flows
-  async function saveAndSet(auth: any) {
-    // Reuse saveAuthData and context by calling signInRequest is complex; instead store directly
-    // Import saveAuthData here dynamically to avoid cycles
-    const { saveAuthData } = await import('../api/client')
-    await saveAuthData(auth)
-    // Reload window to let AuthProvider restore
-    if (typeof window !== 'undefined') window.location.reload()
   }
 
   return (
@@ -154,15 +74,7 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
           </TouchableOpacity>
 
-          <View style={{ height: 12 }} />
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#DB4437' }]} onPress={() => promptGoogleAsync()} disabled={!googleRequest}>
-            <Text style={styles.buttonText}>Sign in with Google</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 8 }} />
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2F2F90' }]} onPress={() => promptMsAsync()} disabled={!msRequest}>
-            <Text style={styles.buttonText}>Sign in with Microsoft</Text>
-          </TouchableOpacity>
+          <SocialAuthSection mode="login" onError={setError} />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>New here?</Text>

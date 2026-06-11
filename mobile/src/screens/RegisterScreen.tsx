@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -8,17 +8,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Image
+  View
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { RootStackParamList } from '../types'
-import * as Google from 'expo-auth-session/providers/google'
-import * as AuthSession from 'expo-auth-session'
-import * as WebBrowser from 'expo-web-browser'
-import Constants from 'expo-constants'
-import { socialSignIn } from '../api/client'
+import SocialAuthSection from '../components/SocialAuthSection'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>
 
@@ -42,69 +37,6 @@ export default function RegisterScreen({ navigation }: Props) {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    WebBrowser.maybeCompleteAuthSession()
-  }, [])
-
-  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-    clientId: (Constants.expoConfig?.extra as any)?.expoGoogleClientId || undefined,
-    webClientId: (Constants.expoConfig?.extra as any)?.expoGoogleWebClientId || undefined,
-    scopes: ['openid', 'profile', 'email']
-  })
-
-  useEffect(() => {
-    async function handle() {
-      if (googleResponse && googleResponse.type === 'success') {
-        const { id_token } = (googleResponse as any).params
-        try {
-          const res = await socialSignIn('google', { idToken: id_token })
-          const auth = res.data
-          const { saveAuthData } = await import('../api/client')
-          await saveAuthData(auth)
-          if (typeof window !== 'undefined') window.location.reload()
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Google sign-up failed')
-        }
-      }
-    }
-    handle()
-  }, [googleResponse])
-
-  const msDiscovery = {
-    authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token'
-  }
-
-  const redirectUri = AuthSession.makeRedirectUri()
-
-  const [msRequest, msResponse, promptMsAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: (Constants.expoConfig?.extra as any)?.expoMicrosoftClientId || undefined,
-      scopes: ['openid', 'profile', 'User.Read'],
-      redirectUri,
-      responseType: 'token'
-    },
-    msDiscovery
-  )
-
-  useEffect(() => {
-    async function handleMs() {
-      if (msResponse && msResponse.type === 'success') {
-        const { access_token } = (msResponse as any).params
-        try {
-          const res = await socialSignIn('microsoft', { accessToken: access_token })
-          const auth = res.data
-          const { saveAuthData } = await import('../api/client')
-          await saveAuthData(auth)
-          if (typeof window !== 'undefined') window.location.reload()
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Microsoft sign-up failed')
-        }
-      }
-    }
-    handleMs()
-  }, [msResponse])
 
   return (
     <SafeAreaView style={styles.container}>
@@ -155,15 +87,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <Text style={styles.buttonText}>{loading ? 'Creating account...' : 'Register'}</Text>
           </TouchableOpacity>
 
-          <View style={{ height: 12 }} />
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#DB4437' }]} onPress={() => promptGoogleAsync()} disabled={!googleRequest}>
-            <Text style={styles.buttonText}>Sign up with Google</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 8 }} />
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#2F2F90' }]} onPress={() => promptMsAsync()} disabled={!msRequest}>
-            <Text style={styles.buttonText}>Sign up with Microsoft</Text>
-          </TouchableOpacity>
+          <SocialAuthSection mode="register" onError={setError} />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account?</Text>

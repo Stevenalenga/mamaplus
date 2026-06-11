@@ -34,6 +34,7 @@ export interface AuthContextState {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (payload: SignUpParams) => Promise<void>
+  signInWithSocial: (auth: AuthPayload) => Promise<void>
   signOut: () => Promise<void>
 }
 
