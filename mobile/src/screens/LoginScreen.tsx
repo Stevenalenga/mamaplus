@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
   View,
   Image
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { getLoginErrorMessage } from '../api/client'

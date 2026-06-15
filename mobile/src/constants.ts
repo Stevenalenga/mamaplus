@@ -1,14 +1,34 @@
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
+const DEFAULT_API_PORT = 3000
+
+function getLanHostFromExpo(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri
+  if (!hostUri) return null
+
+  const host = hostUri.split(':')[0]?.trim()
+  if (!host || host === 'localhost' || host === '127.0.0.1') return null
+
+  return host
+}
+
 function getDefaultApiUrl(): string {
+  if (__DEV__ && Platform.OS === 'android') {
+    const lanHost = getLanHostFromExpo()
+    if (lanHost) {
+      return `http://${lanHost}:${DEFAULT_API_PORT}`
+    }
+    return `http://10.0.2.2:${DEFAULT_API_PORT}`
+  }
+
   switch (Platform.OS) {
     case 'android':
-      return 'http://10.0.2.2:3000'
+      return `http://10.0.2.2:${DEFAULT_API_PORT}`
     case 'web':
     case 'ios':
     default:
-      return 'http://localhost:3000'
+      return `http://localhost:${DEFAULT_API_PORT}`
   }
 }
 
@@ -22,6 +42,11 @@ function normalizeApiUrlForPlatform(url: string): string {
   }
 
   if (Platform.OS === 'android') {
+    const lanHost = getLanHostFromExpo()
+    if (__DEV__ && lanHost && (trimmed.includes('localhost') || trimmed.includes('127.0.0.1') || trimmed.includes('10.0.2.2'))) {
+      return `http://${lanHost}:${DEFAULT_API_PORT}`
+    }
+
     return trimmed
       .replace('localhost', '10.0.2.2')
       .replace('127.0.0.1', '10.0.2.2')
@@ -36,8 +61,11 @@ function resolveApiBaseUrl(): string {
     process.env.EXPO_PUBLIC_API_URL
   )?.trim()
 
-  const base = configured || getDefaultApiUrl()
-  return normalizeApiUrlForPlatform(base)
+  if (configured) {
+    return normalizeApiUrlForPlatform(configured)
+  }
+
+  return getDefaultApiUrl()
 }
 
 export const API_BASE_URL = resolveApiBaseUrl()

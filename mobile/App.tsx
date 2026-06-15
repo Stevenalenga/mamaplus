@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from './src/context/AuthContext'
 import DashboardScreen from './src/screens/DashboardScreen'
 import LoadingScreen from './src/screens/LoadingScreen'
@@ -18,7 +19,7 @@ function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator key={user ? 'main' : 'auth'} screenOptions={{ headerShown: false }}>
         {user ? (
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
         ) : (
@@ -34,8 +35,10 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppNavigator />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
   )
 }

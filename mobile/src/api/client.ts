@@ -39,7 +39,12 @@ export async function saveAuthData(payload: AuthPayload) {
   }
 
   try {
-    await SecureStore.setItemAsync(AUTH_STORAGE_KEY, serialized)
+    await Promise.race([
+      SecureStore.setItemAsync(AUTH_STORAGE_KEY, serialized),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('SecureStore write timed out')), 5000)
+      )
+    ])
   } catch (error) {
     console.warn('saveAuthData: SecureStore set failed', error)
   }
@@ -74,22 +79,34 @@ export async function clearAuthData() {
 
 async function request<T>(path: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${path}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
   let response: Response
 
   try {
     response = await fetch(url, {
       ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {})
       }
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(
+        `Request timed out connecting to ${API_BASE_URL}. Ensure the portal is running (npm run dev) and your phone is on the same Wi‑Fi network.`
+      )
+    }
+
     const hint =
       Platform.OS === 'android'
-        ? ' On Android emulator, ensure the portal is running (npm run dev in the project root).'
+        ? ' On a physical Android device, the API must use your PC LAN IP (not 10.0.2.2). Ensure npm run dev is running and your phone is on the same Wi‑Fi.'
         : ' Make sure the web portal is running (npm run dev in the project root).'
     throw new Error(`Cannot reach the server at ${API_BASE_URL}.${hint}`)
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   const body = await response.json().catch(() => null)

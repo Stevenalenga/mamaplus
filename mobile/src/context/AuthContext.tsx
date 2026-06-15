@@ -28,35 +28,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      const response = await signInRequest(email, password)
-      const auth = response.data
-      await saveAuthData(auth)
-      setUser(auth.user)
-      setToken(auth.token)
-    } finally {
-      setIsLoading(false)
-    }
+    const response = await signInRequest(email, password)
+    const auth = response.data
+    setUser(auth.user)
+    setToken(auth.token)
+    saveAuthData(auth).catch((error) => {
+      console.warn('Failed to persist auth after sign-in', error)
+    })
   }
 
   const signUp = async (payload: SignUpParams) => {
-    setIsLoading(true)
-    try {
-      const response = await signUpRequest(payload)
-      const auth = response.data
-      await saveAuthData(auth)
-      setUser(auth.user)
-      setToken(auth.token)
-    } finally {
-      setIsLoading(false)
-    }
+    const response = await signUpRequest(payload)
+    const auth = response.data
+    setUser(auth.user)
+    setToken(auth.token)
+    saveAuthData(auth).catch((error) => {
+      console.warn('Failed to persist auth after sign-up', error)
+    })
   }
 
   const signInWithSocial = async (auth: AuthPayload) => {
-    await saveAuthData(auth)
     setUser(auth.user)
     setToken(auth.token)
+    saveAuthData(auth).catch((error) => {
+      console.warn('Failed to persist auth after social sign-in', error)
+    })
   }
 
   const signOut = async () => {

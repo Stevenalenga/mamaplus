@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../context/AuthContext'
 import { ROLE_DISPLAY_NAMES, ROLE_DASHBOARD_LABELS } from '../constants'
 
