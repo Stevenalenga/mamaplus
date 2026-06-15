@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
+import { getLoginErrorMessage } from '../api/client'
 import { RootStackParamList } from '../types'
 import SocialAuthSection from '../components/SocialAuthSection'
 
@@ -31,7 +32,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       await signIn(email.trim(), password)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in')
+      setError(getLoginErrorMessage(err))
     } finally {
       setLoading(false)
     }

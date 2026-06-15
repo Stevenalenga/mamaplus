@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateTokenEdge } from '@/lib/auth'
+import { handleCorsPreflight, jsonWithCors } from '@/lib/api-cors'
 
 async function verifyGoogleIdToken(idToken: string) {
-  // Use Google's tokeninfo endpoint for simplicity
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`)
   if (!res.ok) return null
   const data = await res.json()
@@ -15,7 +15,6 @@ async function verifyGoogleIdToken(idToken: string) {
 }
 
 async function verifyMicrosoftAccessToken(accessToken: string) {
-  // Use Microsoft Graph to get user profile
   const res = await fetch('https://graph.microsoft.com/v1.0/me', {
     headers: { Authorization: `Bearer ${accessToken}` }
   })
@@ -28,6 +27,10 @@ async function verifyMicrosoftAccessToken(accessToken: string) {
   }
 }
 
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsPreflight(request) ?? new NextResponse(null, { status: 204 })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -38,26 +41,29 @@ export async function POST(request: NextRequest) {
     }
 
     if (!provider) {
-      return NextResponse.json({ success: false, message: 'Provider is required' }, { status: 400 })
+      return jsonWithCors(request, { success: false, message: 'Provider is required' }, { status: 400 })
     }
 
     let profile: { email: string; name?: string | null; avatar?: string | null } | null = null
 
     if (provider === 'google') {
-      if (!idToken) return NextResponse.json({ success: false, message: 'idToken required for Google' }, { status: 400 })
+      if (!idToken) {
+        return jsonWithCors(request, { success: false, message: 'idToken required for Google' }, { status: 400 })
+      }
       profile = await verifyGoogleIdToken(idToken)
     } else if (provider === 'microsoft') {
-      if (!accessToken) return NextResponse.json({ success: false, message: 'accessToken required for Microsoft' }, { status: 400 })
+      if (!accessToken) {
+        return jsonWithCors(request, { success: false, message: 'accessToken required for Microsoft' }, { status: 400 })
+      }
       profile = await verifyMicrosoftAccessToken(accessToken)
     } else {
-      return NextResponse.json({ success: false, message: 'Unsupported provider' }, { status: 400 })
+      return jsonWithCors(request, { success: false, message: 'Unsupported provider' }, { status: 400 })
     }
 
     if (!profile || !profile.email) {
-      return NextResponse.json({ success: false, message: 'Failed to verify provider token' }, { status: 400 })
+      return jsonWithCors(request, { success: false, message: 'Failed to verify provider token' }, { status: 400 })
     }
 
-    // Find or create user
     let user = await prisma.user.findUnique({ where: { email: profile.email } })
     if (!user) {
       user = await prisma.user.create({
@@ -74,9 +80,22 @@ export async function POST(request: NextRequest) {
 
     const token = await generateTokenEdge({ userId: user.id, email: user.email, role: user.role })
 
-    return NextResponse.json({ success: true, data: { user: { id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar, isVerified: user.isVerified }, token } })
+    return jsonWithCors(request, {
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar,
+          isVerified: user.isVerified
+        },
+        token
+      }
+    })
   } catch (error: any) {
     console.error('Social auth error:', error)
-    return NextResponse.json({ success: false, message: error.message || 'Server error' }, { status: 500 })
+    return jsonWithCors(request, { success: false, message: error.message || 'Server error' }, { status: 500 })
   }
 }

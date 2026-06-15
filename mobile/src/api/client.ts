@@ -74,13 +74,23 @@ export async function clearAuthData() {
 
 async function request<T>(path: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${path}`
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    }
-  })
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    })
+  } catch {
+    const hint =
+      Platform.OS === 'android'
+        ? ' On Android emulator, ensure the portal is running (npm run dev in the project root).'
+        : ' Make sure the web portal is running (npm run dev in the project root).'
+    throw new Error(`Cannot reach the server at ${API_BASE_URL}.${hint}`)
+  }
 
   const body = await response.json().catch(() => null)
 
@@ -89,6 +99,13 @@ async function request<T>(path: string, options: RequestInit = {}) {
   }
 
   return body as T
+}
+
+export function getLoginErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return 'Unable to sign in'
 }
 
 export async function signInRequest(email: string, password: string) {

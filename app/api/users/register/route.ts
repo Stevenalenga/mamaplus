@@ -3,6 +3,11 @@ import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/db-utils'
 import { generateTokenEdge, setAuthCookie } from '@/lib/auth'
 import { ROLES } from '@/lib/roles'
+import { handleCorsPreflight, jsonWithCors } from '@/lib/api-cors'
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsPreflight(request) ?? new NextResponse(null, { status: 204 })
+}
 
 /**
  * POST /api/users/register
@@ -12,82 +17,78 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, name, phoneNumber } = await request.json()
 
-    // Validate input
     if (!email || !password) {
-      return NextResponse.json(
-        { 
+      return jsonWithCors(
+        request,
+        {
           success: false,
-          message: 'Email and password are required' 
+          message: 'Email and password are required'
         },
         { status: 400 }
       )
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { 
+      return jsonWithCors(
+        request,
+        {
           success: false,
-          message: 'Please enter a valid email address' 
+          message: 'Please enter a valid email address'
         },
         { status: 400 }
       )
     }
 
-    // Validate password strength
     if (password.length < 8) {
-      return NextResponse.json(
-        { 
+      return jsonWithCors(
+        request,
+        {
           success: false,
-          message: 'Password must be at least 8 characters long' 
+          message: 'Password must be at least 8 characters long'
         },
         { status: 400 }
       )
     }
 
-    // Validate name if provided
     if (name && name.trim().length < 2) {
-      return NextResponse.json(
-        { 
+      return jsonWithCors(
+        request,
+        {
           success: false,
-          message: 'Name must be at least 2 characters long' 
+          message: 'Name must be at least 2 characters long'
         },
         { status: 400 }
       )
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
     })
 
     if (existingUser) {
       console.log('Registration failed: User already exists -', email)
-      return NextResponse.json(
-        { 
+      return jsonWithCors(
+        request,
+        {
           success: false,
-          message: 'An account with this email already exists. Please log in instead.' 
+          message: 'An account with this email already exists. Please log in instead.'
         },
         { status: 409 }
       )
     }
 
-    // Hash password
     console.log('Creating new user:', email)
     const hashedPassword = await hashPassword(password)
-
-    // All new self-registered users start as PENDING until they complete onboarding
     const role = ROLES.PENDING
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
         phoneNumber,
-        role,
+        role
       },
       select: {
         id: true,
@@ -101,33 +102,35 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Generate JWT token for auto-login
     const token = await generateTokenEdge({
       userId: user.id,
       email: user.email,
       role: user.role
     })
 
-    // Set auth cookie
     await setAuthCookie(token)
 
     console.log('User registered successfully:', email)
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        user,
-        token
+    return jsonWithCors(
+      request,
+      {
+        success: true,
+        data: {
+          user,
+          token
+        },
+        message: 'User registered successfully'
       },
-      message: 'User registered successfully'
-    }, { status: 201 })
-
+      { status: 201 }
+    )
   } catch (error: any) {
     console.error('User registration error:', error)
-    return NextResponse.json(
-      { 
+    return jsonWithCors(
+      request,
+      {
         success: false,
-        message: error.message || 'An error occurred during registration. Please try again.' 
+        message: error.message || 'An error occurred during registration. Please try again.'
       },
       { status: 500 }
     )
