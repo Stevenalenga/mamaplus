@@ -1,6 +1,5 @@
 export default {
   expo: {
-    sdkVersion: '56.0.9',
     name: 'MamaPlus Mobile',
     slug: 'mamaplus-mobile',
     scheme: 'mamaplus',
@@ -8,11 +7,6 @@ export default {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
-    splash: {
-      image: './assets/splash-icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#ffffff'
-    },
     updates: {
       fallbackToCacheTimeout: 0
     },
@@ -23,16 +17,29 @@ export default {
     },
     android: {
       package: 'com.mamaplus.mobile',
+      predictiveBackGestureEnabled: false,
       adaptiveIcon: {
         foregroundImage: './assets/android-icon-foreground.png',
         backgroundImage: './assets/android-icon-background.png',
-        backgroundColor: '#FFFFFF'
+        monochromeImage: './assets/android-icon-monochrome.png',
+        backgroundColor: '#E6F4FE'
       }
     },
     web: {
       favicon: './assets/favicon.png'
     },
-    plugins: ['expo-secure-store'],
+    plugins: [
+      'expo-secure-store',
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#ffffff',
+          image: './assets/splash-icon.png',
+          resizeMode: 'contain',
+          imageWidth: 200
+        }
+      ]
+    ],
     extra: {
       apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
       expoGoogleClientId:
