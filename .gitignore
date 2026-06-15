@@ -25,3 +25,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Mobile app (lives on mobileportal branch; local folder persists when switching branches)
+/mobile/
