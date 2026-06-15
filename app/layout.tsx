@@ -3,7 +3,6 @@
 import React from "react"
 import { usePathname } from 'next/navigation'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { organizationSchema } from '@/lib/seo'
@@ -33,7 +32,6 @@ export default function RootLayout({
         {!isAuthPage && <Header />}
         {children}
         {!isAuthPage && <Footer />}
-        <Analytics />
       </body>
     </html>
   )

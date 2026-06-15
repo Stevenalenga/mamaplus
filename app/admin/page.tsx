@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import SEOHead from '@/components/seo-head'
 import { AdminBlogEditor } from '@/components/admin/blog-editor'
+import { LogoutButton } from '@/components/admin/logout-button'
 import { getBlogPosts } from '@/lib/blog'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 
@@ -37,9 +38,7 @@ export default async function AdminPage() {
             <Link href="/blog">
               <Button variant="outline">View public blog</Button>
             </Link>
-            <Link href="/api/admin/logout">
-              <Button variant="secondary">Logout</Button>
-            </Link>
+            <LogoutButton />
           </div>
         </header>
 

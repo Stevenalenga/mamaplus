@@ -15,10 +15,21 @@ export interface BlogPost {
   readTime: string
 }
 
-const blogPostsPath = path.join(process.cwd(), 'data', 'blog-posts.json')
+const blogPostsPath = process.env.BLOG_DATA_PATH || path.join(process.cwd(), 'data', 'blog-posts.json')
+
+function ensureBlogDataDir() {
+  const dir = path.dirname(blogPostsPath)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+}
 
 function readBlogPosts(): BlogPost[] {
   try {
+    if (!fs.existsSync(blogPostsPath)) {
+      return []
+    }
+
     const file = fs.readFileSync(blogPostsPath, 'utf8')
     return JSON.parse(file) as BlogPost[]
   } catch (error) {
@@ -28,7 +39,13 @@ function readBlogPosts(): BlogPost[] {
 }
 
 function writeBlogPosts(posts: BlogPost[]) {
-  fs.writeFileSync(blogPostsPath, JSON.stringify(posts, null, 2), 'utf8')
+  try {
+    ensureBlogDataDir()
+    fs.writeFileSync(blogPostsPath, JSON.stringify(posts, null, 2), 'utf8')
+  } catch (error) {
+    console.error('Failed to write blog posts to JSON:', error)
+    throw new Error('Unable to save blog posts. Check server write permissions for the blog data file.')
+  }
 }
 
 function slugify(value: string) {

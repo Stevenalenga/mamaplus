@@ -91,18 +91,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  const newPost = addBlogPost({
-    title,
-    description,
-    content,
-    author,
-    category,
-    tags,
-    image,
-    readTime,
-  })
+  try {
+    const newPost = addBlogPost({
+      title,
+      description,
+      content,
+      author,
+      category,
+      tags,
+      image,
+      readTime,
+    })
 
-  return NextResponse.json(newPost)
+    return NextResponse.json(newPost)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to save blog post'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }
 
 export async function PUT(request: Request) {
@@ -122,22 +127,27 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  const updatedPost = updateBlogPost(slug, {
-    title,
-    description,
-    content,
-    author,
-    category,
-    tags,
-    image,
-    readTime,
-  })
+  try {
+    const updatedPost = updateBlogPost(slug, {
+      title,
+      description,
+      content,
+      author,
+      category,
+      tags,
+      image,
+      readTime,
+    })
 
-  if (!updatedPost) {
-    return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    if (!updatedPost) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(updatedPost)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update blog post'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  return NextResponse.json(updatedPost)
 }
 
 export async function DELETE(request: Request) {
@@ -152,11 +162,16 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
   }
 
-  const deleted = deleteBlogPost(slug)
+  try {
+    const deleted = deleteBlogPost(slug)
 
-  if (!deleted) {
-    return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    if (!deleted) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to delete blog post'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  return NextResponse.json({ success: true })
 }

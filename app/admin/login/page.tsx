@@ -31,6 +31,7 @@ export default function AdminLoginPage() {
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -45,6 +46,7 @@ export default function AdminLoginPage() {
       }
 
       router.push('/admin')
+      router.refresh()
     } catch (error) {
       setError('Unable to sign in. Please try again.')
       setLoading(false)

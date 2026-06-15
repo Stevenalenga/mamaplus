@@ -108,6 +108,7 @@ export function AdminBlogEditor({ existingPosts }: AdminBlogEditorProps) {
     try {
       const response = await fetch('/api/admin/blog', {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -159,6 +160,7 @@ export function AdminBlogEditor({ existingPosts }: AdminBlogEditorProps) {
 
       const response = await fetch('/api/admin/blog', {
         method: selectedSlug ? 'PUT' : 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

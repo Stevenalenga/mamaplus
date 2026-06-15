@@ -15,13 +15,20 @@ export async function isAdminAuthenticated() {
   return cookieStore.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_TOKEN
 }
 
+function getSessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+  }
+}
+
 export function createAdminSessionResponse(response: NextResponse) {
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,
     value: ADMIN_SESSION_TOKEN,
-    httpOnly: true,
-    sameSite: 'strict',
-    path: '/',
+    ...getSessionCookieOptions(),
     maxAge: 60 * 60 * 24,
   })
   return response
@@ -31,9 +38,7 @@ export function clearAdminSessionResponse(response: NextResponse) {
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,
     value: '',
-    httpOnly: true,
-    sameSite: 'strict',
-    path: '/',
+    ...getSessionCookieOptions(),
     maxAge: 0,
   })
   return response
