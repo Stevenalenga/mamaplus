@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { RootStackParamList } from '../types'
+import MamaPlusLogo from '../components/MamaPlusLogo'
 import SocialAuthSection from '../components/SocialAuthSection'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>
@@ -45,6 +46,9 @@ export default function RegisterScreen({ navigation }: Props) {
         style={styles.wrapper}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.logoWrap}>
+            <MamaPlusLogo />
+          </View>
           <Text style={styles.title}>Create an account</Text>
           <Text style={styles.subtitle}>Start using MamaPlus on mobile.</Text>
 
@@ -114,8 +118,12 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center'
   },
+  logoWrap: {
+    alignItems: 'center',
+    marginBottom: 24
+  },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: '#0f172a',
     marginBottom: 8

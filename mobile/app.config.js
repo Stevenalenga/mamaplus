@@ -34,9 +34,9 @@ export default {
         'expo-splash-screen',
         {
           backgroundColor: '#ffffff',
-          image: './assets/splash-icon.png',
+          image: './assets/logo.png',
           resizeMode: 'contain',
-          imageWidth: 200
+          imageWidth: 220
         }
       ]
     ],

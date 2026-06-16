@@ -3,6 +3,7 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../context/AuthContext'
 import { ROLE_DISPLAY_NAMES, ROLE_DASHBOARD_LABELS } from '../constants'
+import MamaPlusLogo from '../components/MamaPlusLogo'
 
 export default function DashboardScreen() {
   const { user, signOut } = useAuth()
@@ -19,6 +20,9 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.logoWrap}>
+        <MamaPlusLogo width={160} height={54} />
+      </View>
       <View style={styles.card}>
         <Text style={styles.title}>Welcome back, {user?.name ?? 'User'}!</Text>
         <Text style={styles.role}>Role: {roleLabel}</Text>
@@ -46,6 +50,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
     padding: 24
+  },
+  logoWrap: {
+    alignItems: 'center',
+    marginBottom: 20
   },
   card: {
     backgroundColor: '#ffffff',

@@ -7,14 +7,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Image
+  View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { getLoginErrorMessage } from '../api/client'
 import { RootStackParamList } from '../types'
+import MamaPlusLogo from '../components/MamaPlusLogo'
 import SocialAuthSection from '../components/SocialAuthSection'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>
@@ -45,11 +45,11 @@ export default function LoginScreen({ navigation }: Props) {
         style={styles.wrapper}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={{ alignItems: 'center', marginBottom: 12 }}>
-            <Image source={require('../../assets/icon.png')} style={{ width: 160, height: 56, resizeMode: 'contain' }} />
+          <View style={styles.logoWrap}>
+            <MamaPlusLogo />
           </View>
-          <Text style={styles.title}>MamaPlus</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to access your caregiver portal</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -102,8 +102,12 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center'
   },
+  logoWrap: {
+    alignItems: 'center',
+    marginBottom: 24
+  },
   title: {
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '800',
     color: '#0f172a',
     marginBottom: 8
