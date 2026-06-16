@@ -67,8 +67,9 @@ export default function ServicesPage() {
       accent: 'text-primary',
       badge: 'Most Popular',
       image: '/mamaplus images/relate.jpeg',
-      title: "Placement & Support for House Managers",
-      description: "We connect families with trained, vetted House Managers and domestic workers and provide support before, during, and after placement.",
+      emoji: '👩🏽‍👧',
+      title: "In-Home Childcare & House Manager Support",
+      description: "We help families find trained, vetted House Managers and in-home caregivers, and provide support before, during, and after placement.",
       features: [
         "Caregiver matching based on family needs",
         "Background checks and credential verification",
@@ -77,6 +78,9 @@ export default function ServicesPage() {
         "Guidance on contracts and fair employment practices"
       ],
       cta: "Find a House Manager",
+      ctaHref: "/families",
+      secondaryCta: "Sign In as a Family",
+      secondaryHref: "/login",
       stat: "500+",
       statLabel: "Target Placements"
     },
@@ -87,8 +91,9 @@ export default function ServicesPage() {
       accent: 'text-secondary',
       badge: null,
       image: '/mamaplus images/education.jpeg',
-      title: "Training & Support for Caregivers",
-      description: "We treat caregiving as a profession. MamaPlus provides certified training, mental health support, and access to job opportunities.",
+      emoji: '🎓',
+      title: "Training & Career Support for Caregivers",
+      description: "We believe caregiving is a profession—and we treat it like one. MamaPlus provides certified training, mental health support, and access to job opportunities.",
       features: [
         "Certified training in child development, safety, and emotional care",
         "Skills training in feeding, hygiene, CPR, and educational play",
@@ -97,6 +102,9 @@ export default function ServicesPage() {
         "Access to job opportunities through the MamaPlus platform"
       ],
       cta: "Explore Training",
+      ctaHref: "/courses",
+      secondaryCta: "Sign In as a Caregiver",
+      secondaryHref: "/login",
       stat: "1,200+",
       statLabel: "Training Target"
     },
@@ -105,38 +113,22 @@ export default function ServicesPage() {
       color: 'from-[#ee5f5e] to-[#c44b4a]',
       lightBg: 'bg-primary/10',
       accent: 'text-primary',
-      badge: 'Women-Centered',
-      image: '/mamaplusservices/crowd2.jpeg',
-      title: 'Female-Only Cohorts & Learning Sessions',
-      description: 'We run female-only caregiver cohorts and safe-session learning spaces designed around women\'s realities, confidence building, and practical care leadership.',
-      features: [
-        'Female-only classroom and peer-learning cohorts',
-        'Safe moderated sessions focused on women caregivers',
-        'Facilitators trained in gender-responsive learning methods',
-        'Modules on confidence, communication, and workplace dignity',
-        'Targeted support for young mothers and women re-entering work',
-      ],
-      cta: 'Join a Women-Only Cohort',
-      stat: '300+',
-      statLabel: 'Women in Cohorts',
-    },
-    {
-      icon: Users,
-      color: 'from-[#ee5f5e] to-[#c44b4a]',
-      lightBg: 'bg-primary/10',
-      accent: 'text-primary',
       badge: null,
       image: '/mamaplus images/growpep.jpeg',
+      emoji: '🏫',
       title: "Support Circles for Childcare Centres",
-      description: "We strengthen community and informal childcare centres through training, quality standards, and peer support.",
+      description: "MamaPlus strengthens community and informal childcare centres through training, quality standards, and peer support.",
       features: [
         "Staff training and certification programs",
         "Quality improvement tools and guidance",
         "Support circles and peer learning networks",
         "Increased trust and confidence from families",
-        "Community-driven improvements"
+        "Community-driven improvements in care quality"
       ],
       cta: "Join the Centre Network",
+      ctaHref: "/agencies-partners",
+      secondaryCta: "Centre Sign In",
+      secondaryHref: "/login",
       stat: "80+",
       statLabel: "Target Centres"
     },
@@ -147,16 +139,20 @@ export default function ServicesPage() {
       accent: 'text-secondary',
       badge: 'New',
       image: null,
+      emoji: '🏢',
       title: "Corporate Childcare Provision",
       description: "We help employers set up and manage childcare solutions that support productivity and employee wellbeing.",
       features: [
-        "Customized childcare solutions for workplaces",
+        "Customised childcare solutions for workplaces",
         "Access to trained caregivers and facilities",
         "Employee benefit coordination",
         "Quality assurance and compliance support",
         "Flexible scheduling and management"
       ],
       cta: "Partner With Us",
+      ctaHref: "/agencies-partners",
+      secondaryCta: "Employer Sign In",
+      secondaryHref: "/login",
       stat: "30+",
       statLabel: "Target Partners"
     },
@@ -167,40 +163,22 @@ export default function ServicesPage() {
       accent: 'text-primary',
       badge: null,
       image: null,
+      emoji: '👨‍👩‍👧',
       title: "Training & Support for Parents",
-      description: "We support parents with guidance, tools, and community—because quality childcare works best when families are supported too.",
+      description: "Parenting doesn't come with a manual—but MamaPlus provides guidance, tools, and community support for every family.",
       features: [
         "Guidance on hiring and managing caregivers",
         "Workshops on child development and nurturing care",
         "Communication tools for working with domestic staff",
-        "Parent check-ins and support groups",
-        "Practical resources and community connection"
+        "Parent check-ins, support groups, and practical resources"
       ],
       cta: "Access Parent Resources",
+      ctaHref: "/families",
+      secondaryCta: "Parent Sign In",
+      secondaryHref: "/login",
       stat: "2,000+",
       statLabel: "Target Families"
     },
-    {
-      icon: Building2,
-      color: 'from-[#0c7e8e] to-[#095f6b]',
-      lightBg: 'bg-secondary/10',
-      accent: 'text-secondary',
-      badge: null,
-      image: null,
-      title: "Solutions for Government & Public Sector",
-      description: "We partner with governments to strengthen childcare systems, expand access to quality care, and build a trained workforce.",
-      features: [
-        "Policy implementation support and technical assistance",
-        "Public childcare infrastructure development and management",
-        "National caregiver training and certification programs",
-        "Quality standards development and monitoring systems",
-        "Community-based childcare program expansion",
-        "Data systems for childcare workforce and service mapping"
-      ],
-      cta: "Partner With Government",
-      stat: "5+",
-      statLabel: "Target Counties"
-    }
   ]
 
   const trainingImages = [
@@ -258,26 +236,34 @@ export default function ServicesPage() {
           <AnimatedSection>
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4" />
-              Integrated Childcare Ecosystem
+              Digital & Place-Based Childcare Platform
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-              Quality Care for{' '}
+              Quality Childcare{' '}
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Every Child
+                Families Can Trust
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-xl leading-relaxed">
-              MamaPlus offers integrated services that support the entire childcare ecosystem—from families and caregivers to childcare centres and employers.
+            <p className="text-lg sm:text-xl text-muted-foreground mb-3 max-w-xl leading-relaxed">
+              MamaPlus is a digital and place-based childcare platform that helps families access safe, nurturing, and high-quality childcare—at home, in centres, and near the workplace.
+            </p>
+            <p className="text-base text-muted-foreground mb-8 max-w-xl leading-relaxed">
+              We combine professional training, clear care standards, and technology to connect families with caregivers they can trust. Whether you are a parent looking for reliable care, a caregiver building a career, or an employer supporting working families, MamaPlus brings the right people, skills, and support together.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/services/quicksignup">
+              <Link href="/families">
                 <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-5 text-base rounded-xl shadow-lg shadow-primary/25">
-                  Get Started <ArrowRight className="ml-2 w-4 h-4" />
+                  Find Childcare <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="#services">
+              <Link href="/login">
                 <Button variant="outline" className="border-2 border-primary text-primary hover:bg-primary/5 px-8 py-5 text-base rounded-xl bg-transparent">
-                  Explore Services
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/caregivers">
+                <Button variant="outline" className="border-2 border-secondary text-secondary hover:bg-secondary/5 px-8 py-5 text-base rounded-xl bg-transparent">
+                  Become a Caregiver
                 </Button>
               </Link>
             </div>
@@ -344,6 +330,47 @@ export default function ServicesPage() {
               </AnimatedSection>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── HOW MAMAPLUS WORKS ────────────────────────────── */}
+      <section className="py-16 px-4 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <AnimatedSection className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">How MamaPlus Works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              MamaPlus works both online and on the ground to ensure consistent, high-quality childcare.
+            </p>
+          </AnimatedSection>
+          <div className="grid md:grid-cols-2 gap-8">
+            <AnimatedSection delay={100}>
+              <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-8 h-full">
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-5">
+                  <Globe2 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-3">Digitally</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Our platform connects families, caregivers, centres, and employers—making it easier to find care, access training, and receive ongoing support. Browse vetted caregivers, enrol in courses, track progress, and stay connected from anywhere.
+                </p>
+              </div>
+            </AnimatedSection>
+            <AnimatedSection delay={200}>
+              <div className="bg-gradient-to-br from-secondary/5 to-secondary/10 border border-secondary/20 rounded-2xl p-8 h-full">
+                <div className="w-12 h-12 bg-secondary rounded-2xl flex items-center justify-center mb-5">
+                  <BookOpen className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-3">On the Ground</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Our Training & Support Centres ensure caregivers and childcare providers meet clear standards for safety, learning, and wellbeing. Hands-on training, peer support circles, and mentorship bring quality care to life in homes, centres, and workplaces.
+                </p>
+              </div>
+            </AnimatedSection>
+          </div>
+          <AnimatedSection delay={300} className="mt-8 text-center">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              This combination allows MamaPlus to deliver trusted childcare wherever families need it.
+            </p>
+          </AnimatedSection>
         </div>
       </section>
 
@@ -420,10 +447,15 @@ export default function ServicesPage() {
                                 ))}
                               </ul>
                             </div>
-                            <div className="flex items-end">
-                              <Link href="/signup" className="w-full">
+                            <div className="flex flex-col gap-3">
+                              <Link href={service.ctaHref || '/signup'} className="w-full">
                                 <Button className={`w-full bg-gradient-to-r ${service.color} hover:opacity-90 text-white py-5 rounded-xl shadow-md text-sm font-semibold`}>
                                   {service.cta} <ArrowRight className="ml-2 w-4 h-4" />
+                                </Button>
+                              </Link>
+                              <Link href={service.secondaryHref || '/login'} className="w-full">
+                                <Button variant="outline" className={`w-full border-2 ${service.accent === 'text-primary' ? 'border-primary text-primary hover:bg-primary/10' : 'border-secondary text-secondary hover:bg-secondary/10'} py-4 rounded-xl text-sm font-semibold bg-transparent`}>
+                                  {service.secondaryCta}
                                 </Button>
                               </Link>
                             </div>
@@ -721,21 +753,26 @@ export default function ServicesPage() {
         <AnimatedSection className="relative z-10 max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 text-white rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            Join the MamaPlus Community
+            Get Started Today
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-white/70 mb-10 max-w-2xl mx-auto">
             Whether you are a parent, caregiver, centre, or employer, MamaPlus is here to support you every step of the way.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup">
+            <Link href="/login">
               <Button className="bg-white text-primary hover:bg-white/90 px-10 py-5 text-base font-bold rounded-xl shadow-xl w-full sm:w-auto">
-                Create an Account <ArrowRight className="ml-2 w-4 h-4" />
+                Sign In <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/signup">
               <Button variant="outline" className="border-2 border-white/40 text-white hover:bg-white/10 px-10 py-5 text-base rounded-xl bg-transparent w-full sm:w-auto">
-                Sign In
+                Create an Account
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button variant="outline" className="border-2 border-white/40 text-white hover:bg-white/10 px-10 py-5 text-base rounded-xl bg-transparent w-full sm:w-auto">
+                Contact Us
               </Button>
             </Link>
           </div>

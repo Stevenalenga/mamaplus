@@ -32,12 +32,13 @@ export default function Header() {
         </Link>
         
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-8 text-lg">
+        <div className="hidden lg:flex items-center gap-5 text-base">
           <Link href="/" className={navClass('/')}>Home</Link>
+          <Link href="/services" className={navClass('/services')}>Services</Link>
+          <Link href="/courses" className={navClass('/courses')}>Courses</Link>
           <Link href="/families" className={navClass('/families')}>Families</Link>
           <Link href="/caregivers" className={navClass('/caregivers')}>Caregivers</Link>
           <Link href="/agencies-partners" className={navClass('/agencies-partners')}>Agencies</Link>
-          <Link href="/our-platform" className={navClass('/our-platform')}>Platform</Link>
           <Link href="/blog" className={navClass('/blog')}>Blog</Link>
           <Link href="/contact" className={navClass('/contact')}>Contact</Link>
         </div>
@@ -49,7 +50,7 @@ export default function Header() {
               Sign In
             </Button>
           </Link>
-          <Link href="/services/quicksignup">
+          <Link href="/signup">
             <Button className="bg-primary hover:bg-primary/90 text-white px-3 text-xs h-9">
               Get Started
             </Button>
@@ -78,6 +79,20 @@ export default function Header() {
               Home
             </Link>
             <Link
+              href="/services"
+              className={`${navClass('/services')} block py-2 text-lg`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Our Services
+            </Link>
+            <Link
+              href="/courses"
+              className={`${navClass('/courses')} block py-2 text-lg`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Courses
+            </Link>
+            <Link
               href="/families"
               className={`${navClass('/families')} block py-2 text-lg`}
               onClick={() => setMobileMenuOpen(false)}
@@ -97,13 +112,6 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               For Agencies & Partners
-            </Link>
-            <Link
-              href="/our-platform"
-              className={`${navClass('/our-platform')} block py-2 text-lg`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Our Platform
             </Link>
             <Link
               href="/blog"

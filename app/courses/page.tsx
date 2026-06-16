@@ -41,7 +41,7 @@ export default function CoursesPage() {
         "Network with other protection professionals"
       ],
       includes: "Tuition, lunches, teas, facilitation, materials (excludes travel/accommodation)",
-      scholarship: "Scholarships of up to 20% available for early registration before 30th March 2026"
+      scholarship: "Scholarships of up to 20% available for early registration before 15th April 2026"
     },
     {
       id: 2,
@@ -122,7 +122,7 @@ export default function CoursesPage() {
       duration: "1 Day",
       dates: "Ongoing and Demand-driven",
       location: "TBD",
-      cost: "KES 3,000",
+      cost: "KES 1,500",
       audience: ["Childcare workers", "Centre managers", "Home-based providers"],
       overview: "Understand climate risks and their impact on children, and learn to create resilient, safe, and sustainable childcare environments.",
       objectives: [
@@ -139,6 +139,34 @@ export default function CoursesPage() {
         "Updated emergency procedures and practical resilience plans"
       ],
       includes: "Climate risk assessment, emergency procedure updates, practical resilience planning, sustainability resources"
+    },
+    {
+      id: 6,
+      title: "Responsive Parenting & Self-Care",
+      duration: "1 Day",
+      dates: "Ongoing, Virtual",
+      location: "Online",
+      cost: "KES 3,500",
+      audience: [
+        "Parents, guardians, and primary caregivers of children under six",
+        "Caregivers balancing work, childcare, and family responsibilities",
+        "Any adult seeking to strengthen parent-child relationships"
+      ],
+      overview: "This virtual course equips parents and caregivers with practical skills to support children's development while maintaining their own wellbeing. Participants learn evidence-based parenting strategies, emotional regulation techniques, and approaches for balancing caregiving responsibilities with self-care.",
+      objectives: [
+        "Apply responsive parenting techniques to strengthen parent-child relationships",
+        "Recognise the emotional, social, and developmental needs of young children",
+        "Develop practical self-care strategies to manage stress and caregiver fatigue",
+        "Foster safe, stimulating, and supportive home environments",
+        "Balance caregiving responsibilities with personal wellbeing and growth"
+      ],
+      benefits: [
+        "Improved parent-child interaction and bonding",
+        "Enhanced caregiver confidence and emotional wellbeing",
+        "Safer and more stimulating home environments for children",
+        "Practical routines for balancing parenting and self-care sustainably"
+      ],
+      includes: "Interactive workshops, group discussions, peer learning, practical exercises, personalised parenting and self-care action plan, tools for creating structured and supportive home environments"
     }
   ]
 
@@ -162,20 +190,26 @@ export default function CoursesPage() {
       {/* Hero Section - Mobile Optimized */}
       <section className="pt-20 pb-10 px-4 sm:pt-24 sm:pb-12 md:pt-32 md:pb-16 lg:px-8 bg-gradient-to-br from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto">
+          <p className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-4 py-1 text-sm text-primary font-medium mb-4">
+            MamaPlus Training & Support Centre
+          </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
-            Build Skills, Lead <span className="text-secondary">Change</span>, Protect Children
+            MamaPlus Courses – Build Skills, Lead <span className="text-secondary">Change</span>, Protect Children
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold max-w-3xl mb-6 md:mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-foreground max-w-3xl mb-3 md:mb-4">
             MamaPlus Training & Support Centre offers practical, interactive courses to equip childcare workers, centre staff, and parents with the knowledge and skills to deliver high-quality, safe, and sustainable childcare.
           </p>
-          <div className="flex flex-col gap-3 sm:gap-4">
-            <Link href="/login" className="w-full">
-              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
+          <p className="text-sm text-muted-foreground max-w-3xl mb-6 md:mb-8">
+            Whether you are a caregiver, manager, or centre owner, our courses provide hands-on training, mentorship, and actionable tools you can implement immediately.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Link href="/login">
+              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5">
                 Sign In to Access Courses <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/partner" className="w-full">
-              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 w-full bg-transparent">
+            <Link href="/contact">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 bg-transparent">
                 Contact MamaPlus for More Info
               </Button>
             </Link>
@@ -278,16 +312,21 @@ export default function CoursesPage() {
                     )}
                   </div>
 
-                  {/* CTA Button */}
+                  {/* CTA Buttons */}
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <Link href="/partner" className="flex-1">
+                    <Link href="/login" className="flex-1">
                       <Button className="w-full bg-primary hover:bg-primary/90 text-white py-4 sm:py-5 md:py-6 text-sm sm:text-base">
-                        Contact Us <ArrowRight className="ml-2 w-4 h-4" />
+                        {course.id === 1 ? 'Register Now' : 'Enroll Now'} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </Link>
                     <Link href="/login" className="flex-1">
                       <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 py-4 sm:py-5 md:py-6 bg-transparent text-sm sm:text-base">
-                        Sign In to Portal
+                        Sign In to Training Portal
+                      </Button>
+                    </Link>
+                    <Link href="/contact" className="flex-1">
+                      <Button variant="outline" className="w-full text-secondary border-secondary hover:bg-secondary/10 py-4 sm:py-5 md:py-6 bg-transparent text-sm sm:text-base">
+                        Contact MamaPlus
                       </Button>
                     </Link>
                   </div>
@@ -442,22 +481,25 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* CTA Section - Mobile Optimized */}
+      {/* CTA Section */}
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Ready to Start Your Learning Journey?</h2>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold mb-6 md:mb-8 max-w-2xl mx-auto px-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Get Started Today</h2>
+          <p className="text-base sm:text-lg md:text-xl text-foreground mb-2 max-w-2xl mx-auto">
             Choose a course that matches your goals and elevate your childcare skills.
           </p>
-          <div className="flex flex-col gap-3 sm:gap-4">
-            <Link href="/partner" className="w-full">
-              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-6 py-5 w-full">
-                Contact Us <ArrowRight className="ml-2 w-4 h-4" />
+          <p className="text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto">
+            Interactive, practical training with hands-on exercises. Expert facilitators and mentors. Actionable outputs to implement immediately in centres or homes.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Link href="/login">
+              <Button className="bg-primary hover:bg-primary/90 text-white text-base px-8 py-5">
+                Sign In to Access Courses <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/partner" className="w-full">
-              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-6 py-5 w-full bg-transparent">
-                Contact for More Info
+            <Link href="/contact">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 text-base px-8 py-5 bg-transparent">
+                Contact MamaPlus Today
               </Button>
             </Link>
           </div>

@@ -28,3 +28,30 @@ next-env.d.ts
 
 # Mobile app (lives on mobileportal branch; local folder persists when switching branches)
 /mobile/
+
+# ---- Python / Django (pyportal branch artifacts) ----
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtualenvs
+.venv/
+venv/
+backend/venv/
+
+# Local Django artifacts
+*.sqlite3
+shared/
+backend/logs/
+backend/staticfiles/
+backend/media/
+public/uploads/
+
+# If the Django backend only lives on the pyportal branch,
+# keep local copies from showing up as untracked on master.
+/backend/
