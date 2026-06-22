@@ -22,7 +22,9 @@ export default function UserDashboardPage() {
 
   useEffect(() => {
     if (isLoading) return
-    if (user?.role && user.role !== 'USER') {
+    if (!user) return
+
+    if (user.role !== 'USER') {
       window.location.href = getDashboardForRole(user.role)
       return
     }
@@ -52,7 +54,8 @@ export default function UserDashboardPage() {
     }
 
     loadEnrollments()
-  }, [isLoading, user])
+  // user?.id keeps the dep stable — only re-fetch when the logged-in user changes
+  }, [isLoading, user?.id, user?.role])
 
   const goToCourses = () => router.push('/courses')
 

@@ -26,3 +26,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /lib/generated/prisma
+
+# Python backend (lives on pyportal branch; local folder persists when switching branches)
+/backend/
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# Mobile app (moved to standalone repo: mamaplus-mobile)
+/mobile/

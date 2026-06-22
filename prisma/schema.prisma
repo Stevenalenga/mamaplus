@@ -1,12 +1,12 @@
 // MamaPlus Database Schema
-// Prisma ORM v6 with SQLite (for development/testing)
+// Prisma ORM v6 with MySQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 

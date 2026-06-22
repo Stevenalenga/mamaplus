@@ -137,7 +137,10 @@ export default function UserProfilePage() {
     }
 
     fetchProfile()
-  }, [status, session])
+  // Use session?.user?.id (primitive) instead of session (object) to avoid
+  // re-firing on every NextAuth background poll.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session?.user?.id])
 
   const saveProfile = async () => {
     setSaveError(null)

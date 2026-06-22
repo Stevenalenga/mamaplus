@@ -203,7 +203,10 @@ export default function UserCoursePage() {
     }
 
     loadEnrollmentAndProgress()
-  }, [courseId, router, status, session])
+  // Use session?.user?.id (primitive) instead of session (object) to avoid
+  // re-firing on every NextAuth background poll.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, router, status, session?.user?.id])
 
   const calculateProgress = (completedResourceIds: string[]): number => {
     if (!course?.resources) return 0
