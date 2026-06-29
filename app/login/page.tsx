@@ -10,7 +10,7 @@ import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 
 export default function LoginPage() {
@@ -164,7 +164,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background relative flex items-center justify-center px-4 py-8">
+      <Link
+        href="/"
+        className="absolute top-6 left-4 sm:left-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to main website
+      </Link>
       <SEOHead
         title="Sign In - Caregiver Portal"
         description="Sign in to your MamaPlus caregiver account. Access training courses, job opportunities, and professional support."
@@ -178,7 +185,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="https://mamaplus.co.ke/" className="inline-block hover:opacity-80 transition mb-6">
+          <Link href="/" className="inline-block hover:opacity-80 transition mb-6">
             <Image
               src="/logo.png"
               alt="MamaPlus"

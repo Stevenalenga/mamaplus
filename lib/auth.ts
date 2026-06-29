@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 
 // JWT secret key - should be set in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
@@ -122,11 +123,24 @@ export async function getCurrentUser(request?: NextRequest): Promise<JWTPayload 
       token = await getAuthCookie()
     }
 
-    if (!token) {
-      return null
+    if (token) {
+      const jwtUser = verifyToken(token)
+      if (jwtUser) {
+        return jwtUser
+      }
     }
 
-    return verifyToken(token)
+    // Web portal users authenticate via NextAuth (no auth-token cookie)
+    const session = await auth()
+    if (session?.user?.id) {
+      return {
+        userId: session.user.id,
+        email: session.user.email ?? '',
+        role: (session.user as { role?: string }).role ?? 'USER',
+      }
+    }
+
+    return null
   } catch (error) {
     console.error('Get current user error:', error)
     return null

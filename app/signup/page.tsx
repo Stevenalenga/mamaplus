@@ -10,7 +10,7 @@ import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 
 export default function SignupPage() {
@@ -190,7 +190,14 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background relative flex items-center justify-center px-4 py-8">
+      <Link
+        href="/"
+        className="absolute top-6 left-4 sm:left-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to main website
+      </Link>
       <SEOHead
         title="Create Account - Start Your Caregiving Career"
         description="Join MamaPlus and start your professional caregiving career. Access training, certification, and job opportunities across Kenya."
@@ -205,7 +212,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="https://mamaplus.co.ke/" className="inline-block hover:opacity-80 transition mb-6">
+          <Link href="/" className="inline-block hover:opacity-80 transition mb-6">
             <Image
               src="/logo.png"
               alt="MamaPlus"
