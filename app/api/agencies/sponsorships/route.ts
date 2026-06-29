@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 
 export async function POST(request: Request) {
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'AGENCY') {
+  const currentUser = await getAuthenticatedUser(request as any)
+  if (!currentUser || currentUser.role !== 'AGENCY') {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
-  const agencyId = session.user.id
+  const agencyId = currentUser.id
   const body = await request.json()
   const { caregiverId, courseId } = body
 
@@ -17,7 +17,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. Verify the course exists and get its price
     const course = await prisma.course.findUnique({
       where: { id: courseId },
     })
@@ -26,7 +25,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Course not found' }, { status: 404 })
     }
 
-    // 2. Verify the caregiver exists
     const caregiver = await prisma.user.findUnique({
         where: { id: caregiverId, role: 'USER' }
     })
@@ -35,7 +33,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Caregiver not found' }, { status: 404 })
     }
 
-    // 3. Check if the caregiver is already enrolled
     const existingEnrollment = await prisma.enrollment.findFirst({
       where: {
         userId: caregiverId,
@@ -47,15 +44,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Caregiver is already enrolled in this course' }, { status: 409 })
     }
 
-    // 4. Create a payment record for the sponsorship
     const paymentReference = `SPONSOR-${agencyId.slice(0, 8)}-${courseId.slice(0, 8)}-${Date.now()}`
     
     const payment = await prisma.payment.create({
       data: {
-        userId: agencyId, // Payment is by the agency
+        userId: agencyId,
         courseId: courseId,
         reference: paymentReference,
-        amount: course.priceKES, // Assuming KES for now, adjust as needed
+        amount: course.priceKES,
         currency: 'KES',
         status: 'SUCCESS',
         paymentMethod: 'SPONSORED',
@@ -64,12 +60,11 @@ export async function POST(request: Request) {
         metadata: JSON.stringify({
           sponsoredCaregiverId: caregiverId,
           sponsoredCaregiverEmail: caregiver.email,
-          agencyName: session.user.name,
+          agencyName: currentUser.name,
         }),
       },
     })
 
-    // 5. Create the enrollment for the caregiver
     const enrollment = await prisma.enrollment.create({
       data: {
         userId: caregiverId,
@@ -77,9 +72,6 @@ export async function POST(request: Request) {
         status: 'ACTIVE',
       },
     })
-
-    // TODO: In a real-world scenario, you might want to trigger notifications here
-    // e.g., email the caregiver that they've been enrolled.
 
     return NextResponse.json({ 
         success: true, 

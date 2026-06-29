@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 
 export async function GET(request: Request) {
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'AGENCY') {
+  const currentUser = await getAuthenticatedUser(request as any)
+  if (!currentUser || currentUser.role !== 'AGENCY') {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         // Optional: Exclude caregivers already recruited by the agency
         agencyRecruitments: {
           none: {
-            agencyId: session.user.id,
+            agencyId: currentUser.id,
           },
         },
       },

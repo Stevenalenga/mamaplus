@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { auth } from '@/auth'
 import { ROLES, type Role } from '@/lib/roles'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 
 const VALID_ROLES = Object.values(ROLES)
 
@@ -11,8 +11,7 @@ const VALID_ROLES = Object.values(ROLES)
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    const currentUser = session?.user as { id?: string; role?: string } | undefined
+    const currentUser = await getAuthenticatedUser(request)
     if (!currentUser || currentUser.role !== ROLES.ADMIN) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 })
     }
@@ -75,8 +74,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth()
-    const currentUser = session?.user as { id?: string; role?: string } | undefined
+    const currentUser = await getAuthenticatedUser(request)
     if (!currentUser || currentUser.role !== ROLES.ADMIN) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 })
     }

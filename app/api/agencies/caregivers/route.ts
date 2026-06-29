@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { ROLES } from '@/lib/roles'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 
 /**
  * GET /api/agencies/caregivers
@@ -9,14 +9,14 @@ import { ROLES } from '@/lib/roles'
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
+    const currentUser = await getAuthenticatedUser(request)
 
-    if (!session?.user) {
+    if (!currentUser) {
       return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    const userId = session.user.id
-    const userRole = (session.user as any).role
+    const userId = currentUser.id
+    const userRole = currentUser.role
 
     // Only agencies can access this endpoint
     if (userRole !== ROLES.AGENCY) {
@@ -123,14 +123,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const currentUser = await getAuthenticatedUser(request)
 
-    if (!session?.user) {
+    if (!currentUser) {
       return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    const userId = session.user.id
-    const userRole = (session.user as any).role
+    const userId = currentUser.id
+    const userRole = currentUser.role
 
     if (userRole !== ROLES.AGENCY) {
       return NextResponse.json(

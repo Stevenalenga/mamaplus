@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { ROLES } from '@/lib/roles'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 
 /**
  * PATCH /api/agencies/caregivers/[id]
@@ -12,14 +12,14 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
+    const currentUser = await getAuthenticatedUser(request)
 
-    if (!session?.user) {
+    if (!currentUser) {
       return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    const userId = session.user.id
-    const userRole = (session.user as any).role
+    const userId = currentUser.id
+    const userRole = currentUser.role
 
     if (userRole !== ROLES.AGENCY) {
       return NextResponse.json(
@@ -111,14 +111,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
+    const currentUser = await getAuthenticatedUser(request)
 
-    if (!session?.user) {
+    if (!currentUser) {
       return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
-    const userId = session.user.id
-    const userRole = (session.user as any).role
+    const userId = currentUser.id
+    const userRole = currentUser.role
 
     if (userRole !== ROLES.AGENCY) {
       return NextResponse.json(

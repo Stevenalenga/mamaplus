@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
-import { auth } from '@/auth'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 import { prisma } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/db-utils'
 
@@ -76,15 +76,12 @@ export async function GET(request: NextRequest) {
  *   newPassword     – new password (min 8 characters)
  */
 export async function PATCH(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user) {
+  const currentUser = await getAuthenticatedUser(request)
+  if (!currentUser) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
-  const userId = (session.user as any).id
-  if (!userId) {
-    return NextResponse.json({ success: false, message: 'Invalid session' }, { status: 401 })
-  }
+  const userId = currentUser.id
 
   let body: Record<string, unknown>
   try {
