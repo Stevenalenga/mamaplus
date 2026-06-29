@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { ROLES } from '@/lib/roles'
+import { generateTokenEdge, setAuthCookie } from '@/lib/auth'
 
 const VALID_ONBOARD_ROLES = [ROLES.USER, ROLES.AGENCY, ROLES.INSTRUCTOR]
 const VALID_GENDERS = ['MALE', 'FEMALE']
@@ -72,6 +73,14 @@ export async function POST(request: NextRequest) {
         gender: true,
       },
     })
+
+    // Keep auth-token cookie in sync for API clients after role change
+    const token = await generateTokenEdge({
+      userId: updatedUser.id,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    })
+    await setAuthCookie(token)
 
     return NextResponse.json({ success: true, data: updatedUser })
   } catch (error) {

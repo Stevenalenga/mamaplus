@@ -1,30 +1,26 @@
-'use client'
-
-import React from "react"
-import { usePathname } from 'next/navigation'
-import { SessionProvider } from 'next-auth/react'
+import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import { Toaster } from '@/components/ui/sonner'
-import Header from '@/components/header'
-import Footer from '@/components/footer'
+import { AppShell } from '@/components/app-shell'
 import { organizationSchema } from '@/lib/seo'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+})
 
-function shouldShowMarketingShell(pathname: string) {
-  if (pathname === '/login' || pathname === '/signup' || pathname === '/onboarding') {
-    return false
-  }
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
-    return false
-  }
-  if (pathname === '/courses') {
-    return false
-  }
-  return true
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+})
+
+export const metadata: Metadata = {
+  title: {
+    default: 'MamaPlus - Quality Childcare Families Can Trust',
+    template: '%s | MamaPlus',
+  },
+  description:
+    'MamaPlus supports families with safe, nurturing, high-quality childcare through professional training, clear care standards, and ongoing support across Kenya.',
 }
 
 export default function RootLayout({
@@ -32,26 +28,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const pathname = usePathname()
-  const showMarketingShell = shouldShowMarketingShell(pathname)
-
   return (
     <html lang="en">
-      <head>
-        <link rel="canonical" href={`https://mamaplus.co.ke${pathname}`} />
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-      </head>
-      <body className={`font-sans antialiased`}>
-        <SessionProvider>
-          {showMarketingShell && <Header />}
-          {children}
-          {showMarketingShell && <Footer />}
-          <Toaster />
-          <Analytics />
-        </SessionProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   )

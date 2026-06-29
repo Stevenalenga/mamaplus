@@ -41,9 +41,16 @@ export default function AgencyDashboardPage() {
   const [recruitingId, setRecruitingId] = useState<string | null>(null)
   const [hasLoaded, setHasLoaded] = useState(false)
 
+  // Redirect non-agency users away from agency-only pages
+  useEffect(() => {
+    if (isLoading || !user) return
+    if (user.role !== 'AGENCY') {
+      window.location.replace(getDashboardForRole(user.role))
+    }
+  }, [isLoading, user])
+
   // Load stats and available caregivers
   useEffect(() => {
-    // Prevent duplicate fetches
     if (isLoading || !user || hasLoaded) return
     if (user.role !== 'AGENCY') return
 
@@ -59,6 +66,10 @@ export default function AgencyDashboardPage() {
         
         if (!statsRes.ok) {
           const errorData = await statsRes.json().catch(() => ({ message: 'Unknown error' }))
+          if (statsRes.status === 403) {
+            window.location.replace(getDashboardForRole(user!.role))
+            return
+          }
           console.error('Stats fetch failed:', statsRes.status, errorData)
           toast.error(`Failed to load stats: ${errorData.message || 'Server error'}`)
         } else {
@@ -80,6 +91,10 @@ export default function AgencyDashboardPage() {
         
         if (!caregiversRes.ok) {
           const errorData = await caregiversRes.json().catch(() => ({ message: 'Unknown error' }))
+          if (caregiversRes.status === 403) {
+            window.location.replace(getDashboardForRole(user!.role))
+            return
+          }
           console.error('Caregivers fetch failed:', caregiversRes.status, errorData)
           toast.error(`Failed to load caregivers: ${errorData.message || 'Server error'}`)
         } else {
@@ -133,10 +148,16 @@ export default function AgencyDashboardPage() {
     }
   }
 
-  // Guard: redirect non-agency users
+  // Guard: show loading while redirecting non-agency users
   if (!isLoading && user?.role && user.role !== 'AGENCY') {
-    window.location.href = getDashboardForRole(user.role)
-    return null
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   if (isLoading) {

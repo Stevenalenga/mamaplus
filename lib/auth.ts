@@ -107,30 +107,18 @@ export async function clearAuthCookie() {
  */
 export async function getCurrentUser(request?: NextRequest): Promise<JWTPayload | null> {
   try {
-    let token: string | undefined
-
+    // 1. Explicit Bearer token (mobile API clients)
     if (request) {
-      // Try to get token from Authorization header first
       const authHeader = request.headers.get('Authorization')
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7)
-      } else {
-        // Fallback to cookie
-        token = request.cookies.get('auth-token')?.value
-      }
-    } else {
-      // Server component context
-      token = await getAuthCookie()
-    }
-
-    if (token) {
-      const jwtUser = verifyToken(token)
-      if (jwtUser) {
-        return jwtUser
+      if (authHeader?.startsWith('Bearer ')) {
+        const jwtUser = verifyToken(authHeader.substring(7))
+        if (jwtUser) {
+          return jwtUser
+        }
       }
     }
 
-    // Web portal users authenticate via NextAuth (no auth-token cookie)
+    // 2. NextAuth session (web portal — authoritative over stale auth-token cookie)
     const session = await auth()
     if (session?.user?.id) {
       return {
@@ -138,6 +126,18 @@ export async function getCurrentUser(request?: NextRequest): Promise<JWTPayload 
         email: session.user.email ?? '',
         role: (session.user as { role?: string }).role ?? 'USER',
       }
+    }
+
+    // 3. auth-token cookie (mobile / legacy flows without NextAuth session)
+    let token: string | undefined
+    if (request) {
+      token = request.cookies.get('auth-token')?.value
+    } else {
+      token = await getAuthCookie()
+    }
+
+    if (token) {
+      return verifyToken(token)
     }
 
     return null

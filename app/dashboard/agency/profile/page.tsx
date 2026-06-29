@@ -108,14 +108,15 @@ export default function AgencyProfilePage() {
   const [reviewComment, setReviewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Guard: redirect non-agency users
-  if (!isLoading && user?.role && user.role !== 'AGENCY') {
-    window.location.href = getDashboardForRole(user.role)
-    return null
-  }
+  // Redirect non-agency users away from agency-only pages
+  useEffect(() => {
+    if (isLoading || !user) return
+    if (user.role !== 'AGENCY') {
+      window.location.replace(getDashboardForRole(user.role))
+    }
+  }, [isLoading, user])
 
   useEffect(() => {
-    // Prevent duplicate fetches
     if (isLoading || !user || hasLoaded) return
     if (user.role !== 'AGENCY') return
 
@@ -147,6 +148,10 @@ export default function AgencyProfilePage() {
         
         if (!statsRes.ok) {
           const errorData = await statsRes.json().catch(() => ({ message: 'Unknown error' }))
+          if (statsRes.status === 403) {
+            window.location.replace(getDashboardForRole(user!.role))
+            return
+          }
           console.error('Stats fetch failed:', statsRes.status, errorData)
           toast.error(`Failed to load stats: ${errorData.message || 'Server error'}`)
         } else {
@@ -168,6 +173,10 @@ export default function AgencyProfilePage() {
         
         if (!recruitedRes.ok) {
           const errorData = await recruitedRes.json().catch(() => ({ message: 'Unknown error' }))
+          if (recruitedRes.status === 403) {
+            window.location.replace(getDashboardForRole(user!.role))
+            return
+          }
           console.error('Caregivers fetch failed:', recruitedRes.status, errorData)
           toast.error(`Failed to load caregivers: ${errorData.message || 'Server error'}`)
         } else {
@@ -328,6 +337,17 @@ export default function AgencyProfilePage() {
   const activeCaregivers = recruitedCaregivers.filter(r => r.status === 'ACTIVE')
   const completedCaregivers = recruitedCaregivers.filter(r => r.status === 'COMPLETED')
   const inactiveCaregivers = recruitedCaregivers.filter(r => r.status === 'INACTIVE')
+
+  if (!isLoading && user?.role && user.role !== 'AGENCY') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading || loading) {
     return (
