@@ -4,6 +4,7 @@ import { getCourseRating } from '@/lib/db-utils'
 import { getCurrentUser, hasRole } from '@/lib/auth'
 import { ROLES } from '@/lib/roles'
 import { requireAdminForCourseWrite } from '@/lib/course-access'
+import { resolveRouteParams } from '@/lib/route-params'
 
 /**
  * GET /api/courses/[id]
@@ -11,17 +12,18 @@ import { requireAdminForCourseWrite } from '@/lib/course-access'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
 
     // Try to find by ID first, then by slug
     const course = await prisma.course.findFirst({
       where: {
         OR: [
-          { id: params.id },
-          { slug: params.id }
+          { id },
+          { slug: id }
         ]
       },
       include: {
@@ -118,15 +120,16 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
     const existingCourse = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true }
     })
 
@@ -140,7 +143,7 @@ export async function PATCH(
     const data = await request.json()
 
     const course = await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(data.title !== undefined && { title: data.title }),
         ...(data.slug !== undefined && { slug: data.slug }),
@@ -160,6 +163,7 @@ export async function PATCH(
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
         ...(data.requirements !== undefined && { requirements: data.requirements }),
         ...(data.whatYouLearn !== undefined && { whatYouLearn: data.whatYouLearn }),
+        ...(data.keyBenefits !== undefined && { keyBenefits: data.keyBenefits }),
         ...(data.specialOffer !== undefined && { specialOffer: data.specialOffer }),
         ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl }),
         ...(data.previewUrl !== undefined && { previewUrl: data.previewUrl })
@@ -187,15 +191,16 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
     const existingCourse = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true }
     })
 
@@ -207,7 +212,7 @@ export async function DELETE(
     }
 
     await prisma.course.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({

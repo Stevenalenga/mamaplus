@@ -24,6 +24,8 @@ type ManagedCourse = {
   priceUSD: number
   priceKES: number
   targetAudienceText: string
+  learningObjectivesText: string
+  keyBenefitsText: string
   isFeatured: boolean
   status: CourseStatus
   enrolledStudents: number
@@ -41,6 +43,8 @@ type ApiCourse = {
   priceUSD?: number
   priceKES?: number
   requirements?: string | null
+  whatYouLearn?: string | null
+  keyBenefits?: string | null
   isFeatured?: boolean
   isPublished: boolean
   updatedAt: string
@@ -58,6 +62,8 @@ type CourseFormState = {
   currency: 'USD' | 'KES'
   price: string
   targetAudienceText: string
+  learningObjectivesText: string
+  keyBenefitsText: string
   isFeatured: boolean
 }
 
@@ -70,6 +76,8 @@ const emptyForm: CourseFormState = {
   currency: 'KES',
   price: '',
   targetAudienceText: '',
+  learningObjectivesText: '',
+  keyBenefitsText: '',
   isFeatured: false,
 }
 
@@ -86,6 +94,8 @@ function mapApiCourse(course: ApiCourse): ManagedCourse {
     priceUSD: course.priceUSD ?? 0,
     priceKES: course.priceKES ?? 0,
     targetAudienceText: stringListToTextarea(decodeStringList(course.requirements)),
+    learningObjectivesText: stringListToTextarea(decodeStringList(course.whatYouLearn)),
+    keyBenefitsText: stringListToTextarea(decodeStringList(course.keyBenefits)),
     isFeatured: !!course.isFeatured,
     status: course.isPublished ? 'PUBLISHED' : 'DRAFT',
     enrolledStudents: course._count?.enrollments || 0,
@@ -103,6 +113,8 @@ function formFromCourse(course: ManagedCourse): CourseFormState {
     currency: course.currency,
     price: String(course.currency === 'USD' ? course.priceUSD : course.priceKES),
     targetAudienceText: course.targetAudienceText,
+    learningObjectivesText: course.learningObjectivesText,
+    keyBenefitsText: course.keyBenefitsText,
     isFeatured: course.isFeatured,
   }
 }
@@ -119,6 +131,8 @@ function buildPayload(form: CourseFormState) {
     priceUSD: form.currency === 'USD' ? price : 0,
     priceKES: form.currency === 'KES' ? price : 0,
     requirements: encodeStringList(textareaToStringList(form.targetAudienceText)),
+    whatYouLearn: encodeStringList(textareaToStringList(form.learningObjectivesText)),
+    keyBenefits: encodeStringList(textareaToStringList(form.keyBenefitsText)),
     isFeatured: form.isFeatured,
     category: 'Professional Training',
     level: 'BEGINNER',
@@ -331,6 +345,38 @@ export default function CourseManagementPage() {
             disabled={submitting}
           />
           <p className="text-xs text-muted-foreground mt-1">Enter one target audience item per line.</p>
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-objectives`} className="block text-sm font-medium mb-1">
+            Learning Objectives
+          </label>
+          <textarea
+            id={`${idPrefix}-objectives`}
+            value={form.learningObjectivesText}
+            onChange={(e) => onChange({ ...form, learningObjectivesText: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+            placeholder="One objective per line"
+            disabled={submitting}
+          />
+          <p className="text-xs text-muted-foreground mt-1">Enter one learning objective per line.</p>
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-benefits`} className="block text-sm font-medium mb-1">
+            Key Benefits
+          </label>
+          <textarea
+            id={`${idPrefix}-benefits`}
+            value={form.keyBenefitsText}
+            onChange={(e) => onChange({ ...form, keyBenefitsText: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+            placeholder="One benefit per line"
+            disabled={submitting}
+          />
+          <p className="text-xs text-muted-foreground mt-1">Enter one key benefit per line.</p>
         </div>
 
         <label className="flex items-center gap-2 text-sm">

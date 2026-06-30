@@ -3,18 +3,20 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { requireAdminForCourseWrite } from '@/lib/course-access'
 import { encodeModuleDescription } from '@/lib/course-authoring'
+import { resolveRouteParams } from '@/lib/route-params'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true }
     })
 
@@ -28,12 +30,12 @@ export async function POST(
     }
 
     const existingCount = await prisma.module.count({
-      where: { courseId: params.id }
+      where: { courseId: id }
     })
 
     const module = await prisma.module.create({
       data: {
-        courseId: params.id,
+        courseId: id,
         title: title.trim(),
         description: encodeModuleDescription(description, isMilestone),
         order: existingCount + 1,

@@ -21,6 +21,7 @@ type SeedCourse = {
   priceKES: number
   targetAudience: string[]
   learningObjectives: string[]
+  keyBenefits: string[]
   included: string
   specialOffer?: string
   isFeatured?: boolean
@@ -49,6 +50,12 @@ const seedCourses: SeedCourse[] = [
       'Identify child risks and vulnerabilities',
       'Implement practical child protection measures',
       'Design monitoring and response systems',
+    ],
+    keyBenefits: [
+      'Expert-led regional safeguarding training',
+      'Practical tools for homes, centres, and communities',
+      'Certificate of completion',
+      'Networking with child protection professionals',
     ],
     included: 'Tuition, lunches, teas, facilitation, materials (excludes travel/accommodation)',
     specialOffer:
@@ -80,6 +87,12 @@ const seedCourses: SeedCourse[] = [
       'Specialized Skills – Inclusive childcare, climate-resilient practices, safeguarding',
       'Parenting & Self-Care – Supporting families while maintaining caregiver wellbeing',
     ],
+    keyBenefits: [
+      'Hands-on practical childcare training',
+      'Leadership and entrepreneurship skills',
+      'Certificate of completion and mentorship support',
+      'Flexible inservice scheduling during school holidays',
+    ],
     included:
       'Interactive workshops, practical demonstrations, group discussions, scenario-based exercises, certificate of completion, mentorship support',
     isFeatured: true,
@@ -102,6 +115,12 @@ const seedCourses: SeedCourse[] = [
       'Strengthen communication and teamwork',
       'Implement inclusion-focused improvements in childcare operations',
     ],
+    keyBenefits: [
+      'Inclusive childcare environment design',
+      'Personal and operational improvement plans',
+      'Practical inclusion strategies for diverse needs',
+      'Clear communication and documentation systems',
+    ],
     included:
       'Training materials, personal development plan, operational improvement plan, clear systems for communication and documentation',
   },
@@ -123,6 +142,12 @@ const seedCourses: SeedCourse[] = [
       'Apply management principles to daily operations',
       'Plan and sustain improvements in centres',
     ],
+    keyBenefits: [
+      'Stronger team leadership and communication',
+      'Practical management tools for daily operations',
+      'Centre improvement planning support',
+      'Affordable demand-driven training',
+    ],
     included:
       'Leadership training, management tools, personal leadership improvement plan, centre operational improvement plan',
   },
@@ -143,6 +168,12 @@ const seedCourses: SeedCourse[] = [
       'Assess vulnerabilities in childcare centres',
       'Design climate-resilient spaces (shade, ventilation, safe play areas)',
       'Lead centre-wide sustainability initiatives',
+    ],
+    keyBenefits: [
+      'Climate-resilient childcare planning',
+      'Practical sustainability resources',
+      'Emergency procedure updates',
+      'Safer environments for children',
     ],
     included:
       'Climate risk assessment, emergency procedure updates, practical resilience planning, sustainability resources',
@@ -196,6 +227,7 @@ async function main() {
       isFeatured: !!seed.isFeatured,
       requirements: encodeStringList(seed.targetAudience),
       whatYouLearn: encodeStringList(seed.learningObjectives),
+      keyBenefits: encodeStringList(seed.keyBenefits),
       specialOffer: seed.specialOffer || null,
     }
 

@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { requireAdminForCourseWrite } from '@/lib/course-access'
+import { resolveRouteParams } from '@/lib/route-params'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true }
     })
 
@@ -22,7 +24,7 @@ export async function POST(
     }
 
     const unpublished = await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: { isPublished: false }
     })
 

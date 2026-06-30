@@ -3,26 +3,28 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { requireAdminForCourseWrite } from '@/lib/course-access'
 import { decodeModuleDescription, encodeModuleDescription } from '@/lib/course-authoring'
+import { resolveRouteParams } from '@/lib/route-params'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; moduleId: string } }
+  { params }: { params: Promise<{ id: string; moduleId: string }> }
 ) {
   try {
+    const { id, moduleId } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
     const data = await request.json()
-    const existingModule = await prisma.module.findUnique({ where: { id: params.moduleId } })
-    if (!existingModule || existingModule.courseId !== params.id) {
+    const existingModule = await prisma.module.findUnique({ where: { id: moduleId } })
+    if (!existingModule || existingModule.courseId !== id) {
       return NextResponse.json({ success: false, message: 'Section not found' }, { status: 404 })
     }
 
     const existingMeta = decodeModuleDescription(existingModule.description)
 
     const module = await prisma.module.update({
-      where: { id: params.moduleId },
+      where: { id: moduleId },
       data: {
         ...(data.title !== undefined && { title: data.title }),
         ...(data.order !== undefined && { order: data.order }),
@@ -42,19 +44,20 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; moduleId: string } }
+  { params }: { params: Promise<{ id: string; moduleId: string }> }
 ) {
   try {
+    const { id, moduleId } = await resolveRouteParams(params)
     const currentUser = await getCurrentUser(request)
     const authError = requireAdminForCourseWrite(currentUser)
     if (authError) return authError
 
-    const existingModule = await prisma.module.findUnique({ where: { id: params.moduleId } })
-    if (!existingModule || existingModule.courseId !== params.id) {
+    const existingModule = await prisma.module.findUnique({ where: { id: moduleId } })
+    if (!existingModule || existingModule.courseId !== id) {
       return NextResponse.json({ success: false, message: 'Section not found' }, { status: 404 })
     }
 
-    await prisma.module.delete({ where: { id: params.moduleId } })
+    await prisma.module.delete({ where: { id: moduleId } })
 
     return NextResponse.json({ success: true, message: 'Section deleted successfully' })
   } catch (error: any) {

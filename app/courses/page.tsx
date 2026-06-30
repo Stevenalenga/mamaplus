@@ -58,6 +58,7 @@ type ApiPublishedCourse = {
   isFeatured?: boolean
   requirements?: string | null
   whatYouLearn?: string | null
+  keyBenefits?: string | null
   specialOffer?: string | null
   modules?: Array<{
     lessons?: Array<{ id: string }>
@@ -120,7 +121,7 @@ function mapApiCourseToBrowseCourse(course: ApiPublishedCourse): Course {
     overview: course.shortDescription || course.description || 'Professional training course from MamaPlus.',
     targetAudience: parseListField(course.requirements, defaultAudience),
     learningObjectives: parseListField(course.whatYouLearn, defaultObjectives),
-    keyBenefits: parseListField(course.whatYouLearn, defaultBenefits),
+    keyBenefits: parseListField(course.keyBenefits, defaultBenefits),
     included: 'Online learning content, progress tracking, and certificate upon completion',
     specialOffer: course.specialOffer || undefined,
     featured: !!course.isFeatured,

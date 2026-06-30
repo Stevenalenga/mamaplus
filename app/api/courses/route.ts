@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
         isFeatured: data.isFeatured || false,
         requirements: data.requirements,
         whatYouLearn: data.whatYouLearn,
+        keyBenefits: data.keyBenefits,
         specialOffer: data.specialOffer,
         instructorId: data.instructorId || null,
         videoUrl: data.videoUrl,

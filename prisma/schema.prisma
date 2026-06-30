@@ -65,6 +65,7 @@ model Course {
   isFeatured    Boolean   @default(false)
   requirements  String?   @db.Text
   whatYouLearn  String?   @db.Text
+  keyBenefits   String?   @db.Text
   location      String?
   scheduleDates String?
   durationLabel String?
