@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { searchCourses } from '@/lib/db-utils'
 import { getCurrentUser, hasRole } from '@/lib/auth'
 import { ROLES } from '@/lib/roles'
+import { requireAdminForCourseWrite } from '@/lib/course-access'
+import { encodeModuleDescription } from '@/lib/course-authoring'
 
 function createSlug(title: string) {
   return title
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
+      if (!hasRole(currentUser, ROLES.ADMIN)) {
         return NextResponse.json(
           { success: false, message: 'Forbidden' },
           { status: 403 }
@@ -41,16 +43,10 @@ export async function GET(request: NextRequest) {
       }
 
       const ownedCourses = await prisma.course.findMany({
-        where: hasRole(currentUser, ROLES.ADMIN)
-          ? {
-              ...(category && { category }),
-              ...(level && { level: level as any }),
-            }
-          : {
-              instructorId: currentUser.userId,
-              ...(category && { category }),
-              ...(level && { level: level as any }),
-            },
+        where: {
+          ...(category && { category }),
+          ...(level && { level: level as any }),
+        },
         include: {
           modules: {
             include: {
@@ -151,30 +147,19 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/courses
- * Create a new course (Admin/Instructor only)
+ * Create a new course (Admin only)
  */
 export async function POST(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const data = await request.json()
 
-    if (!data.title?.trim() || !data.description?.trim() || !data.category?.trim()) {
+    if (!data.title?.trim() || !data.description?.trim()) {
       return NextResponse.json(
-        { success: false, message: 'title, description and category are required' },
+        { success: false, message: 'title and description are required' },
         { status: 400 }
       )
     }
@@ -188,9 +173,6 @@ export async function POST(request: NextRequest) {
       suffix += 1
     }
 
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    const instructorId = isAdmin ? (data.instructorId || null) : currentUser.userId
-
     const course = await prisma.course.create({
       data: {
         title: data.title,
@@ -199,20 +181,47 @@ export async function POST(request: NextRequest) {
         shortDescription: data.shortDescription,
         thumbnail: data.thumbnail,
         level: data.level || 'BEGINNER',
-        category: data.category,
+        category: data.category || 'Professional Training',
         duration: data.duration || 0,
-        priceUSD: data.priceUSD || 0,
-        priceKES: data.priceKES || 0,
+        durationLabel: data.durationLabel,
+        scheduleDates: data.scheduleDates,
+        location: data.location,
+        priceUSD: data.priceUSD ?? 0,
+        priceKES: data.priceKES ?? 0,
         currency: data.currency || 'USD',
         isPublished: data.isPublished || false,
         isFeatured: data.isFeatured || false,
         requirements: data.requirements,
         whatYouLearn: data.whatYouLearn,
-        instructorId,
+        specialOffer: data.specialOffer,
+        instructorId: data.instructorId || null,
         videoUrl: data.videoUrl,
         previewUrl: data.previewUrl
       }
     })
+
+    const moduleCount = await prisma.module.count({ where: { courseId: course.id } })
+    if (moduleCount === 0) {
+      const module = await prisma.module.create({
+        data: {
+          courseId: course.id,
+          title: 'Course Overview',
+          description: encodeModuleDescription('', false),
+          order: 1,
+        },
+      })
+      await prisma.lesson.create({
+        data: {
+          moduleId: module.id,
+          title: 'Introduction',
+          description: 'Course introduction',
+          content: 'file',
+          duration: 0,
+          order: 1,
+          isFree: true,
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,

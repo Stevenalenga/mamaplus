@@ -1,270 +1,494 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { Loader2 } from 'lucide-react'
 import { AdminHeader } from '@/components/admin/admin-header'
+import {
+  decodeStringList,
+  encodeStringList,
+  stringListToTextarea,
+  textareaToStringList,
+} from '@/lib/course-fields'
 
-type Resource = {
-  id: string
-  name: string
-  type: 'video' | 'file' | 'image'
-  url?: string
-  fileData?: string
-  fileName?: string
-  fileSize?: number
-  isMilestone: boolean
-}
+type CourseStatus = 'DRAFT' | 'PUBLISHED'
 
-type Course = {
+type ManagedCourse = {
   id: string
   title: string
-  description?: string
-  enrolledStudents?: number
-  completedStudents?: number
-  resources?: Resource[]
+  description: string
+  durationLabel: string
+  scheduleDates: string
+  location: string
+  currency: 'USD' | 'KES'
+  priceUSD: number
+  priceKES: number
+  targetAudienceText: string
+  isFeatured: boolean
+  status: CourseStatus
+  enrolledStudents: number
+  updatedAt: string
 }
 
-function uid() {
-  return Math.random().toString(36).slice(2, 9)
+type ApiCourse = {
+  id: string
+  title: string
+  description?: string | null
+  durationLabel?: string | null
+  scheduleDates?: string | null
+  location?: string | null
+  currency?: string | null
+  priceUSD?: number
+  priceKES?: number
+  requirements?: string | null
+  isFeatured?: boolean
+  isPublished: boolean
+  updatedAt: string
+  _count?: {
+    enrollments?: number
+  }
 }
 
-const defaultCourses: Course[] = [
-  {
-    id: uid(),
-    title: 'Introduction to Caregiving',
-    description: 'Basic caregiving skills',
-    enrolledStudents: 125,
-    completedStudents: 89,
-    resources: [
-      { id: uid(), name: 'Course Overview Video', type: 'video', url: '', isMilestone: true },
-      { id: uid(), name: 'Module 1: Basics', type: 'video', url: '', isMilestone: false },
-      { id: uid(), name: 'Assessment Quiz', type: 'file', url: '', isMilestone: true },
-    ],
-  },
-  {
-    id: uid(),
-    title: 'Maternal Health Basics',
-    description: 'Essential maternal health knowledge',
-    enrolledStudents: 98,
-    completedStudents: 67,
-    resources: [{ id: uid(), name: 'Introduction', type: 'video', url: '', isMilestone: true }],
-  },
-  {
-    id: uid(),
-    title: 'Infant Nutrition',
-    description: 'Nutrition for infants and toddlers',
-    enrolledStudents: 84,
-    completedStudents: 84,
-    resources: [],
-  },
-]
+type CourseFormState = {
+  title: string
+  description: string
+  durationLabel: string
+  scheduleDates: string
+  location: string
+  currency: 'USD' | 'KES'
+  price: string
+  targetAudienceText: string
+  isFeatured: boolean
+}
+
+const emptyForm: CourseFormState = {
+  title: '',
+  description: '',
+  durationLabel: '',
+  scheduleDates: '',
+  location: '',
+  currency: 'KES',
+  price: '',
+  targetAudienceText: '',
+  isFeatured: false,
+}
+
+function mapApiCourse(course: ApiCourse): ManagedCourse {
+  const currency = course.currency === 'USD' ? 'USD' : 'KES'
+  return {
+    id: course.id,
+    title: course.title,
+    description: course.description || '',
+    durationLabel: course.durationLabel || '',
+    scheduleDates: course.scheduleDates || '',
+    location: course.location || '',
+    currency,
+    priceUSD: course.priceUSD ?? 0,
+    priceKES: course.priceKES ?? 0,
+    targetAudienceText: stringListToTextarea(decodeStringList(course.requirements)),
+    isFeatured: !!course.isFeatured,
+    status: course.isPublished ? 'PUBLISHED' : 'DRAFT',
+    enrolledStudents: course._count?.enrollments || 0,
+    updatedAt: course.updatedAt,
+  }
+}
+
+function formFromCourse(course: ManagedCourse): CourseFormState {
+  return {
+    title: course.title,
+    description: course.description,
+    durationLabel: course.durationLabel,
+    scheduleDates: course.scheduleDates,
+    location: course.location,
+    currency: course.currency,
+    price: String(course.currency === 'USD' ? course.priceUSD : course.priceKES),
+    targetAudienceText: course.targetAudienceText,
+    isFeatured: course.isFeatured,
+  }
+}
+
+function buildPayload(form: CourseFormState) {
+  const price = parseFloat(form.price) || 0
+  return {
+    title: form.title.trim(),
+    description: form.description.trim(),
+    durationLabel: form.durationLabel.trim(),
+    scheduleDates: form.scheduleDates.trim(),
+    location: form.location.trim(),
+    currency: form.currency,
+    priceUSD: form.currency === 'USD' ? price : 0,
+    priceKES: form.currency === 'KES' ? price : 0,
+    requirements: encodeStringList(textareaToStringList(form.targetAudienceText)),
+    isFeatured: form.isFeatured,
+    category: 'Professional Training',
+    level: 'BEGINNER',
+    duration: 0,
+  }
+}
 
 export default function CourseManagementPage() {
-  const router = useRouter()
   const { data: session, status } = useSession()
 
-  const [courses, setCourses] = useState<Course[]>(() => {
-    try {
-      const raw = localStorage.getItem('admin:courses')
-      if (raw) return JSON.parse(raw)
-      localStorage.setItem('admin:courses', JSON.stringify(defaultCourses))
-      return defaultCourses
-    } catch {
-      return []
-    }
-  })
-
-  // Create course form
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-
-  // Creation-time resources
-  const [creationResources, setCreationResources] = useState<Resource[]>([])
-  const [creationResourceName, setCreationResourceName] = useState('')
-  const [creationResourceType, setCreationResourceType] = useState<'video' | 'file' | 'image'>('video')
-  const [creationResourceMilestone, setCreationResourceMilestone] = useState(false)
-  const [initialCourseFile, setInitialCourseFile] = useState<{ data: string; name: string; size: number } | null>(null)
-  const [uploadingInitialFile, setUploadingInitialFile] = useState(false)
-
-  // Per-course resource add form
-  const [showResourceForm, setShowResourceForm] = useState<string | null>(null)
-  const [resourceName, setResourceName] = useState('')
-  const [resourceType, setResourceType] = useState<'video' | 'file' | 'image'>('video')
-  const [resourceUrl, setResourceUrl] = useState('')
-  const [resourceIsMilestone, setResourceIsMilestone] = useState(false)
-  const [resourceFile, setResourceFile] = useState<{ data: string; name: string; size: number } | null>(null)
-  const [uploadingFile, setUploadingFile] = useState(false)
-
-  // Search / filter
+  const [courses, setCourses] = useState<ManagedCourse[]>([])
+  const [loadingCourses, setLoadingCourses] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
+  const [createForm, setCreateForm] = useState<CourseFormState>(emptyForm)
+  const [editForm, setEditForm] = useState<CourseFormState | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
     if (status === 'unauthenticated' || session?.user?.role !== 'ADMIN') {
       window.location.href = '/login'
     }
-  }, [router, status, session])
+  }, [status, session])
+
+  async function loadCourses() {
+    setLoadingCourses(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/courses?mine=true')
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to load courses')
+        return
+      }
+
+      const mappedCourses = (json.data as ApiCourse[]).map(mapApiCourse)
+      setCourses(mappedCourses)
+
+      if (selectedCourseId) {
+        const selected = mappedCourses.find((course) => course.id === selectedCourseId)
+        if (selected) {
+          setEditForm(formFromCourse(selected))
+        } else {
+          setSelectedCourseId(null)
+          setEditForm(null)
+        }
+      }
+    } catch {
+      setError('Failed to load courses')
+    } finally {
+      setLoadingCourses(false)
+    }
+  }
 
   useEffect(() => {
-    try { localStorage.setItem('admin:courses', JSON.stringify(courses)) } catch {}
-  }, [courses])
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  const handleInitialFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) { alert('File size must be less than 10MB'); return }
-    setUploadingInitialFile(true)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setInitialCourseFile({ data: reader.result as string, name: file.name, size: file.size })
-      setUploadingInitialFile(false)
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      loadCourses()
     }
-    reader.readAsDataURL(file)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session?.user?.role])
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) { alert('File size must be less than 10MB'); return }
-    setUploadingFile(true)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setResourceFile({ data: reader.result as string, name: file.name, size: file.size })
-      setUploadingFile(false)
-      if (!resourceName.trim()) setResourceName(file.name)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  function addCreationResource() {
-    if (!creationResourceName.trim()) return
-    const newResource: Resource = {
-      id: uid(),
-      name: creationResourceName.trim(),
-      type: creationResourceType,
-      isMilestone: creationResourceMilestone,
-      fileData: initialCourseFile?.data,
-      fileName: initialCourseFile?.name,
-      fileSize: initialCourseFile?.size,
-    }
-    setCreationResources(prev => [...prev, newResource])
-    setCreationResourceName('')
-    setCreationResourceType('video')
-    setCreationResourceMilestone(false)
-    setInitialCourseFile(null)
-  }
-
-  function removeCreationResource(resourceId: string) {
-    setCreationResources(prev => prev.filter(r => r.id !== resourceId))
-  }
-
-  function addCourse(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (!title.trim()) return
-    const courseId = uid()
-    const newCourse: Course = {
-      id: courseId,
-      title: title.trim(),
-      description: description.trim(),
-      enrolledStudents: 0,
-      completedStudents: 0,
-      resources: [...creationResources],
-    }
-    setCourses(prev => [newCourse, ...prev])
-    // Sync to browse:courses
-    try {
-      const browseCourses = JSON.parse(localStorage.getItem('browse:courses') || '[]')
-      const maxId = browseCourses.length > 0 ? Math.max(...browseCourses.map((c: any) => Number(c.id) || 0)) : 0
-      browseCourses.push({
-        id: maxId + 1,
-        title: newCourse.title,
-        description: newCourse.description || 'No description provided',
-        duration: `${creationResources.length} resources`,
-        price: 'Free',
-        courseId,
-      })
-      localStorage.setItem('browse:courses', JSON.stringify(browseCourses))
-    } catch {}
-    setTitle('')
-    setDescription('')
-    setCreationResources([])
-    setInitialCourseFile(null)
-  }
-
-  function removeCourse(id: string) {
-    setCourses(prev => prev.filter(c => c.id !== id))
-    try {
-      const browseCourses = JSON.parse(localStorage.getItem('browse:courses') || '[]')
-      localStorage.setItem('browse:courses', JSON.stringify(browseCourses.filter((c: any) => c.courseId !== id)))
-    } catch {}
-  }
-
-  function updateCourse(id: string, data: Partial<Course>) {
-    setCourses(prev => prev.map(c => (c.id === id ? { ...c, ...data } : c)))
-    try {
-      const browseCourses = JSON.parse(localStorage.getItem('browse:courses') || '[]')
-      localStorage.setItem(
-        'browse:courses',
-        JSON.stringify(
-          browseCourses.map((c: any) =>
-            c.courseId === id ? { ...c, title: data.title || c.title, description: data.description || c.description } : c
-          )
-        )
-      )
-    } catch {}
-  }
-
-  function addResource(courseId: string) {
-    if (!resourceName.trim()) { alert('Please provide a resource name'); return }
-    if (!resourceUrl.trim() && !resourceFile) { alert('Please either upload a file or provide a URL'); return }
-    const newResource: Resource = {
-      id: uid(),
-      name: resourceName.trim(),
-      type: resourceType,
-      url: resourceUrl.trim(),
-      isMilestone: resourceIsMilestone,
-      fileData: resourceFile?.data,
-      fileName: resourceFile?.name,
-      fileSize: resourceFile?.size,
-    }
-    setCourses(prev =>
-      prev.map(c => (c.id === courseId ? { ...c, resources: [...(c.resources || []), newResource] } : c))
-    )
-    setResourceName(''); setResourceUrl(''); setResourceIsMilestone(false); setResourceFile(null); setShowResourceForm(null)
-  }
-
-  function removeResource(courseId: string, resourceId: string) {
-    setCourses(prev =>
-      prev.map(c => (c.id === courseId ? { ...c, resources: (c.resources || []).filter(r => r.id !== resourceId) } : c))
-    )
-  }
-
-  function updateResource(courseId: string, resourceId: string, data: Partial<Resource>) {
-    setCourses(prev =>
-      prev.map(c =>
-        c.id === courseId
-          ? { ...c, resources: (c.resources || []).map(r => (r.id === resourceId ? { ...r, ...data } : r)) }
-          : c
-      )
-    )
-  }
-
-  const filteredCourses = courses.filter(
-    c =>
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      (c.description || '').toLowerCase().includes(search.toLowerCase())
+  const selectedCourse = useMemo(
+    () => courses.find((course) => course.id === selectedCourseId) || null,
+    [courses, selectedCourseId],
   )
 
-  const totalEnrollments = courses.reduce((s, c) => s + (c.enrolledStudents || 0), 0)
-  const totalCompletions = courses.reduce((s, c) => s + (c.completedStudents || 0), 0)
+  const filteredCourses = courses.filter(
+    (course) =>
+      course.title.toLowerCase().includes(search.toLowerCase()) ||
+      course.description.toLowerCase().includes(search.toLowerCase()) ||
+      course.location.toLowerCase().includes(search.toLowerCase()),
+  )
 
-  if (status === 'loading') {
+  const totalEnrollments = courses.reduce((sum, course) => sum + course.enrolledStudents, 0)
+
+  function selectCourse(course: ManagedCourse) {
+    setSelectedCourseId(course.id)
+    setEditForm(formFromCourse(course))
+    setMessage(null)
+    setError(null)
+  }
+
+  function renderFormFields(
+    form: CourseFormState,
+    onChange: (next: CourseFormState) => void,
+    idPrefix: string,
+  ) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label htmlFor={`${idPrefix}-title`} className="block text-sm font-medium mb-1">
+            Course Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            id={`${idPrefix}-title`}
+            value={form.title}
+            onChange={(e) => onChange({ ...form, title: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            placeholder="e.g., Maternal Nutrition"
+            disabled={submitting}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor={`${idPrefix}-duration`} className="block text-sm font-medium mb-1">
+              Duration
+            </label>
+            <input
+              id={`${idPrefix}-duration`}
+              value={form.durationLabel}
+              onChange={(e) => onChange({ ...form, durationLabel: e.target.value })}
+              className="w-full border px-3 py-2 rounded"
+              placeholder="e.g., 3 Days"
+              disabled={submitting}
+            />
+          </div>
+          <div>
+            <label htmlFor={`${idPrefix}-dates`} className="block text-sm font-medium mb-1">
+              Time / Dates
+            </label>
+            <input
+              id={`${idPrefix}-dates`}
+              value={form.scheduleDates}
+              onChange={(e) => onChange({ ...form, scheduleDates: e.target.value })}
+              className="w-full border px-3 py-2 rounded"
+              placeholder="e.g., 13th – 15th May 2026"
+              disabled={submitting}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-location`} className="block text-sm font-medium mb-1">
+            Place / Location
+          </label>
+          <input
+            id={`${idPrefix}-location`}
+            value={form.location}
+            onChange={(e) => onChange({ ...form, location: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            placeholder="e.g., Nairobi"
+            disabled={submitting}
+          />
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-description`} className="block text-sm font-medium mb-1">
+            Course Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id={`${idPrefix}-description`}
+            value={form.description}
+            onChange={(e) => onChange({ ...form, description: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+            placeholder="Describe what participants will learn..."
+            disabled={submitting}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor={`${idPrefix}-currency`} className="block text-sm font-medium mb-1">
+              Price Currency
+            </label>
+            <select
+              id={`${idPrefix}-currency`}
+              value={form.currency}
+              onChange={(e) => onChange({ ...form, currency: e.target.value as 'USD' | 'KES' })}
+              className="w-full border px-3 py-2 rounded"
+              disabled={submitting}
+            >
+              <option value="KES">KES</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`${idPrefix}-price`} className="block text-sm font-medium mb-1">
+              Price
+            </label>
+            <input
+              id={`${idPrefix}-price`}
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => onChange({ ...form, price: e.target.value })}
+              className="w-full border px-3 py-2 rounded"
+              placeholder="e.g., 24000"
+              disabled={submitting}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor={`${idPrefix}-audience`} className="block text-sm font-medium mb-1">
+            Target Audience
+          </label>
+          <textarea
+            id={`${idPrefix}-audience`}
+            value={form.targetAudienceText}
+            onChange={(e) => onChange({ ...form, targetAudienceText: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+            placeholder="One audience per line"
+            disabled={submitting}
+          />
+          <p className="text-xs text-muted-foreground mt-1">Enter one target audience item per line.</p>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isFeatured}
+            onChange={(e) => onChange({ ...form, isFeatured: e.target.checked })}
+            disabled={submitting}
+          />
+          Feature this course on the browse page
+        </label>
+      </div>
+    )
+  }
+
+  async function createCourse(e: React.FormEvent) {
+    e.preventDefault()
+    if (!createForm.title.trim() || !createForm.description.trim()) {
+      setError('Course title and description are required.')
+      return
+    }
+
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload(createForm)),
+      })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to create course')
+        return
+      }
+
+      setCreateForm(emptyForm)
+      setMessage('Course created. Publish it when ready to show on Browse Courses.')
+      await loadCourses()
+      if (json.data?.id) {
+        setSelectedCourseId(json.data.id)
+      }
+    } catch {
+      setError('Failed to create course')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function saveCourse(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedCourseId || !editForm) return
+    if (!editForm.title.trim() || !editForm.description.trim()) {
+      setError('Course title and description are required.')
+      return
+    }
+
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(`/api/courses/${selectedCourseId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload(editForm)),
+      })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to update course')
+        return
+      }
+
+      setMessage('Course updated successfully.')
+      await loadCourses()
+    } catch {
+      setError('Failed to update course')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function publishCourse(courseId: string) {
+    if (!window.confirm('Publish this course to the Browse Courses page?')) return
+
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(`/api/courses/${courseId}/publish`, { method: 'POST' })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to publish course')
+        return
+      }
+      setMessage('Course published to Browse Courses.')
+      await loadCourses()
+    } catch {
+      setError('Failed to publish course')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function unpublishCourse(courseId: string) {
+    if (!window.confirm('Remove this course from the Browse Courses page?')) return
+
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(`/api/courses/${courseId}/unpublish`, { method: 'POST' })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to unpublish course')
+        return
+      }
+      setMessage('Course removed from Browse Courses.')
+      await loadCourses()
+    } catch {
+      setError('Failed to unpublish course')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function removeCourse(courseId: string) {
+    const course = courses.find((item) => item.id === courseId)
+    if (!window.confirm(`Delete "${course?.title}" permanently?`)) return
+
+    setSubmitting(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(`/api/courses/${courseId}`, { method: 'DELETE' })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        setError(json.message || 'Failed to delete course')
+        return
+      }
+
+      if (selectedCourseId === courseId) {
+        setSelectedCourseId(null)
+        setEditForm(null)
+      }
+      setMessage('Course deleted.')
+      await loadCourses()
+    } catch {
+      setError('Failed to delete course')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (status === 'loading' || loadingCourses) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -275,10 +499,11 @@ export default function CourseManagementPage() {
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h1 className="text-3xl font-bold mb-2">Course Management</h1>
-        <p className="text-muted-foreground mb-6">Create, update, upload resources, and delete courses.</p>
+        <p className="text-muted-foreground mb-6">
+          Create and edit courses shown on the Browse Courses page. Only published courses are visible to users.
+        </p>
 
-        {/* Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Total Courses</p>
             <p className="text-3xl font-bold text-primary">{courses.length}</p>
@@ -287,420 +512,166 @@ export default function CourseManagementPage() {
             <p className="text-sm text-gray-600 mb-1">Total Enrollments</p>
             <p className="text-3xl font-bold text-blue-600">{totalEnrollments}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Completions</p>
-            <p className="text-3xl font-bold text-green-600">{totalCompletions}</p>
-          </div>
         </div>
 
-        {/* Create Course */}
+        {message && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">
+            {message}
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-800 px-4 py-3 text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Create New Course</h2>
-          <form onSubmit={addCourse} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Course Title <span className="text-red-500">*</span></label>
-              <input
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-                placeholder="e.g., Maternal Nutrition"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-                rows={3}
-                placeholder="Brief course description..."
-              />
-            </div>
-
-            {/* Pre-add resources during creation */}
-            <div className="border-t pt-4">
-              <label className="block text-sm font-medium mb-2">Add Resources & Milestones</label>
-              <div className="bg-gray-50 p-4 rounded space-y-3 mb-3">
-                <div>
-                  <label className="block text-xs font-medium mb-1">Resource Name</label>
-                  <input
-                    value={creationResourceName}
-                    onChange={e => setCreationResourceName(e.target.value)}
-                    className="w-full text-sm border px-3 py-2 rounded"
-                    placeholder="e.g., Introduction Video, Quiz 1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1">Type</label>
-                    <select
-                      value={creationResourceType}
-                      onChange={e => setCreationResourceType(e.target.value as 'video' | 'file' | 'image')}
-                      className="w-full text-sm border px-3 py-2 rounded"
-                    >
-                      <option value="video">Video</option>
-                      <option value="file">Document / File</option>
-                      <option value="image">Image</option>
-                    </select>
-                  </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={creationResourceMilestone}
-                        onChange={e => setCreationResourceMilestone(e.target.checked)}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-xs font-medium">Mark as Milestone</span>
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">Upload File (max 10 MB, optional)</label>
-                  <div className="flex items-center gap-2">
-                    <label className="flex-1 px-3 py-2 bg-white border rounded text-sm cursor-pointer hover:bg-gray-50">
-                      {uploadingInitialFile ? 'Uploading…' : initialCourseFile ? initialCourseFile.name : 'Choose file…'}
-                      <input
-                        type="file"
-                        onChange={handleInitialFileUpload}
-                        disabled={uploadingInitialFile}
-                        accept={
-                          creationResourceType === 'image' ? 'image/*' : creationResourceType === 'video' ? 'video/*' : '*/*'
-                        }
-                        className="hidden"
-                      />
-                    </label>
-                    {initialCourseFile && (
-                      <button
-                        type="button"
-                        onClick={() => setInitialCourseFile(null)}
-                        className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  {initialCourseFile && (
-                    <p className="text-xs text-gray-500 mt-1">📎 {(initialCourseFile.size / 1024).toFixed(1)} KB</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={addCreationResource}
-                  className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                >
-                  + Add Resource to Course
-                </button>
-              </div>
-
-              {creationResources.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-600">{creationResources.length} resource(s) queued:</p>
-                  {creationResources.map(r => (
-                    <div key={r.id} className="flex items-center justify-between bg-white border rounded px-3 py-2">
-                      <div>
-                        <span className="text-sm font-medium">{r.name}</span>
-                        {r.isMilestone && (
-                          <span className="ml-2 text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded">★ Milestone</span>
-                        )}
-                        <div className="text-xs text-gray-500 mt-0.5 capitalize">
-                          {r.type}{r.fileName ? ` • ${r.fileName}` : ''}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeCreationResource(r.id)}
-                        className="text-red-600 hover:text-red-700 text-sm ml-4"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button type="submit" className="px-6 py-2 bg-primary text-white rounded hover:bg-primary/90 font-medium">
-                Create Course
-              </button>
-            </div>
+          <form onSubmit={createCourse}>
+            {renderFormFields(createForm, setCreateForm, 'create')}
+            <button
+              type="submit"
+              disabled={submitting || !createForm.title.trim() || !createForm.description.trim()}
+              className="mt-4 px-6 py-2 bg-primary text-white rounded hover:bg-primary/90 font-medium disabled:opacity-50"
+            >
+              Create Course
+            </button>
           </form>
         </div>
 
-        {/* Course List */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-            <h2 className="text-xl font-semibold">All Courses</h2>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="border px-3 py-2 rounded text-sm w-full sm:w-64"
-              placeholder="Search courses…"
-            />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <h2 className="text-xl font-semibold">All Courses</h2>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border px-3 py-2 rounded text-sm w-full sm:w-64"
+                placeholder="Search courses…"
+              />
+            </div>
 
-          {filteredCourses.length === 0 && (
-            <p className="text-muted-foreground py-4">{search ? 'No courses match your search.' : 'No courses yet.'}</p>
-          )}
-
-          <div className="space-y-6">
-            {filteredCourses.map(course => {
-              const completionPct =
-                (course.enrolledStudents || 0) > 0
-                  ? Math.round(((course.completedStudents || 0) / (course.enrolledStudents || 1)) * 100)
-                  : 0
-
-              return (
-                <div key={course.id} className="border rounded-lg p-5 hover:bg-gray-50 transition">
-                  {/* Title row */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <input
-                      value={course.title}
-                      onChange={e => updateCourse(course.id, { title: e.target.value })}
-                      className="font-semibold text-lg border-b border-transparent hover:border-gray-300 focus:border-primary outline-none bg-transparent flex-1"
-                    />
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete "${course.title}"? This cannot be undone.`)) removeCourse(course.id)
-                      }}
-                      className="px-3 py-1 text-sm bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 shrink-0"
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  {/* Description */}
-                  <textarea
-                    className="w-full border p-2 rounded mb-4 text-sm"
-                    value={course.description || ''}
-                    onChange={e => updateCourse(course.id, { description: e.target.value })}
-                    placeholder="Course description…"
-                    rows={2}
-                  />
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-3 gap-4 pb-4 border-b mb-4">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Enrolled</p>
-                      <input
-                        type="number"
-                        value={course.enrolledStudents || 0}
-                        onChange={e => updateCourse(course.id, { enrolledStudents: parseInt(e.target.value) || 0 })}
-                        className="w-full text-sm border px-2 py-1 rounded"
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Completed</p>
-                      <input
-                        type="number"
-                        value={course.completedStudents || 0}
-                        onChange={e => updateCourse(course.id, { completedStudents: parseInt(e.target.value) || 0 })}
-                        className="w-full text-sm border px-2 py-1 rounded"
-                        min="0"
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Completion Rate</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{ width: `${completionPct}%` }}
-                          />
+            {filteredCourses.length === 0 ? (
+              <p className="text-muted-foreground py-4">
+                {search ? 'No courses match your search.' : 'No courses yet.'}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition ${
+                      selectedCourseId === course.id ? 'border-primary bg-primary/5' : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => selectCourse(course)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold">{course.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <span>{course.durationLabel || 'Duration TBD'}</span>
+                          <span>•</span>
+                          <span>{course.location || 'Location TBD'}</span>
+                          <span>•</span>
+                          <span>
+                            {course.currency === 'USD'
+                              ? `$${course.priceUSD}`
+                              : `KES ${course.priceKES.toLocaleString()}`}
+                          </span>
                         </div>
-                        <span className="text-sm font-semibold text-green-600 shrink-0">{completionPct}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Resources */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-700">
-                        Resources & Milestones
-                        <span className="ml-2 text-xs font-normal text-gray-400">({(course.resources || []).length})</span>
-                      </h3>
-                      <button
-                        onClick={() => {
-                          setShowResourceForm(showResourceForm === course.id ? null : course.id)
-                          setResourceName(''); setResourceUrl(''); setResourceType('video')
-                          setResourceIsMilestone(false); setResourceFile(null)
-                        }}
-                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                      >
-                        {showResourceForm === course.id ? 'Cancel' : '+ Add Resource'}
-                      </button>
-                    </div>
-
-                    {/* Add resource form */}
-                    {showResourceForm === course.id && (
-                      <div className="bg-blue-50 border border-blue-100 p-4 rounded mb-3 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium mb-1">Resource Name</label>
-                            <input
-                              value={resourceName}
-                              onChange={e => setResourceName(e.target.value)}
-                              className="w-full text-sm border px-2 py-1 rounded"
-                              placeholder="e.g., Module 1 Video"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium mb-1">Type</label>
-                            <select
-                              value={resourceType}
-                              onChange={e => setResourceType(e.target.value as 'video' | 'file' | 'image')}
-                              className="w-full text-sm border px-2 py-1 rounded"
-                            >
-                              <option value="video">Video</option>
-                              <option value="image">Image</option>
-                              <option value="file">File / Document</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium mb-1">Upload File (max 10 MB)</label>
-                          <div className="flex items-center gap-2">
-                            <label className="flex-1 px-3 py-2 bg-white border rounded text-sm cursor-pointer hover:bg-gray-50">
-                              {uploadingFile ? 'Uploading…' : resourceFile ? resourceFile.name : 'Choose file…'}
-                              <input
-                                type="file"
-                                onChange={handleFileUpload}
-                                disabled={uploadingFile}
-                                accept={
-                                  resourceType === 'image' ? 'image/*' : resourceType === 'video' ? 'video/*' : '*/*'
-                                }
-                                className="hidden"
-                              />
-                            </label>
-                            {resourceFile && (
-                              <button
-                                onClick={() => setResourceFile(null)}
-                                className="px-2 py-2 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                          {resourceFile && (
-                            <p className="text-xs text-gray-500 mt-1">📎 {(resourceFile.size / 1024).toFixed(1)} KB</p>
-                          )}
-                        </div>
-
-                        <div className="text-xs text-gray-500 text-center">— or —</div>
-
-                        <div>
-                          <label className="block text-xs font-medium mb-1">External URL</label>
-                          <input
-                            value={resourceUrl}
-                            onChange={e => setResourceUrl(e.target.value)}
-                            className="w-full text-sm border px-2 py-1 rounded"
-                            placeholder="https://…"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={resourceIsMilestone}
-                            onChange={e => setResourceIsMilestone(e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                          <label className="text-xs font-medium">Mark as Milestone</label>
-                        </div>
-
-                        <button
-                          onClick={() => addResource(course.id)}
-                          disabled={uploadingFile}
-                          className="px-4 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                        <span
+                          className={`inline-block mt-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+                            course.status === 'PUBLISHED'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
                         >
-                          Save Resource
+                          {course.status}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        {course.status === 'PUBLISHED' ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              unpublishCourse(course.id)
+                            }}
+                            className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50"
+                            disabled={submitting}
+                          >
+                            Unpublish
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              publishCourse(course.id)
+                            }}
+                            className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                            disabled={submitting}
+                          >
+                            Publish
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeCourse(course.id)
+                          }}
+                          className="px-3 py-1 text-xs bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 disabled:opacity-50"
+                          disabled={submitting}
+                        >
+                          Delete
                         </button>
                       </div>
-                    )}
-
-                    {/* Resource list */}
-                    <div className="space-y-2">
-                      {(!course.resources || course.resources.length === 0) && (
-                        <p className="text-xs text-gray-400 italic">No resources yet.</p>
-                      )}
-                      {course.resources?.map(resource => (
-                        <div key={resource.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded border">
-                          <div className="flex-shrink-0 mt-0.5">
-                            {resource.type === 'video' ? (
-                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                              </svg>
-                            ) : resource.type === 'image' ? (
-                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                              </svg>
-                            ) : (
-                              <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <input
-                              value={resource.name}
-                              onChange={e => updateResource(course.id, resource.id, { name: e.target.value })}
-                              className="w-full text-sm font-medium bg-transparent border-b border-transparent hover:border-gray-300 focus:border-primary outline-none"
-                            />
-                            {resource.fileData ? (
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-gray-500">
-                                  📎 {resource.fileName} ({(resource.fileSize! / 1024).toFixed(1)} KB)
-                                </span>
-                                <a href={resource.fileData} download={resource.fileName} className="text-xs text-blue-600 hover:underline">
-                                  Download
-                                </a>
-                                {resource.type === 'image' && (
-                                  <button
-                                    onClick={() => {
-                                      const win = window.open()
-                                      win?.document.write(`<img src="${resource.fileData}" alt="${resource.name}" style="max-width:100%;height:auto;"/>`)
-                                    }}
-                                    className="text-xs text-green-600 hover:underline"
-                                  >
-                                    Preview
-                                  </button>
-                                )}
-                              </div>
-                            ) : resource.url ? (
-                              <input
-                                value={resource.url}
-                                onChange={e => updateResource(course.id, resource.id, { url: e.target.value })}
-                                className="w-full text-xs text-gray-500 bg-transparent mt-0.5"
-                                placeholder="URL"
-                              />
-                            ) : null}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => updateResource(course.id, resource.id, { isMilestone: !resource.isMilestone })}
-                              className={`px-2 py-0.5 text-xs rounded ${resource.isMilestone ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
-                            >
-                              {resource.isMilestone ? '★ Milestone' : 'Milestone?'}
-                            </button>
-                            <button
-                              onClick={() => removeResource(course.id, resource.id)}
-                              className="text-red-500 hover:text-red-700 text-xs px-1"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Edit Course</h2>
+            {!selectedCourse || !editForm ? (
+              <p className="text-muted-foreground">Select a course from the list to edit its details.</p>
+            ) : (
+              <form onSubmit={saveCourse}>
+                {renderFormFields(editForm, setEditForm, 'edit')}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 disabled:opacity-50"
+                  >
+                    Save Changes
+                  </button>
+                  {selectedCourse.status === 'PUBLISHED' ? (
+                    <button
+                      type="button"
+                      onClick={() => unpublishCourse(selectedCourse.id)}
+                      disabled={submitting}
+                      className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      Unpublish
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => publishCourse(selectedCourse.id)}
+                      disabled={submitting}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Publish
+                    </button>
+                  )}
                 </div>
-              )
-            })}
+              </form>
+            )}
           </div>
         </div>
       </div>

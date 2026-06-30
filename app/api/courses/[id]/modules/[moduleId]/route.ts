@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getCurrentUser, hasRole } from '@/lib/auth'
-import { ROLES } from '@/lib/roles'
+import { getCurrentUser } from '@/lib/auth'
+import { requireAdminForCourseWrite } from '@/lib/course-access'
 import { decodeModuleDescription, encodeModuleDescription } from '@/lib/course-authoring'
-
-async function canManageCourse(courseId: string, userId: string, isAdmin: boolean) {
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { id: true, instructorId: true }
-  })
-
-  if (!course) return { ok: false as const, notFound: true }
-  if (!isAdmin && course.instructorId !== userId) return { ok: false as const, forbidden: true }
-  return { ok: true as const }
-}
 
 export async function PATCH(
   request: NextRequest,
@@ -21,20 +10,8 @@ export async function PATCH(
 ) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
-
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    const access = await canManageCourse(params.id, currentUser.userId, isAdmin)
-    if (!access.ok) {
-      if ('notFound' in access) return NextResponse.json({ success: false, message: 'Course not found' }, { status: 404 })
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const data = await request.json()
     const existingModule = await prisma.module.findUnique({ where: { id: params.moduleId } })
@@ -69,20 +46,8 @@ export async function DELETE(
 ) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
-
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    const access = await canManageCourse(params.id, currentUser.userId, isAdmin)
-    if (!access.ok) {
-      if ('notFound' in access) return NextResponse.json({ success: false, message: 'Course not found' }, { status: 404 })
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const existingModule = await prisma.module.findUnique({ where: { id: params.moduleId } })
     if (!existingModule || existingModule.courseId !== params.id) {

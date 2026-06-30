@@ -52,8 +52,8 @@ model Course {
   id            String    @id @default(cuid())
   title         String
   slug          String    @unique
-  description   String
-  shortDescription String?
+  description   String    @db.Text
+  shortDescription String? @db.Text
   thumbnail     String?
   level         String    @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
   category      String
@@ -63,8 +63,12 @@ model Course {
   currency      String    @default("USD")
   isPublished   Boolean   @default(false)
   isFeatured    Boolean   @default(false)
-  requirements  String?
-  whatYouLearn  String?
+  requirements  String?   @db.Text
+  whatYouLearn  String?   @db.Text
+  location      String?
+  scheduleDates String?
+  durationLabel String?
+  specialOffer  String?   @db.Text
   instructorId  String?
   videoUrl      String?
   previewUrl    String?

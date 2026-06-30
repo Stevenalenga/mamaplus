@@ -132,23 +132,9 @@ export default function UserCoursePage() {
         if (response.ok && json.success && json.data) {
           const mappedCourse = mapApiCourseToLocalCourse(json.data as ApiCourse)
           setCourse(mappedCourse)
-          return
         }
       } catch (e) {
         console.error('Error loading course from API:', e)
-      }
-
-      try {
-        const adminCoursesRaw = localStorage.getItem('admin:courses')
-        if (adminCoursesRaw) {
-          const adminCourses = JSON.parse(adminCoursesRaw) as Course[]
-          const foundCourse = adminCourses.find(c => c.id === courseId)
-          if (foundCourse) {
-            setCourse(foundCourse)
-          }
-        }
-      } catch (e) {
-        console.error('Error loading course from localStorage:', e)
       }
     }
 
@@ -272,36 +258,6 @@ export default function UserCoursePage() {
     }).catch(() => {
       // Keep UI responsive even if API call fails
     })
-
-    // Update course completion stats in admin:courses
-    if (newProgress === 100 && enrolledCourse.progress !== 100) {
-      updateCourseCompletionStats(true)
-    } else if (newProgress !== 100 && enrolledCourse.progress === 100) {
-      updateCourseCompletionStats(false)
-    }
-  }
-
-  const updateCourseCompletionStats = (completed: boolean) => {
-    try {
-      const adminCoursesRaw = localStorage.getItem('admin:courses')
-      if (adminCoursesRaw) {
-        const adminCourses = JSON.parse(adminCoursesRaw) as Course[]
-        const updatedCourses = adminCourses.map(c => {
-          if (c.id === courseId) {
-            return {
-              ...c,
-              completedStudents: completed
-                ? (c.completedStudents || 0) + 1
-                : Math.max((c.completedStudents || 0) - 1, 0)
-            }
-          }
-          return c
-        })
-        localStorage.setItem('admin:courses', JSON.stringify(updatedCourses))
-      }
-    } catch (e) {
-      console.error('Error updating completion stats:', e)
-    }
   }
 
   const downloadCertificate = () => {

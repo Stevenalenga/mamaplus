@@ -2,15 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
-import { useSession, signOut } from 'next-auth/react'
-import { Bell } from 'lucide-react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { useSession } from 'next-auth/react'
+import AuthenticatedHeader from '@/components/authenticated-header'
 
 type Course = {
   id: string
@@ -35,18 +28,8 @@ export default function AdminAssistantDashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
 
-  const [courses, setCourses] = useState<Course[]>(() => {
-    try {
-      const raw = localStorage.getItem('admin:courses')
-      if (raw) return JSON.parse(raw)
-      const defaults = [
-        { id: uid(), title: 'Introduction to Caregiving', description: 'Basic caregiving skills', enrolledStudents: 125, completedStudents: 89 },
-        { id: uid(), title: 'Maternal Health Basics', description: 'Essential maternal health knowledge', enrolledStudents: 98, completedStudents: 67 },
-      ]
-      localStorage.setItem('admin:courses', JSON.stringify(defaults))
-      return defaults
-    } catch { return [] }
-  })
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loadingCourses, setLoadingCourses] = useState(true)
 
   const [schools, setSchools] = useState<School[]>(() => {
     try {
@@ -61,20 +44,9 @@ export default function AdminAssistantDashboardPage() {
     } catch { return [] }
   })
 
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [schoolName, setSchoolName] = useState('')
   const [schoolLocation, setSchoolLocation] = useState('')
   const [schoolStudentCount, setSchoolStudentCount] = useState('')
-
-  const [notifications, setNotifications] = useState([
-    { id: '1', title: 'New Enrollment', message: 'A new student enrolled', time: '2 hours ago', read: false },
-    { id: '2', title: 'Course Update', message: 'Maternal Health course was updated', time: '1 day ago', read: false },
-    { id: '3', title: 'Welcome', message: 'Welcome to MamaPlus admin portal', time: '3 days ago', read: true },
-  ])
-  const unreadCount = notifications.filter(n => !n.read).length
-  const markAsRead = (id: string) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
-  const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
 
   useEffect(() => {
     if (status === 'loading') return
@@ -90,24 +62,39 @@ export default function AdminAssistantDashboardPage() {
   }, [status, session])
 
   useEffect(() => {
-    try { localStorage.setItem('admin:courses', JSON.stringify(courses)) } catch {}
-  }, [courses])
+    if (status !== 'authenticated') return
+    const role = (session?.user as { role?: string })?.role
+    if (role !== 'ADMIN_ASSISTANT' && role !== 'ADMIN') return
+
+    async function fetchCourses() {
+      setLoadingCourses(true)
+      try {
+        const res = await fetch('/api/courses')
+        const json = await res.json()
+        if (json.success) {
+          setCourses(
+            (json.data || []).map((c: { id: string; title: string; description?: string; _count?: { enrollments?: number } }) => ({
+              id: c.id,
+              title: c.title,
+              description: c.description,
+              enrolledStudents: c._count?.enrollments || 0,
+              completedStudents: 0,
+            })),
+          )
+        }
+      } catch {
+        // Keep dashboard usable if course stats fail to load
+      } finally {
+        setLoadingCourses(false)
+      }
+    }
+
+    fetchCourses()
+  }, [status, session?.user?.role])
 
   useEffect(() => {
     try { localStorage.setItem('admin:schools', JSON.stringify(schools)) } catch {}
   }, [schools])
-
-  function addCourse(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (!title.trim()) return
-    setCourses(prev => [{ id: uid(), title: title.trim(), description: description.trim(), enrolledStudents: 0, completedStudents: 0 }, ...prev])
-    setTitle('')
-    setDescription('')
-  }
-
-  function removeCourse(id: string) {
-    setCourses(prev => prev.filter(c => c.id !== id))
-  }
 
   function addSchool(e?: React.FormEvent) {
     e?.preventDefault()
@@ -125,11 +112,6 @@ export default function AdminAssistantDashboardPage() {
   const totalStudents = schools.reduce((sum, s) => sum + s.studentCount, 0)
   const totalEnrollments = courses.reduce((sum, c) => sum + (c.enrolledStudents || 0), 0)
 
-  const handleLogout = async () => {
-    await signOut({ redirect: false })
-    window.location.href = '/login'
-  }
-
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -140,84 +122,17 @@ export default function AdminAssistantDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard/admin-assistant" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="MamaPlus" width={240} height={240} className="object-contain" />
-            </Link>
-            <Link href="/dashboard/admin-assistant" className="text-sm font-semibold text-primary border-b-2 border-primary">Home</Link>
-            <Link href="/courses" className="text-sm text-muted-foreground hover:text-primary">Browse Courses</Link>
-            <Link href="/dashboard/admin-assistant/profile" className="text-sm text-muted-foreground hover:text-primary">My Profile</Link>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Notifications Bell */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="relative p-2 text-gray-700 hover:text-primary transition rounded-full hover:bg-gray-100 border border-gray-200">
-                  <Bell className="w-5 h-5 stroke-2" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 rounded-full w-3 h-3 border-2 border-white animate-pulse" />
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="flex items-center justify-between p-4 border-b">
-                  <h3 className="font-semibold text-lg">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllAsRead} className="text-xs text-primary hover:underline">Mark all as read</button>
-                  )}
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                      <p>No notifications yet</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {notifications.map(notification => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 hover:bg-gray-50 transition cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-sm mb-1">{notification.title}</h4>
-                              <p className="text-sm text-muted-foreground mb-1">{notification.message}</p>
-                              <p className="text-xs text-muted-foreground">{notification.time}</p>
-                            </div>
-                            {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1" />}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-            {session?.user && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{session.user.name || session.user.email}</span>
-                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">Admin Assistant</span>
-              </div>
-            )}
-            <button onClick={handleLogout} className="text-sm text-muted-foreground hover:text-primary">Logout</button>
-          </div>
-        </div>
-      </nav>
+      <AuthenticatedHeader activePage="home" />
 
       <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
         <h1 className="text-3xl font-bold mb-4">Admin Assistant Dashboard</h1>
-        <p className="text-muted-foreground mb-6">Manage courses and schools. User management is reserved for administrators.</p>
+        <p className="text-muted-foreground mb-6">View courses and manage schools. Course catalog updates are reserved for administrators.</p>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Total Courses</p>
-            <p className="text-3xl font-bold text-primary">{courses.length}</p>
+            <p className="text-3xl font-bold text-primary">{loadingCourses ? '…' : courses.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Physical Schools</p>
@@ -258,24 +173,16 @@ export default function AdminAssistantDashboardPage() {
           </div>
         </div>
 
-        {/* Manage Courses */}
+        {/* Published Courses (read-only) */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Manage Courses</h2>
-          <form onSubmit={addCourse} className="space-y-3 mb-6 pb-6 border-b">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Course title" className="w-full border rounded px-3 py-2" />
-            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description (optional)" className="w-full border rounded px-3 py-2" />
-            <button type="submit" disabled={!title.trim()} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50">Add Course</button>
-          </form>
+          <h2 className="text-xl font-semibold mb-4">Published Courses</h2>
           <div className="space-y-3">
-            {courses.length === 0 && <p className="text-muted-foreground">No courses yet.</p>}
+            {courses.length === 0 && <p className="text-muted-foreground">No published courses yet.</p>}
             {courses.map(course => (
-              <div key={course.id} className="flex items-center justify-between border rounded-lg p-4">
-                <div>
-                  <h3 className="font-semibold">{course.title}</h3>
-                  {course.description && <p className="text-sm text-muted-foreground">{course.description}</p>}
-                  <p className="text-xs text-gray-500 mt-1">{course.enrolledStudents || 0} enrolled &middot; {course.completedStudents || 0} completed</p>
-                </div>
-                <button onClick={() => removeCourse(course.id)} className="text-red-500 hover:text-red-700 text-sm">Remove</button>
+              <div key={course.id} className="border rounded-lg p-4">
+                <h3 className="font-semibold">{course.title}</h3>
+                {course.description && <p className="text-sm text-muted-foreground">{course.description}</p>}
+                <p className="text-xs text-gray-500 mt-1">{course.enrolledStudents || 0} enrolled</p>
               </div>
             ))}
           </div>

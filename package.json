@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "start": "next start",
     "db:seed": "tsx scripts/seed-users.ts",
+    "db:seed-courses": "tsx scripts/seed-courses.ts",
     "db:studio": "prisma studio",
     "db:check-passwords": "tsx scripts/check-passwords.ts",
     "db:fix-passwords": "tsx scripts/fix-passwords.ts"

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getCourseRating } from '@/lib/db-utils'
 import { getCurrentUser, hasRole } from '@/lib/auth'
 import { ROLES } from '@/lib/roles'
+import { requireAdminForCourseWrite } from '@/lib/course-access'
 
 /**
  * GET /api/courses/[id]
@@ -113,7 +114,7 @@ export async function GET(
 
 /**
  * PATCH /api/courses/[id]
- * Update course (Admin/Instructor only)
+ * Update course (Admin only)
  */
 export async function PATCH(
   request: NextRequest,
@@ -121,23 +122,12 @@ export async function PATCH(
 ) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const existingCourse = await prisma.course.findUnique({
       where: { id: params.id },
-      select: { id: true, instructorId: true }
+      select: { id: true }
     })
 
     if (!existingCourse) {
@@ -147,34 +137,30 @@ export async function PATCH(
       )
     }
 
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    if (!isAdmin && existingCourse.instructorId !== currentUser.userId) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
-
     const data = await request.json()
 
     const course = await prisma.course.update({
       where: { id: params.id },
       data: {
-        ...(data.title && { title: data.title }),
-        ...(data.slug && { slug: data.slug }),
-        ...(data.description && { description: data.description }),
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.slug !== undefined && { slug: data.slug }),
+        ...(data.description !== undefined && { description: data.description }),
         ...(data.shortDescription !== undefined && { shortDescription: data.shortDescription }),
-        ...(data.thumbnail && { thumbnail: data.thumbnail }),
-        ...(data.level && { level: data.level }),
-        ...(data.category && { category: data.category }),
+        ...(data.thumbnail !== undefined && { thumbnail: data.thumbnail }),
+        ...(data.level !== undefined && { level: data.level }),
+        ...(data.category !== undefined && { category: data.category }),
         ...(data.duration !== undefined && { duration: data.duration }),
+        ...(data.durationLabel !== undefined && { durationLabel: data.durationLabel }),
+        ...(data.scheduleDates !== undefined && { scheduleDates: data.scheduleDates }),
+        ...(data.location !== undefined && { location: data.location }),
         ...(data.priceUSD !== undefined && { priceUSD: data.priceUSD }),
         ...(data.priceKES !== undefined && { priceKES: data.priceKES }),
-        ...(data.currency && { currency: data.currency }),
+        ...(data.currency !== undefined && { currency: data.currency }),
         ...(data.isPublished !== undefined && { isPublished: data.isPublished }),
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
         ...(data.requirements !== undefined && { requirements: data.requirements }),
         ...(data.whatYouLearn !== undefined && { whatYouLearn: data.whatYouLearn }),
+        ...(data.specialOffer !== undefined && { specialOffer: data.specialOffer }),
         ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl }),
         ...(data.previewUrl !== undefined && { previewUrl: data.previewUrl })
       }
@@ -205,37 +191,18 @@ export async function DELETE(
 ) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
-      )
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const existingCourse = await prisma.course.findUnique({
       where: { id: params.id },
-      select: { id: true, instructorId: true }
+      select: { id: true }
     })
 
     if (!existingCourse) {
       return NextResponse.json(
         { success: false, message: 'Course not found' },
         { status: 404 }
-      )
-    }
-
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    if (!isAdmin && existingCourse.instructorId !== currentUser.userId) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden' },
-        { status: 403 }
       )
     }
 

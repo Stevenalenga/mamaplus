@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getCurrentUser, hasRole } from '@/lib/auth'
-import { ROLES } from '@/lib/roles'
+import { getCurrentUser } from '@/lib/auth'
+import { requireAdminForCourseWrite } from '@/lib/course-access'
 
 export async function POST(
   request: NextRequest,
@@ -9,13 +9,8 @@ export async function POST(
 ) {
   try {
     const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
-    }
-
-    if (!hasRole(currentUser, [ROLES.INSTRUCTOR, ROLES.ADMIN])) {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
+    const authError = requireAdminForCourseWrite(currentUser)
+    if (authError) return authError
 
     const course = await prisma.course.findUnique({
       where: { id: params.id },
@@ -28,11 +23,6 @@ export async function POST(
 
     if (!course) {
       return NextResponse.json({ success: false, message: 'Course not found' }, { status: 404 })
-    }
-
-    const isAdmin = hasRole(currentUser, ROLES.ADMIN)
-    if (!isAdmin && course.instructorId !== currentUser.userId) {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
     }
 
     const hasAtLeastOneModule = course.modules.length > 0

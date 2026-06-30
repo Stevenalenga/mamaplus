@@ -58,15 +58,8 @@ function uid() {
 export default function AdminDashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [courses] = useState<Course[]>(() => {
-    try {
-      const raw = localStorage.getItem('admin:courses')
-      if (raw) return JSON.parse(raw)
-      return []
-    } catch {
-      return []
-    }
-  })
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loadingCourses, setLoadingCourses] = useState(true)
 
   const [schools] = useState<School[]>(() => {
     try {
@@ -130,6 +123,35 @@ export default function AdminDashboardPage() {
       return
     }
   }, [router, status, session])
+
+  useEffect(() => {
+    if (status !== 'authenticated' || session?.user?.role !== 'ADMIN') return
+
+    async function fetchCourses() {
+      setLoadingCourses(true)
+      try {
+        const res = await fetch('/api/courses?mine=true')
+        const json = await res.json()
+        if (json.success) {
+          setCourses(
+            (json.data || []).map((c: { id: string; title: string; description?: string; _count?: { enrollments?: number } }) => ({
+              id: c.id,
+              title: c.title,
+              description: c.description,
+              enrolledStudents: c._count?.enrollments || 0,
+              completedStudents: 0,
+            })),
+          )
+        }
+      } catch {
+        // Keep dashboard usable if course stats fail to load
+      } finally {
+        setLoadingCourses(false)
+      }
+    }
+
+    fetchCourses()
+  }, [status, session?.user?.role])
 
   // Fetch users from API
   const fetchUsers = useCallback(async (search = '', role = '', page = 1) => {
@@ -208,7 +230,7 @@ export default function AdminDashboardPage() {
 
       <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
         <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-        <p className="text-muted-foreground mb-6">This is a placeholder admin interface—changes are stored locally in your browser only.</p>
+        <p className="text-muted-foreground mb-6">Overview of platform activity and user management.</p>
 
         {/* Dashboard Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
@@ -220,7 +242,7 @@ export default function AdminDashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
-            <p className="text-3xl font-bold text-primary">{courses.length}</p>
+            <p className="text-3xl font-bold text-primary">{loadingCourses ? '…' : courses.length}</p>
             <p className="text-xs text-muted-foreground mt-1">Active courses</p>
           </div>
 
