@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
+import { SHOW_SOCIAL_AUTH_BUTTONS } from '@/lib/auth-features'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -335,49 +336,53 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gradient-to-br from-background via-white to-background text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
+        {SHOW_SOCIAL_AUTH_BUTTONS && (
+          <>
+            {/* Divider */}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gradient-to-br from-background via-white to-background text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
 
-        {/* Social Sign Up */}
-        <div className="space-y-3 mb-6">
-          {/* Google */}
-          <button 
-            type="button"
-            onClick={() => handleSocialSignup('google')} 
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 c0-3.331,2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.461,2.268,15.365,1.25,12.545,1.25 c-6.209,0-11.25,5.041-11.25,11.25c0,6.209,5.041,11.25,11.25,11.25c6.209,0,11.25-5.041,11.25-11.25 C23.795,11.6,23.7,10.999,23.589,10.403H12.545z"/>
-            </svg>
-            Sign up with Google
-          </button>
+            {/* Social Sign Up */}
+            <div className="space-y-3 mb-6">
+              {/* Google */}
+              <button 
+                type="button"
+                onClick={() => handleSocialSignup('google')} 
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 c0-3.331,2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.461,2.268,15.365,1.25,12.545,1.25 c-6.209,0-11.25,5.041-11.25,11.25c0,6.209,5.041,11.25,11.25,11.25c6.209,0,11.25-5.041,11.25-11.25 C23.795,11.6,23.7,10.999,23.589,10.403H12.545z"/>
+                </svg>
+                Sign up with Google
+              </button>
 
-          {/* Microsoft */}
-          <button 
-            type="button"
-            onClick={() => handleSocialSignup('microsoft')} 
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#00A4EF" d="M0 0h11v11H0z"/>
-              <path fill="#7FBA00" d="M13 0h11v11H13z"/>
-              <path fill="#FFB900" d="M0 13h11v11H0z"/>
-              <path fill="#F25022" d="M13 13h11v11H13z"/>
-            </svg>
-            Sign up with Microsoft
-          </button>
-        </div>
+              {/* Microsoft */}
+              <button 
+                type="button"
+                onClick={() => handleSocialSignup('microsoft')} 
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition font-medium text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#00A4EF" d="M0 0h11v11H0z"/>
+                  <path fill="#7FBA00" d="M13 0h11v11H13z"/>
+                  <path fill="#FFB900" d="M0 13h11v11H0z"/>
+                  <path fill="#F25022" d="M13 13h11v11H13z"/>
+                </svg>
+                Sign up with Microsoft
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Sign In Link */}
         <p className="text-center text-muted-foreground">

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { deleteFromCloudinary, extractPublicId, getResourceType } from '@/lib/cloudinary'
+import { deleteFromStorage } from '@/lib/storage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /**
  * DELETE /api/upload/[publicId]
- * Delete a file from Cloudinary
+ * Delete a file from VPS storage
  * Requires authentication and instructor/admin role
  */
 export async function DELETE(
@@ -43,13 +43,8 @@ export async function DELETE(
       )
     }
 
-    // Get resource type from query params or infer from publicId
-    const { searchParams } = new URL(request.url)
-    const resourceTypeParam = searchParams.get('resourceType') as 'image' | 'video' | 'raw' | null
-    const resourceType = resourceTypeParam || getResourceType(publicId)
-
-    // Delete from Cloudinary
-    const result = await deleteFromCloudinary(publicId, resourceType)
+    // Delete from VPS storage
+    const result = await deleteFromStorage(publicId)
 
     if (!result.success) {
       return NextResponse.json(
