@@ -19,6 +19,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import AgencyHeader from '@/components/agency/agency-header'
+import { PhoneInput } from '@/components/phone-input'
+import { parseStoredPhoneNumber } from '@/lib/phone-countries'
+import { displayPhoneNumber, validateAndFormatProfilePhone } from '@/lib/validation'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -74,11 +77,14 @@ export default function AgencyProfilePage() {
   // Profile editing state
   const [agencyName, setAgencyName] = useState('')
   const [agencyEmail, setAgencyEmail] = useState('')
+  const [agencyPhone, setAgencyPhone] = useState('')
   const [agencyAvatar, setAgencyAvatar] = useState<string | null>(null)
   const [agencyIsOAuth, setAgencyIsOAuth] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState('')
   const [editedEmail, setEditedEmail] = useState('')
+  const [editedPhoneCountry, setEditedPhoneCountry] = useState('KE')
+  const [editedPhoneNumber, setEditedPhoneNumber] = useState('')
   const [uploadingPicture, setUploadingPicture] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
@@ -91,6 +97,13 @@ export default function AgencyProfilePage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  const syncPhoneEditFields = (storedPhone?: string | null) => {
+    const { countryCode, nationalNumber } = parseStoredPhoneNumber(storedPhone)
+    setEditedPhoneCountry(countryCode)
+    setEditedPhoneNumber(nationalNumber)
+  }
+
   const [ratingDialog, setRatingDialog] = useState<{
     open: boolean
     caregiverId: string | null
@@ -131,10 +144,12 @@ export default function AgencyProfilePage() {
             const u = meData.data
             setAgencyName(u.name || '')
             setAgencyEmail(u.email || '')
+            setAgencyPhone(u.phoneNumber || '')
             setAgencyAvatar(u.avatar || null)
             setAgencyIsOAuth(!u.password || u.password === '')
             setEditedName(u.name || '')
             setEditedEmail(u.email || '')
+            syncPhoneEditFields(u.phoneNumber)
           }
         }
 
@@ -203,16 +218,29 @@ export default function AgencyProfilePage() {
   const saveProfile = async () => {
     setSaveError(null)
     setSaveSuccess(null)
+
+    const phoneResult = validateAndFormatProfilePhone(editedPhoneNumber, editedPhoneCountry)
+    if (!phoneResult.success) {
+      setSaveError(phoneResult.message)
+      return
+    }
+
     try {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editedName, email: editedEmail }),
+        body: JSON.stringify({
+          name: editedName,
+          email: editedEmail,
+          phoneNumber: phoneResult.phoneNumber,
+        }),
       })
       const data = await res.json()
       if (!res.ok || !data.success) { setSaveError(data.message || 'Failed to save profile'); return }
       setAgencyName(editedName)
       setAgencyEmail(editedEmail)
+      setAgencyPhone(data.data?.phoneNumber || phoneResult.phoneNumber)
+      syncPhoneEditFields(data.data?.phoneNumber || phoneResult.phoneNumber)
       setSaveSuccess('Profile saved successfully')
     } catch {
       setSaveError('Failed to save profile')
@@ -382,7 +410,13 @@ export default function AgencyProfilePage() {
             ) : (
               <div className="flex gap-2">
                 <button onClick={saveProfile} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">Save</button>
-                <button onClick={() => { setIsEditing(false); setEditedName(agencyName); setEditedEmail(agencyEmail); setSaveError(null) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</button>
+                <button onClick={() => {
+                  setIsEditing(false)
+                  setEditedName(agencyName)
+                  setEditedEmail(agencyEmail)
+                  syncPhoneEditFields(agencyPhone)
+                  setSaveError(null)
+                }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Cancel</button>
               </div>
             )}
           </div>
@@ -433,6 +467,21 @@ export default function AgencyProfilePage() {
                 <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className="w-full border px-3 py-2 rounded" />
               ) : (
                 <p className="text-foreground">{agencyEmail}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+              {isEditing ? (
+                <PhoneInput
+                  countryCode={editedPhoneCountry}
+                  onCountryChange={setEditedPhoneCountry}
+                  value={editedPhoneNumber}
+                  onChange={setEditedPhoneNumber}
+                />
+              ) : (
+                <p className="text-foreground">
+                  {agencyPhone ? displayPhoneNumber(agencyPhone) : 'Not provided'}
+                </p>
               )}
             </div>
           </div>

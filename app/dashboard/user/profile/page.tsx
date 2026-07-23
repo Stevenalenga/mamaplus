@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import UserHeader from '@/components/user/user-header'
+import { PhoneInput } from '@/components/phone-input'
+import { parseStoredPhoneNumber } from '@/lib/phone-countries'
+import { displayPhoneNumber, validateAndFormatProfilePhone } from '@/lib/validation'
 import { getRoleDisplayName, getRoleBadgeColor, getDashboardForRole } from '@/lib/roles'
 
 type EnrolledCourse = {
@@ -19,6 +22,7 @@ type UserProfile = {
   id?: string
   name: string
   email: string
+  phoneNumber?: string
   enrolledCourses: EnrolledCourse[]
   profilePicture?: string
   isOAuthUser?: boolean
@@ -38,6 +42,8 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
+  const [editedPhoneCountry, setEditedPhoneCountry] = useState('KE')
+  const [editedPhoneNumber, setEditedPhoneNumber] = useState('')
   const [uploadingPicture, setUploadingPicture] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
@@ -50,6 +56,12 @@ export default function UserProfilePage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  const syncPhoneEditFields = (storedPhone?: string | null) => {
+    const { countryCode, nationalNumber } = parseStoredPhoneNumber(storedPhone)
+    setEditedPhoneCountry(countryCode)
+    setEditedPhoneNumber(nationalNumber)
+  }
 
   useEffect(() => {
     if (status === 'loading') return
@@ -81,6 +93,7 @@ export default function UserProfilePage() {
               id: dbUser.id,
               name: dbUser.name || '',
               email: dbUser.email || '',
+              phoneNumber: dbUser.phoneNumber || '',
               profilePicture: dbUser.avatar || '',
               enrolledCourses: [],
               isOAuthUser: !dbUser.password || dbUser.password === '',
@@ -108,6 +121,7 @@ export default function UserProfilePage() {
         setProfile(dbProfile)
         setEditedName(dbProfile.name)
         setEditedEmail(dbProfile.email)
+        syncPhoneEditFields(dbProfile.phoneNumber)
       } catch {
         const fallbackProfile = {
           ...defaultProfile,
@@ -118,6 +132,7 @@ export default function UserProfilePage() {
         setProfile(fallbackProfile)
         setEditedName(fallbackProfile.name)
         setEditedEmail(fallbackProfile.email)
+        syncPhoneEditFields(fallbackProfile.phoneNumber)
       }
     }
 
@@ -130,19 +145,36 @@ export default function UserProfilePage() {
   const saveProfile = async () => {
     setSaveError(null)
     setSaveSuccess(null)
+
+    const phoneResult = validateAndFormatProfilePhone(editedPhoneNumber, editedPhoneCountry)
+    if (!phoneResult.success) {
+      setSaveError(phoneResult.message)
+      return
+    }
+
     try {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editedName, email: editedEmail }),
+        body: JSON.stringify({
+          name: editedName,
+          email: editedEmail,
+          phoneNumber: phoneResult.phoneNumber,
+        }),
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
         setSaveError(data.message || 'Failed to save profile')
         return
       }
-      const updated = { ...profile, name: editedName, email: editedEmail }
+      const updated = {
+        ...profile,
+        name: editedName,
+        email: editedEmail,
+        phoneNumber: data.data?.phoneNumber || phoneResult.phoneNumber,
+      }
       setProfile(updated)
+      syncPhoneEditFields(updated.phoneNumber)
       setSaveSuccess('Profile saved successfully')
     } catch {
       setSaveError('Failed to save profile')
@@ -306,7 +338,13 @@ on ${new Date().toLocaleDateString()}
                 <button onClick={saveProfile} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
                   Save
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email); setSaveError(null) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                <button onClick={() => {
+                  setIsEditing(false)
+                  setEditedName(profile.name)
+                  setEditedEmail(profile.email)
+                  syncPhoneEditFields(profile.phoneNumber)
+                  setSaveError(null)
+                }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                   Cancel
                 </button>
               </div>
@@ -376,6 +414,21 @@ on ${new Date().toLocaleDateString()}
                 <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className="w-full border px-3 py-2 rounded" />
               ) : (
                 <p className="text-foreground">{profile.email}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+              {isEditing ? (
+                <PhoneInput
+                  countryCode={editedPhoneCountry}
+                  onCountryChange={setEditedPhoneCountry}
+                  value={editedPhoneNumber}
+                  onChange={setEditedPhoneNumber}
+                />
+              ) : (
+                <p className="text-foreground">
+                  {profile.phoneNumber ? displayPhoneNumber(profile.phoneNumber) : 'Not provided'}
+                </p>
               )}
             </div>
           </div>

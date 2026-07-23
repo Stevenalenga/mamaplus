@@ -67,11 +67,12 @@ export async function GET(request: NextRequest) {
 
 /**
  * PATCH /api/users/me
- * Update the authenticated user's name, email, and/or password.
+ * Update the authenticated user's name, email, phone number, and/or password.
  *
  * Body (all fields optional):
  *   name            – display name
  *   email           – new email address (must be unique)
+ *   phoneNumber     – phone number in E.164 format without +
  *   currentPassword – required when changing password
  *   newPassword     – new password (min 8 characters)
  */
@@ -90,9 +91,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { name, email, currentPassword, newPassword } = body as {
+  const { name, email, phoneNumber, currentPassword, newPassword } = body as {
     name?: string
     email?: string
+    phoneNumber?: string
     currentPassword?: string
     newPassword?: string
   }
@@ -130,6 +132,17 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  if (phoneNumber !== undefined) {
+    const normalizedPhone = String(phoneNumber).replace(/\D/g, '')
+    if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
+      return NextResponse.json(
+        { success: false, message: 'Please enter a valid phone number' },
+        { status: 400 },
+      )
+    }
+    updateData.phoneNumber = normalizedPhone
+  }
+
   if (newPassword !== undefined) {
     if (!currentPassword) {
       return NextResponse.json(
@@ -164,7 +177,7 @@ export async function PATCH(request: NextRequest) {
   const updated = await prisma.user.update({
     where: { id: userId },
     data: updateData,
-    select: { id: true, name: true, email: true, avatar: true, updatedAt: true },
+    select: { id: true, name: true, email: true, phoneNumber: true, avatar: true, updatedAt: true },
   })
 
   return NextResponse.json({

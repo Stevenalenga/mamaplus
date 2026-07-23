@@ -1,5 +1,77 @@
 // Phone number validation utilities for mobile money
 
+import { getPhoneCountry, type PhoneCountry } from '@/lib/phone-countries'
+
+/**
+ * Formats a national phone number with country dial code (E.164 without +)
+ */
+export function formatInternationalPhoneNumber(nationalNumber: string, dialCode: string): string {
+  let cleaned = nationalNumber.replace(/\D/g, '')
+
+  if (cleaned.startsWith('0')) {
+    cleaned = cleaned.slice(1)
+  }
+
+  if (cleaned.startsWith(dialCode)) {
+    return cleaned
+  }
+
+  return dialCode + cleaned
+}
+
+/**
+ * Validates a national phone number for a selected country
+ */
+export function validatePhoneForCountry(nationalNumber: string, country: PhoneCountry): boolean {
+  let cleaned = nationalNumber.replace(/\D/g, '')
+
+  if (!cleaned) {
+    return false
+  }
+
+  if (cleaned.startsWith('0')) {
+    cleaned = cleaned.slice(1)
+  }
+
+  if (cleaned.startsWith(country.dialCode)) {
+    cleaned = cleaned.slice(country.dialCode.length)
+  }
+
+  return (
+    /^\d+$/.test(cleaned) &&
+    cleaned.length >= country.minLength &&
+    cleaned.length <= country.maxLength
+  )
+}
+
+/**
+ * Validate and format a profile phone number update
+ */
+export function validateAndFormatProfilePhone(
+  nationalNumber: string,
+  countryCode: string
+): { success: true; phoneNumber: string } | { success: false; message: string } {
+  const country = getPhoneCountry(countryCode)
+
+  if (!validatePhoneForCountry(nationalNumber, country)) {
+    return {
+      success: false,
+      message: `Please enter a valid ${country.name} phone number`,
+    }
+  }
+
+  const formattedPhone = formatInternationalPhoneNumber(nationalNumber, country.dialCode)
+
+  if (countryCode === 'KE' && !validateKenyanPhoneNumber(formattedPhone)) {
+    return {
+      success: false,
+      message: 'Please enter a valid Kenyan mobile number',
+    }
+  }
+
+  return { success: true, phoneNumber: formattedPhone }
+}
+
 /**
  * Validates Kenyan phone numbers for M-Pesa and Airtel Money
  * Format: 254XXXXXXXXX (12 digits total)

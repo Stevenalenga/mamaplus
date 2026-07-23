@@ -13,6 +13,13 @@ import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import SEOHead from '@/components/seo-head'
 import { SHOW_SOCIAL_AUTH_BUTTONS } from '@/lib/auth-features'
+import { DEFAULT_PHONE_COUNTRY, PhoneInput } from '@/components/phone-input'
+import { getPhoneCountry } from '@/lib/phone-countries'
+import {
+  formatInternationalPhoneNumber,
+  validateKenyanPhoneNumber,
+  validatePhoneForCountry,
+} from '@/lib/validation'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -23,6 +30,8 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phoneCountry: DEFAULT_PHONE_COUNTRY,
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     agreeToTerms: false
@@ -62,8 +71,24 @@ export default function SignupPage() {
     e.preventDefault()
     
     // Client-side validation
-    if (!formData.fullName || !formData.email || !formData.password) {
+    if (!formData.fullName || !formData.email || !formData.password || !formData.phoneNumber.trim()) {
       toast.error('Please fill in all required fields')
+      return
+    }
+
+    const phoneCountry = getPhoneCountry(formData.phoneCountry)
+    if (!validatePhoneForCountry(formData.phoneNumber, phoneCountry)) {
+      toast.error(`Please enter a valid ${phoneCountry.name} phone number`)
+      return
+    }
+
+    const formattedPhone = formatInternationalPhoneNumber(
+      formData.phoneNumber,
+      phoneCountry.dialCode
+    )
+
+    if (formData.phoneCountry === 'KE' && !validateKenyanPhoneNumber(formattedPhone)) {
+      toast.error('Please enter a valid Kenyan mobile number')
       return
     }
 
@@ -107,6 +132,7 @@ export default function SignupPage() {
           name: formData.fullName.trim(),
           email: formData.email.trim(),
           password: formData.password,
+          phoneNumber: formattedPhone,
         }),
       })
 
@@ -254,6 +280,26 @@ export default function SignupPage() {
               onChange={handleInputChange}
               disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
+              required
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-foreground mb-2">
+              Phone Number
+            </label>
+            <PhoneInput
+              id="phoneNumber"
+              countryCode={formData.phoneCountry}
+              onCountryChange={(phoneCountry) =>
+                setFormData((prev) => ({ ...prev, phoneCountry }))
+              }
+              value={formData.phoneNumber}
+              onChange={(phoneNumber) =>
+                setFormData((prev) => ({ ...prev, phoneNumber }))
+              }
+              disabled={isLoading}
               required
             />
           </div>

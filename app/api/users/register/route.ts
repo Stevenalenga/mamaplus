@@ -17,12 +17,24 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, name, phoneNumber } = await request.json()
 
-    if (!email || !password) {
+    if (!email || !password || !phoneNumber?.trim()) {
       return jsonWithCors(
         request,
         {
           success: false,
-          message: 'Email and password are required'
+          message: 'Email, password, and phone number are required'
+        },
+        { status: 400 }
+      )
+    }
+
+    const normalizedPhone = String(phoneNumber).replace(/\D/g, '')
+    if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
+      return jsonWithCors(
+        request,
+        {
+          success: false,
+          message: 'Please enter a valid phone number'
         },
         { status: 400 }
       )
@@ -87,7 +99,7 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         name,
-        phoneNumber,
+        phoneNumber: normalizedPhone,
         role
       },
       select: {

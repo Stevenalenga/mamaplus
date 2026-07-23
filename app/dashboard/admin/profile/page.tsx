@@ -7,10 +7,14 @@ import { useSession, signOut } from 'next-auth/react'
 import Cropper from 'react-easy-crop'
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
 import { AdminHeader } from '@/components/admin/admin-header'
+import { PhoneInput } from '@/components/phone-input'
+import { parseStoredPhoneNumber } from '@/lib/phone-countries'
+import { displayPhoneNumber, validateAndFormatProfilePhone } from '@/lib/validation'
 
 type AdminProfile = {
   name: string
   email: string
+  phoneNumber?: string
   role: string
   adminSince: string
   profilePicture?: string
@@ -62,6 +66,8 @@ export default function AdminProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
+  const [editedPhoneCountry, setEditedPhoneCountry] = useState('KE')
+  const [editedPhoneNumber, setEditedPhoneNumber] = useState('')
   const [uploadingPicture, setUploadingPicture] = useState(false)
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
@@ -81,6 +87,12 @@ export default function AdminProfilePage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  const syncPhoneEditFields = (storedPhone?: string | null) => {
+    const { countryCode, nationalNumber } = parseStoredPhoneNumber(storedPhone)
+    setEditedPhoneCountry(countryCode)
+    setEditedPhoneNumber(nationalNumber)
+  }
 
   useEffect(() => {
     // Redirect if not authenticated or not admin
@@ -102,6 +114,7 @@ export default function AdminProfilePage() {
             const dbProfile: AdminProfile = {
               name: dbUser.name || defaultAdminProfile.name,
               email: dbUser.email || defaultAdminProfile.email,
+              phoneNumber: dbUser.phoneNumber || '',
               role: dbUser.role || 'ADMIN',
               adminSince: dbUser.createdAt || defaultAdminProfile.adminSince,
               profilePicture: dbUser.avatar || '',
@@ -110,6 +123,7 @@ export default function AdminProfilePage() {
             setProfile(dbProfile)
             setEditedName(dbProfile.name)
             setEditedEmail(dbProfile.email)
+            syncPhoneEditFields(dbProfile.phoneNumber)
             return
           }
         }
@@ -125,6 +139,7 @@ export default function AdminProfilePage() {
           setProfile(parsed)
           setEditedName(parsed.name)
           setEditedEmail(parsed.email)
+          syncPhoneEditFields(parsed.phoneNumber)
         } else {
           localStorage.setItem('admin:profile', JSON.stringify(defaultAdminProfile))
         }
@@ -139,19 +154,36 @@ export default function AdminProfilePage() {
   const saveProfile = async () => {
     setSaveError(null)
     setSaveSuccess(null)
+
+    const phoneResult = validateAndFormatProfilePhone(editedPhoneNumber, editedPhoneCountry)
+    if (!phoneResult.success) {
+      setSaveError(phoneResult.message)
+      return
+    }
+
     try {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editedName, email: editedEmail }),
+        body: JSON.stringify({
+          name: editedName,
+          email: editedEmail,
+          phoneNumber: phoneResult.phoneNumber,
+        }),
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
         setSaveError(data.message || 'Failed to save profile')
         return
       }
-      const updated = { ...profile, name: editedName, email: editedEmail }
+      const updated = {
+        ...profile,
+        name: editedName,
+        email: editedEmail,
+        phoneNumber: data.data?.phoneNumber || phoneResult.phoneNumber,
+      }
       setProfile(updated)
+      syncPhoneEditFields(updated.phoneNumber)
       setSaveSuccess('Profile saved successfully')
     } catch {
       setSaveError('Failed to save profile')
@@ -275,7 +307,13 @@ export default function AdminProfilePage() {
                 <button onClick={saveProfile} className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
                   Save
                 </button>
-                <button onClick={() => { setIsEditing(false); setEditedName(profile.name); setEditedEmail(profile.email); setSaveError(null) }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                <button onClick={() => {
+                  setIsEditing(false)
+                  setEditedName(profile.name)
+                  setEditedEmail(profile.email)
+                  syncPhoneEditFields(profile.phoneNumber)
+                  setSaveError(null)
+                }} className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                   Cancel
                 </button>
               </div>
@@ -355,6 +393,21 @@ export default function AdminProfilePage() {
                 <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className="w-full border px-3 py-2 rounded" />
               ) : (
                 <p className="text-foreground">{profile.email}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+              {isEditing ? (
+                <PhoneInput
+                  countryCode={editedPhoneCountry}
+                  onCountryChange={setEditedPhoneCountry}
+                  value={editedPhoneNumber}
+                  onChange={setEditedPhoneNumber}
+                />
+              ) : (
+                <p className="text-foreground">
+                  {profile.phoneNumber ? displayPhoneNumber(profile.phoneNumber) : 'Not provided'}
+                </p>
               )}
             </div>
             <div>

@@ -1,29 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { ROLES } from '@/lib/roles'
 import { generateTokenEdge, setAuthCookie } from '@/lib/auth'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
+import { handleCorsPreflight, jsonWithCors } from '@/lib/api-cors'
 
 const VALID_ONBOARD_ROLES = [ROLES.USER, ROLES.AGENCY, ROLES.INSTRUCTOR]
 const VALID_GENDERS = ['MALE', 'FEMALE']
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsPreflight(request) ?? new NextResponse(null, { status: 204 })
+}
 
 /**
  * POST /api/users/onboard
  * Complete onboarding: set role and (for caregivers) gender.
  * Only callable by authenticated users whose current role is PENDING.
+ * Supports NextAuth session (web) and Bearer JWT (mobile).
  */
 export async function POST(request: NextRequest) {
-  const session = await auth()
+  const currentUser = await getAuthenticatedUser(request)
 
-  if (!session?.user) {
-    return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
+  if (!currentUser) {
+    return jsonWithCors(
+      request,
+      { success: false, message: 'Not authenticated' },
+      { status: 401 },
+    )
   }
 
-  const userId = session.user.id
-  const currentRole = (session.user as any).role
+  const userId = currentUser.id
+  const currentRole = currentUser.role
 
   if (currentRole !== ROLES.PENDING) {
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       { success: false, message: 'Onboarding already completed' },
       { status: 400 },
     )
@@ -33,13 +44,18 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ success: false, message: 'Invalid request body' }, { status: 400 })
+    return jsonWithCors(
+      request,
+      { success: false, message: 'Invalid request body' },
+      { status: 400 },
+    )
   }
 
   const { role, gender } = body
 
   if (!role || !VALID_ONBOARD_ROLES.includes(role as any)) {
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       {
         success: false,
         message: `Role must be one of: ${VALID_ONBOARD_ROLES.join(', ')}`,
@@ -51,7 +67,8 @@ export async function POST(request: NextRequest) {
   // Gender is required only for caregivers (USER role)
   if (role === ROLES.USER) {
     if (!gender || !VALID_GENDERS.includes(gender)) {
-      return NextResponse.json(
+      return jsonWithCors(
+        request,
         { success: false, message: 'Gender (MALE or FEMALE) is required for caregivers' },
         { status: 400 },
       )
@@ -71,10 +88,13 @@ export async function POST(request: NextRequest) {
         name: true,
         role: true,
         gender: true,
+        phoneNumber: true,
+        avatar: true,
+        isVerified: true,
       },
     })
 
-    // Keep auth-token cookie in sync for API clients after role change
+    // Keep auth-token cookie (web) and return a fresh JWT (mobile) after role change
     const token = await generateTokenEdge({
       userId: updatedUser.id,
       email: updatedUser.email,
@@ -82,9 +102,19 @@ export async function POST(request: NextRequest) {
     })
     await setAuthCookie(token)
 
-    return NextResponse.json({ success: true, data: updatedUser })
+    return jsonWithCors(request, {
+      success: true,
+      data: {
+        user: updatedUser,
+        token,
+      },
+    })
   } catch (error) {
     console.error('Onboard error:', error)
-    return NextResponse.json({ success: false, message: 'Failed to complete onboarding' }, { status: 500 })
+    return jsonWithCors(
+      request,
+      { success: false, message: 'Failed to complete onboarding' },
+      { status: 500 },
+    )
   }
 }
