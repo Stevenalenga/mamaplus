@@ -27,6 +27,88 @@ type SeedCourse = {
   isFeatured?: boolean
 }
 
+const acceleratedAudience = [
+  'Experienced childcare workers',
+  'Childcare micro-entrepreneurs',
+  'Domestic workers without formal training',
+  'Early Childhood Development (ECD) teachers – 0–5 years',
+  'Anyone interested in childcare',
+]
+
+const acceleratedSessions = [
+  'Understanding childcare and safety in childcare centres',
+  'Developmental milestones and child grooming',
+  'Child Play and Habit Formation',
+  'Leadership in centre management',
+  'Health and Nutrition',
+  'Homecare, Psychosocial support and Feedback',
+  'Disability and Inclusion in Early Childhood Care, Education and Development',
+  'Climate change and Environmental Management',
+]
+
+const acceleratedBenefits = [
+  'Hands-on practical childcare training',
+  'Leadership and entrepreneurship skills',
+  'Certificate of completion and mentorship support',
+  'Scheduled Thursday & Saturday sessions, 9am – 4pm',
+]
+
+const acceleratedIncluded =
+  'Interactive workshops, practical demonstrations, group discussions, scenario-based exercises, certificate of completion, mentorship support'
+
+function buildAcceleratedSchedule(venue: string) {
+  return [
+    `Venue: ${venue}`,
+    'Time: 9am – 4pm (Thursday & Saturday sessions)',
+    '14 & 16 May 2026 — Understanding childcare and safety in childcare centres',
+    '21 & 23 May 2026 — Developmental milestones and child grooming',
+    '28 & 30 May 2026 — Child Play and Habit Formation',
+    '4 & 6 June 2026 — Leadership in centre management',
+    '11 & 13 June 2026 — Health and Nutrition',
+    '18 & 20 June 2026 — Homecare, Psychosocial support and Feedback',
+    '25 & 27 June 2026 — Disability and Inclusion in Early Childhood Care, Education and Development',
+    '2 & 4 July 2026 — Climate change and Environmental Management',
+  ].join('\n')
+}
+
+const nairobiSchedule = buildAcceleratedSchedule('Mama Plus Training center Nairobi')
+const bungomaSchedule = buildAcceleratedSchedule('Mama Plus Training center Bungoma')
+const kisumuSchedule = buildAcceleratedSchedule('Kisumu (location TBC by Kisumu Team)')
+
+const bootcampSessions = [
+  'Understanding childcare and safety in childcare centres',
+  'Developmental milestones and child grooming',
+  'Child Play and Habit Formation',
+  'Leadership in centre management',
+  'Health and Nutrition',
+  'Homecare, Psychosocial support and Feedback',
+]
+
+const bootcampBenefits = [
+  'Intensive 5-day holiday bootcamp format',
+  'Hands-on practical childcare training',
+  'Leadership and centre management skills',
+  'Certificate of completion and mentorship support',
+]
+
+const bootcampIncluded =
+  'Interactive workshops, practical demonstrations, group discussions, scenario-based exercises, certificate of completion, mentorship support'
+
+function buildBootcampSchedule(venue: string) {
+  return [
+    'August Holidays Bootcamp',
+    `Venue: ${venue}`,
+    'Dates: Monday – Friday, 4th – 8th August 2026',
+    'Time: 9:00 am – 4:00 pm daily',
+    'Sessions covered:',
+    ...bootcampSessions.map((session) => `• ${session}`),
+  ].join('\n')
+}
+
+const nairobiBootcampSchedule = buildBootcampSchedule('MamaPlus Training Centre Nairobi')
+const bungomaBootcampSchedule = buildBootcampSchedule('MamaPlus Training Centre Bungoma')
+const kisumuBootcampSchedule = buildBootcampSchedule('MamaPlus Training Centre Kisumu')
+
 const seedCourses: SeedCourse[] = [
   {
     title: 'Regional Child Safeguarding & Protection Training',
@@ -63,38 +145,105 @@ const seedCourses: SeedCourse[] = [
     isFeatured: true,
   },
   {
-    title: '15-Day Accelerated Childcare Worker Training Course',
+    title: 'Accelerated Childcare Worker Training — Nairobi',
     slug: '15-day-accelerated-childcare-worker-training',
     description:
-      'This intensive 15-day training equips childcare workers with practical skills to deliver safe, nurturing, and high-quality care. Participants gain hands-on experience, professional knowledge, and leadership skills needed to excel in childcare homes, centres, or entrepreneurial ventures.',
-    durationLabel: '15 Days',
-    scheduleDates: '16th March onwards (Inservice during school holidays)',
-    location: 'Nairobi, Kisumu, Bungoma & Migori',
+      'This intensive training equips childcare workers with practical skills to deliver safe, nurturing, and high-quality care. Participants gain hands-on experience, professional knowledge, and leadership skills needed to excel in childcare homes, centres, or entrepreneurial ventures.',
+    durationLabel: 'Thursdays & Saturdays, 9am – 4pm',
+    scheduleDates: nairobiSchedule,
+    location: 'Mama Plus Training center Nairobi',
     currency: 'KES',
     priceUSD: 0,
     priceKES: 24000,
-    targetAudience: [
-      'Experienced childcare workers',
-      'Childcare micro-entrepreneurs',
-      'Domestic workers without formal training',
-      'Early Childhood Development (ECD) teachers – 0–5 years',
-      'Anyone interested in childcare',
-    ],
-    learningObjectives: [
-      'Foundations of Childcare – Health, hygiene, child safety, and basic development',
-      'Child Growth & Development – Supporting milestones, play, and early learning',
-      'Professional Skills – Leadership, centre management, entrepreneurship',
-      'Specialized Skills – Inclusive childcare, climate-resilient practices, safeguarding',
-      'Parenting & Self-Care – Supporting families while maintaining caregiver wellbeing',
-    ],
-    keyBenefits: [
-      'Hands-on practical childcare training',
-      'Leadership and entrepreneurship skills',
-      'Certificate of completion and mentorship support',
-      'Flexible inservice scheduling during school holidays',
-    ],
-    included:
-      'Interactive workshops, practical demonstrations, group discussions, scenario-based exercises, certificate of completion, mentorship support',
+    targetAudience: acceleratedAudience,
+    learningObjectives: acceleratedSessions,
+    keyBenefits: acceleratedBenefits,
+    included: acceleratedIncluded,
+    isFeatured: true,
+  },
+  {
+    title: 'Accelerated Childcare Worker Training — Bungoma',
+    slug: 'accelerated-childcare-worker-training-bungoma',
+    description:
+      'This intensive training equips childcare workers with practical skills to deliver safe, nurturing, and high-quality care. Participants gain hands-on experience, professional knowledge, and leadership skills needed to excel in childcare homes, centres, or entrepreneurial ventures.',
+    durationLabel: 'Thursdays & Saturdays, 9am – 4pm',
+    scheduleDates: bungomaSchedule,
+    location: 'Mama Plus Training center Bungoma',
+    currency: 'KES',
+    priceUSD: 0,
+    priceKES: 24000,
+    targetAudience: acceleratedAudience,
+    learningObjectives: acceleratedSessions,
+    keyBenefits: acceleratedBenefits,
+    included: acceleratedIncluded,
+    isFeatured: true,
+  },
+  {
+    title: 'Accelerated Childcare Worker Training — Kisumu',
+    slug: 'accelerated-childcare-worker-training-kisumu',
+    description:
+      'This intensive training equips childcare workers with practical skills to deliver safe, nurturing, and high-quality care. Participants gain hands-on experience, professional knowledge, and leadership skills needed to excel in childcare homes, centres, or entrepreneurial ventures.',
+    durationLabel: 'Thursdays & Saturdays, 9am – 4pm',
+    scheduleDates: kisumuSchedule,
+    location: 'Kisumu (location TBC by Kisumu Team)',
+    currency: 'KES',
+    priceUSD: 0,
+    priceKES: 24000,
+    targetAudience: acceleratedAudience,
+    learningObjectives: acceleratedSessions,
+    keyBenefits: acceleratedBenefits,
+    included: acceleratedIncluded,
+    isFeatured: true,
+  },
+  {
+    title: '5-Day Childcare Bootcamp — Nairobi',
+    slug: '5-day-childcare-bootcamp-nairobi',
+    description:
+      'An intensive August holidays bootcamp covering core childcare skills in five consecutive days. Ideal for caregivers and childcare workers who want practical, hands-on training during the school holiday period.',
+    durationLabel: '5 Days (Mon–Fri), 9am – 4pm',
+    scheduleDates: nairobiBootcampSchedule,
+    location: 'MamaPlus Training Centre Nairobi',
+    currency: 'KES',
+    priceUSD: 0,
+    priceKES: 15000,
+    targetAudience: acceleratedAudience,
+    learningObjectives: bootcampSessions,
+    keyBenefits: bootcampBenefits,
+    included: bootcampIncluded,
+    isFeatured: true,
+  },
+  {
+    title: '5-Day Childcare Bootcamp — Kisumu',
+    slug: '5-day-childcare-bootcamp-kisumu',
+    description:
+      'An intensive August holidays bootcamp covering core childcare skills in five consecutive days. Ideal for caregivers and childcare workers who want practical, hands-on training during the school holiday period.',
+    durationLabel: '5 Days (Mon–Fri), 9am – 4pm',
+    scheduleDates: kisumuBootcampSchedule,
+    location: 'MamaPlus Training Centre Kisumu',
+    currency: 'KES',
+    priceUSD: 0,
+    priceKES: 15000,
+    targetAudience: acceleratedAudience,
+    learningObjectives: bootcampSessions,
+    keyBenefits: bootcampBenefits,
+    included: bootcampIncluded,
+    isFeatured: true,
+  },
+  {
+    title: '5-Day Childcare Bootcamp — Bungoma',
+    slug: '5-day-childcare-bootcamp-bungoma',
+    description:
+      'An intensive August holidays bootcamp covering core childcare skills in five consecutive days. Ideal for caregivers and childcare workers who want practical, hands-on training during the school holiday period.',
+    durationLabel: '5 Days (Mon–Fri), 9am – 4pm',
+    scheduleDates: bungomaBootcampSchedule,
+    location: 'MamaPlus Training Centre Bungoma',
+    currency: 'KES',
+    priceUSD: 0,
+    priceKES: 15000,
+    targetAudience: acceleratedAudience,
+    learningObjectives: bootcampSessions,
+    keyBenefits: bootcampBenefits,
+    included: bootcampIncluded,
     isFeatured: true,
   },
   {
@@ -103,8 +252,8 @@ const seedCourses: SeedCourse[] = [
     description:
       'Learn to create inclusive, accessible, and safe childcare environments for children with diverse needs. This course equips staff to support children with disabilities while strengthening centre operations.',
     durationLabel: '2 Days',
-    scheduleDates: 'Ongoing, demand-driven',
-    location: 'TBD',
+    scheduleDates: '25 & 27 June 2026 (also included in Accelerated Training)',
+    location: 'Nairobi, Bungoma & Kisumu',
     currency: 'KES',
     priceUSD: 0,
     priceKES: 8000,
@@ -130,8 +279,8 @@ const seedCourses: SeedCourse[] = [
     description:
       'Build leadership, management, and operational skills to lead teams, improve childcare operations, and drive sustainable growth.',
     durationLabel: '2 Days',
-    scheduleDates: 'Ongoing, Demand-Driven',
-    location: 'TBD',
+    scheduleDates: '4 & 6 June 2026 (also included in Accelerated Training)',
+    location: 'Nairobi, Bungoma & Kisumu',
     currency: 'KES',
     priceUSD: 0,
     priceKES: 3000,
@@ -146,7 +295,7 @@ const seedCourses: SeedCourse[] = [
       'Stronger team leadership and communication',
       'Practical management tools for daily operations',
       'Centre improvement planning support',
-      'Affordable demand-driven training',
+      'Affordable scheduled training across Mama Plus centres',
     ],
     included:
       'Leadership training, management tools, personal leadership improvement plan, centre operational improvement plan',
@@ -157,8 +306,8 @@ const seedCourses: SeedCourse[] = [
     description:
       "Understand climate risks and their impact on children, and learn to create resilient, safe, and sustainable childcare environments.",
     durationLabel: '1 Day',
-    scheduleDates: 'Ongoing and Demand-driven',
-    location: 'TBD',
+    scheduleDates: '2 & 4 July 2026 (also included in Accelerated Training)',
+    location: 'Nairobi, Bungoma & Kisumu',
     currency: 'KES',
     priceUSD: 0,
     priceKES: 3000,

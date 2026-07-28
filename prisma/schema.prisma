@@ -66,9 +66,9 @@ model Course {
   requirements  String?   @db.Text
   whatYouLearn  String?   @db.Text
   keyBenefits   String?   @db.Text
-  location      String?
-  scheduleDates String?
-  durationLabel String?
+  location      String?   @db.VarChar(500)
+  scheduleDates String?   @db.Text
+  durationLabel String?   @db.VarChar(100)
   specialOffer  String?   @db.Text
   instructorId  String?
   videoUrl      String?

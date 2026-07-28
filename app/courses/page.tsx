@@ -463,12 +463,16 @@ function CoursesPageInner() {
                     <span><strong>Cost:</strong> {course.cost}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span><strong>Dates:</strong> {course.dates}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
                     <MapPin className="w-4 h-4 text-primary" />
                     <span><strong>Location:</strong> {course.location}</span>
+                  </div>
+                  <div className="col-span-2 flex items-start gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="whitespace-pre-line">
+                      <strong>Schedule:</strong>
+                      {'\n'}
+                      {course.dates}
+                    </span>
                   </div>
                 </div>
 
@@ -486,7 +490,7 @@ function CoursesPageInner() {
                 <Tabs defaultValue="audience" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="audience">Audience</TabsTrigger>
-                    <TabsTrigger value="objectives">Objectives</TabsTrigger>
+                    <TabsTrigger value="objectives">Topics</TabsTrigger>
                     <TabsTrigger value="benefits">Benefits</TabsTrigger>
                   </TabsList>
                   
@@ -503,7 +507,7 @@ function CoursesPageInner() {
                   </TabsContent>
                   
                   <TabsContent value="objectives" className="space-y-2 mt-4">
-                    <h4 className="font-semibold text-sm text-gray-700">Learning Objectives:</h4>
+                    <h4 className="font-semibold text-sm text-gray-700">What you will cover:</h4>
                     <ul className="space-y-1">
                       {course.learningObjectives.map((item, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-sm">
