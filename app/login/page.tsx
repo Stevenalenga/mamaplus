@@ -56,7 +56,7 @@ export default function LoginPage() {
     } else if (errorParam === 'session_expired') {
       toast.error('Your session has expired. Please log in again.')
     } else if (errorParam === 'CredentialsSignin') {
-      toast.error('Invalid email or password. Please try again.')
+      toast.error('Invalid email/phone or password. Please try again.')
     }
   }, [searchParams])
 
@@ -75,30 +75,38 @@ export default function LoginPage() {
     try {
       // Client-side validation
       if (!formData.email || !formData.password) {
-        toast.error('Please enter both email and password')
+        toast.error('Please enter your email or phone number, and password')
         setIsLoading(false)
         return
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.email.trim())) {
-        toast.error('Please enter a valid email address')
-        setIsLoading(false)
-        return
+      const identifier = formData.email.trim()
+      const looksLikeEmail = identifier.includes('@')
+      if (looksLikeEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(identifier)) {
+          toast.error('Please enter a valid email address')
+          setIsLoading(false)
+          return
+        }
+      } else {
+        const digits = identifier.replace(/\D/g, '')
+        if (digits.length < 10 || digits.length > 15) {
+          toast.error('Please enter a valid phone number or email address')
+          setIsLoading(false)
+          return
+        }
       }
 
-      // Use NextAuth signIn
       const result = await signIn('credentials', {
-        email: formData.email.trim(),
+        email: identifier,
         password: formData.password,
         redirect: false,
       })
 
       if (result?.error) {
-        // Handle authentication errors
         console.error('Login error:', result.error)
-        toast.error('Invalid email or password. Please check your credentials.')
+        toast.error('Invalid email/phone or password. Please check your credentials.')
         return
       }
 
@@ -201,18 +209,19 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4 mb-6">
-          {/* Email */}
+          {/* Email or phone */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Email or Phone Number</label>
             <Input
-              type="email"
+              type="text"
               name="email"
-              placeholder="jane@example.com"
+              placeholder="jane@example.com or 0712 345 678"
               value={formData.email}
               onChange={handleInputChange}
               disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
               required
+              autoComplete="username"
             />
           </div>
 

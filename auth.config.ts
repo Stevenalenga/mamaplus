@@ -31,54 +31,39 @@ export const authConfig: NextAuthConfig = {
     Credentials({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        email: { label: 'Email or phone', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log('Missing email or password')
+          console.log('Missing identifier or password')
           return null
         }
 
-        const email = credentials.email as string
+        const identifier = credentials.email as string
         const password = credentials.password as string
 
         try {
-          // Find user
-          const user = await prisma.user.findUnique({
-            where: { email },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              password: true,
-              role: true,
-              gender: true,
-              phoneNumber: true,
-              avatar: true,
-              isVerified: true
-            }
-          })
+          const { findUserByIdentifier, userLoginLabel } = await import('@/lib/user-identity')
+          const { error, user } = await findUserByIdentifier(identifier)
 
-          if (!user) {
-            console.log('User not found:', email)
+          if (error || !user) {
+            console.log('User not found:', identifier)
             return null
           }
 
-          // Verify password
           const isValidPassword = await verifyPassword(password, user.password)
 
           if (!isValidPassword) {
-            console.log('Invalid password for user:', email)
+            console.log('Invalid password for user:', userLoginLabel(user))
             return null
           }
 
-          console.log('Login successful:', email)
+          console.log('Login successful:', userLoginLabel(user))
 
-          // Return user object (without password)
           return {
             id: user.id,
-            email: user.email,
+            email: user.email ?? user.phoneNumber ?? undefined,
             name: user.name,
             role: user.role,
             gender: user.gender,

@@ -12,7 +12,7 @@ const JWT_EXPIRES_IN = '24h' // Token expires in 24 hours
 
 export interface JWTPayload {
   userId: string
-  email: string
+  email: string // email or phone fallback used as login label
   role: string
 }
 

@@ -13,12 +13,12 @@ datasource db {
 // User model
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  email         String?   @unique
   name          String?
   password      String    // Hashed password (empty string for OAuth users)
   role          String    @default("PENDING") // PENDING, USER, AGENCY, INSTRUCTOR, ADMIN_ASSISTANT, ADMIN
   gender        String?   // MALE, FEMALE (set during onboarding for caregivers)
-  phoneNumber   String?
+  phoneNumber   String?   @unique
   avatar        String?   // Profile picture URL (auto-populated from OAuth providers)
   isVerified    Boolean   @default(false) // Auto-set to true for OAuth users
   verificationToken String?
@@ -44,6 +44,7 @@ model User {
   agencyRecruitments  AgencyCaregiver[] @relation("CaregiverRecruitedBy")
   
   @@index([email])
+  @@index([phoneNumber])
   @@map("users")
 }
 

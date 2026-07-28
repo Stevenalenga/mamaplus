@@ -70,26 +70,37 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
-    if (!formData.fullName || !formData.email || !formData.password || !formData.phoneNumber.trim()) {
+    // Client-side validation: name + password required; email OR phone required
+    if (!formData.fullName || !formData.password) {
       toast.error('Please fill in all required fields')
       return
     }
 
-    const phoneCountry = getPhoneCountry(formData.phoneCountry)
-    if (!validatePhoneForCountry(formData.phoneNumber, phoneCountry)) {
-      toast.error(`Please enter a valid ${phoneCountry.name} phone number`)
+    const hasEmail = !!formData.email.trim()
+    const hasPhone = !!formData.phoneNumber.trim()
+
+    if (!hasEmail && !hasPhone) {
+      toast.error('Please provide an email address or a phone number')
       return
     }
 
-    const formattedPhone = formatInternationalPhoneNumber(
-      formData.phoneNumber,
-      phoneCountry.dialCode
-    )
+    let formattedPhone: string | undefined
+    if (hasPhone) {
+      const phoneCountry = getPhoneCountry(formData.phoneCountry)
+      if (!validatePhoneForCountry(formData.phoneNumber, phoneCountry)) {
+        toast.error(`Please enter a valid ${phoneCountry.name} phone number`)
+        return
+      }
 
-    if (formData.phoneCountry === 'KE' && !validateKenyanPhoneNumber(formattedPhone)) {
-      toast.error('Please enter a valid Kenyan mobile number')
-      return
+      formattedPhone = formatInternationalPhoneNumber(
+        formData.phoneNumber,
+        phoneCountry.dialCode
+      )
+
+      if (formData.phoneCountry === 'KE' && !validateKenyanPhoneNumber(formattedPhone)) {
+        toast.error('Please enter a valid Kenyan mobile number')
+        return
+      }
     }
 
     if (formData.fullName.trim().length < 2) {
@@ -97,11 +108,12 @@ export default function SignupPage() {
       return
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email.trim())) {
-      toast.error('Please enter a valid email address')
-      return
+    if (hasEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email.trim())) {
+        toast.error('Please enter a valid email address')
+        return
+      }
     }
     
     if (formData.password !== formData.confirmPassword) {
@@ -122,7 +134,6 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      // Register user
       const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: {
@@ -130,7 +141,7 @@ export default function SignupPage() {
         },
         body: JSON.stringify({
           name: formData.fullName.trim(),
-          email: formData.email.trim(),
+          email: hasEmail ? formData.email.trim() : undefined,
           password: formData.password,
           phoneNumber: formattedPhone,
         }),
@@ -139,9 +150,8 @@ export default function SignupPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        // Handle specific error cases
         if (response.status === 409) {
-          toast.error(data.message || 'An account with this email already exists. Please log in instead.')
+          toast.error(data.message || 'An account with these details already exists. Please log in instead.')
         } else if (response.status === 400) {
           toast.error(data.message || 'Please check your input and try again')
         } else if (response.status === 500) {
@@ -152,13 +162,15 @@ export default function SignupPage() {
         return
       }
 
-      // Registration successful
       console.log('Registration successful:', data)
       toast.success('Account created successfully! Logging you in...')
 
-      // Auto-login with NextAuth
+      const loginIdentifier = hasEmail
+        ? formData.email.trim()
+        : (formattedPhone as string)
+
       const loginResult = await signIn('credentials', {
-        email: formData.email.trim(),
+        email: loginIdentifier,
         password: formData.password,
         redirect: false,
       })
@@ -271,7 +283,9 @@ export default function SignupPage() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Email Address <span className="text-muted-foreground font-normal">(or phone below)</span>
+            </label>
             <Input
               type="email"
               name="email"
@@ -280,14 +294,13 @@ export default function SignupPage() {
               onChange={handleInputChange}
               disabled={isLoading}
               className="w-full bg-white border-border focus:border-primary"
-              required
             />
           </div>
 
           {/* Phone Number */}
           <div>
             <label htmlFor="phoneNumber" className="block text-sm font-medium text-foreground mb-2">
-              Phone Number
+              Phone Number <span className="text-muted-foreground font-normal">(or email above)</span>
             </label>
             <PhoneInput
               id="phoneNumber"
@@ -300,8 +313,10 @@ export default function SignupPage() {
                 setFormData((prev) => ({ ...prev, phoneNumber }))
               }
               disabled={isLoading}
-              required
             />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Provide at least an email or a phone number. Both are unique — each can only be used once.
+            </p>
           </div>
 
           {/* Password */}

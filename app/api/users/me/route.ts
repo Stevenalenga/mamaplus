@@ -140,6 +140,17 @@ export async function PATCH(request: NextRequest) {
         { status: 400 },
       )
     }
+    if (normalizedPhone !== user.phoneNumber) {
+      const existingPhone = await prisma.user.findUnique({
+        where: { phoneNumber: normalizedPhone },
+      })
+      if (existingPhone) {
+        return NextResponse.json(
+          { success: false, message: 'Phone number is already in use' },
+          { status: 409 },
+        )
+      }
+    }
     updateData.phoneNumber = normalizedPhone
   }
 
