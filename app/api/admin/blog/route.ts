@@ -1,10 +1,17 @@
-import fs from 'fs'
-import path from 'path'
-import { NextResponse } from 'next/server'
-import { isAdminAuthenticated } from '@/lib/admin-auth'
-import { addBlogPost, updateBlogPost, deleteBlogPost } from '@/lib/blog'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
+import { ROLES } from '@/lib/roles'
+import {
+  addBlogPost,
+  updateBlogPost,
+  deleteBlogPost,
+  getBlogPosts,
+} from '@/lib/blog'
+import { uploadToStorage } from '@/lib/storage'
 
-const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+function canManageBlog(role: string | undefined) {
+  return role === ROLES.ADMIN || role === ROLES.ADMIN_ASSISTANT
+}
 
 function parseTags(tags: unknown): string[] {
   if (Array.isArray(tags)) {
@@ -18,44 +25,49 @@ function parseTags(tags: unknown): string[] {
   return []
 }
 
-function ensureUploadsDir() {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true })
+/** Prefer a site-relative /api/files/... path so images keep working across hosts. */
+function toPublicImageUrl(url: string): string {
+  const trimmed = url.trim()
+  if (!trimmed) return trimmed
+  try {
+    if (trimmed.startsWith('/')) return trimmed
+    const parsed = new URL(trimmed)
+    if (parsed.pathname.startsWith('/api/files/')) {
+      return `${parsed.pathname}${parsed.search}`
+    }
+  } catch {
+    // keep original
   }
+  return trimmed
 }
 
-function saveImageDataUrl(dataUrl: string) {
-  const match = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
-  if (!match) {
-    return ''
-  }
-
-  const mime = match[1]
-  const base64Data = match[2]
-  const extension = mime.split('/')[1].replace('jpeg', 'jpg')
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`
-  const filePath = path.join(uploadsDir, fileName)
-
-  ensureUploadsDir()
-  fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'))
-
-  return `/uploads/${fileName}`
-}
-
-function parseImageField(body: any) {
+async function resolveImageField(body: any): Promise<
+  { ok: true; image: string | undefined } | { ok: false; error: string }
+> {
   if (typeof body.imageData === 'string' && body.imageData.startsWith('data:')) {
-    return saveImageDataUrl(body.imageData)
+    const result = await uploadToStorage(body.imageData, 'image', {
+      folder: 'mamaplus/blog',
+    })
+    if (!result.success || !result.url) {
+      return { ok: false, error: result.error || 'Failed to upload cover image' }
+    }
+    return { ok: true, image: toPublicImageUrl(result.url) }
   }
 
   if (typeof body.imageUrl === 'string' && body.imageUrl.trim()) {
-    return body.imageUrl.trim()
+    return { ok: true, image: toPublicImageUrl(body.imageUrl) }
   }
 
   if (typeof body.image === 'string' && body.image.trim()) {
-    return body.image.trim()
+    return { ok: true, image: toPublicImageUrl(body.image) }
   }
 
-  return undefined
+  // Explicit clear
+  if (body.clearImage === true) {
+    return { ok: true, image: '' }
+  }
+
+  return { ok: true, image: undefined }
 }
 
 function validatePostBody(body: any) {
@@ -65,34 +77,62 @@ function validatePostBody(body: any) {
     content: typeof body.content === 'string' ? body.content.trim() : '',
     author: typeof body.author === 'string' ? body.author.trim() : '',
     category: typeof body.category === 'string' ? body.category.trim() : '',
-    image: parseImageField(body),
     readTime: typeof body.readTime === 'string' ? body.readTime.trim() : '',
     tags: parseTags(body.tags),
+    isPublished:
+      typeof body.isPublished === 'boolean' ? body.isPublished : undefined,
   }
 }
 
-export async function POST(request: Request) {
-  if (!(await isAdminAuthenticated())) {
+async function requireBlogAdmin(request: NextRequest) {
+  const user = await getAuthenticatedUser(request)
+  if (!user || !canManageBlog(user.role)) {
+    return null
+  }
+  return user
+}
+
+export async function GET(request: NextRequest) {
+  const user = await requireBlogAdmin(request)
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const posts = await getBlogPosts({ includeUnpublished: true })
+  return NextResponse.json({ success: true, data: posts })
+}
+
+export async function POST(request: NextRequest) {
+  const user = await requireBlogAdmin(request)
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await request.json()
-  const { title, description, content, author, category, image, readTime, tags } = validatePostBody(body)
+  const { title, description, content, author, category, readTime, tags, isPublished } =
+    validatePostBody(body)
 
   if (!title || !description || !content || !author || !category || !readTime) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  const imageResult = await resolveImageField(body)
+  if (!imageResult.ok) {
+    return NextResponse.json({ error: imageResult.error }, { status: 400 })
+  }
+
   try {
-    const newPost = addBlogPost({
+    const newPost = await addBlogPost({
       title,
       description,
       content,
       author,
+      authorId: user.id,
       category,
       tags,
-      image,
+      image: imageResult.image,
       readTime,
+      isPublished: isPublished ?? true,
     })
 
     return NextResponse.json(newPost)
@@ -102,14 +142,16 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
-  if (!(await isAdminAuthenticated())) {
+export async function PUT(request: NextRequest) {
+  const user = await requireBlogAdmin(request)
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await request.json()
   const slug = typeof body.slug === 'string' ? body.slug.trim() : ''
-  const { title, description, content, author, category, image, readTime, tags } = validatePostBody(body)
+  const { title, description, content, author, category, readTime, tags, isPublished } =
+    validatePostBody(body)
 
   if (!slug) {
     return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
@@ -119,16 +161,24 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  const imageResult = await resolveImageField(body)
+  if (!imageResult.ok) {
+    return NextResponse.json({ error: imageResult.error }, { status: 400 })
+  }
+
   try {
-    const updatedPost = updateBlogPost(slug, {
+    const updatedPost = await updateBlogPost(slug, {
       title,
       description,
       content,
       author,
+      authorId: user.id,
       category,
       tags,
-      image,
+      // undefined keeps existing image; '' clears it
+      image: imageResult.image,
       readTime,
+      isPublished,
     })
 
     if (!updatedPost) {
@@ -142,8 +192,9 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
-  if (!(await isAdminAuthenticated())) {
+export async function DELETE(request: NextRequest) {
+  const user = await requireBlogAdmin(request)
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -155,7 +206,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const deleted = deleteBlogPost(slug)
+    const deleted = await deleteBlogPost(slug)
 
     if (!deleted) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })

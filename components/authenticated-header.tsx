@@ -33,6 +33,7 @@ function getNavItems(role: string | undefined): { homeHref: string; items: NavIt
           { href: '/dashboard/admin', label: 'Home', pageKey: 'home' },
           { href: '/courses', label: 'Browse Courses', pageKey: 'courses' },
           { href: '/dashboard/admin/course-management', label: 'Course Management', pageKey: 'course-management' },
+          { href: '/dashboard/admin/blog', label: 'Blog', pageKey: 'blog' },
           { href: '/dashboard/admin/school-manager', label: 'School Manager', pageKey: 'school-manager' },
           { href: '/dashboard/admin/profile', label: 'My Profile', pageKey: 'profile' },
         ],
@@ -43,6 +44,7 @@ function getNavItems(role: string | undefined): { homeHref: string; items: NavIt
         items: [
           { href: '/dashboard/admin-assistant', label: 'Home', pageKey: 'home' },
           { href: '/courses', label: 'Browse Courses', pageKey: 'courses' },
+          { href: '/dashboard/admin/blog', label: 'Blog', pageKey: 'blog' },
           { href: '/dashboard/admin-assistant/profile', label: 'My Profile', pageKey: 'profile' },
         ],
       }

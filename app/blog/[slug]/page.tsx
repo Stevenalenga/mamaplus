@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string | string[] }> }) {
   const { slug } = await params
-  const post = getBlogPost(slug)
-  const allPosts = getBlogPosts()
+  const post = await getBlogPost(slug)
+  const allPosts = await getBlogPosts()
 
   if (!post) {
     return (

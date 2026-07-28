@@ -1,7 +1,8 @@
-﻿import * as fs from 'fs'
-import * as path from 'path'
+﻿import { prisma } from '@/lib/db'
+import type { BlogPost as DbBlogPost } from '@prisma/client'
 
 export interface BlogPost {
+  id?: string
   slug: string
   title: string
   description: string
@@ -13,39 +14,7 @@ export interface BlogPost {
   tags: string[]
   image?: string
   readTime: string
-}
-
-const blogPostsPath = process.env.BLOG_DATA_PATH || path.join(process.cwd(), 'data', 'blog-posts.json')
-
-function ensureBlogDataDir() {
-  const dir = path.dirname(blogPostsPath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-}
-
-function readBlogPosts(): BlogPost[] {
-  try {
-    if (!fs.existsSync(blogPostsPath)) {
-      return []
-    }
-
-    const file = fs.readFileSync(blogPostsPath, 'utf8')
-    return JSON.parse(file) as BlogPost[]
-  } catch (error) {
-    console.error('Failed to read blog posts from JSON:', error)
-    return []
-  }
-}
-
-function writeBlogPosts(posts: BlogPost[]) {
-  try {
-    ensureBlogDataDir()
-    fs.writeFileSync(blogPostsPath, JSON.stringify(posts, null, 2), 'utf8')
-  } catch (error) {
-    console.error('Failed to write blog posts to JSON:', error)
-    throw new Error('Unable to save blog posts. Check server write permissions for the blog data file.')
-  }
+  isPublished?: boolean
 }
 
 function slugify(value: string) {
@@ -59,126 +28,187 @@ function normalizeSlug(value: string) {
   return decodeURIComponent(value || '').trim().toLowerCase()
 }
 
-function sortPostsByDate(posts: BlogPost[]) {
-  return [...posts].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+function toDateOnly(value: Date | string): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().split('T')[0]
+  }
+  return date.toISOString().split('T')[0]
 }
 
-function generateUniqueSlug(title: string, posts: BlogPost[]) {
-  const baseSlug = slugify(title)
+function parseTags(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean)
+  } catch {
+    // fall through
+  }
+  return raw.split(',').map((tag) => tag.trim()).filter(Boolean)
+}
+
+function encodeTags(tags: string[]): string {
+  return JSON.stringify(tags.map((tag) => tag.trim()).filter(Boolean))
+}
+
+function mapDbPost(post: DbBlogPost): BlogPost {
+  return {
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    description: post.description,
+    content: post.content,
+    author: post.author,
+    publishedAt: toDateOnly(post.publishedAt),
+    updatedAt: toDateOnly(post.updatedAt),
+    category: post.category,
+    tags: parseTags(post.tags),
+    image: post.image || undefined,
+    readTime: post.readTime,
+    isPublished: post.isPublished,
+  }
+}
+
+async function generateUniqueSlug(title: string, excludeId?: string) {
+  const baseSlug = slugify(title) || `post-${Date.now()}`
   let slug = baseSlug
   let index = 1
 
-  while (posts.some((post) => normalizeSlug(post.slug) === slug)) {
+  while (true) {
+    const existing = await prisma.blogPost.findUnique({ where: { slug } })
+    if (!existing || (excludeId && existing.id === excludeId)) {
+      return slug
+    }
     slug = `${baseSlug}-${index}`
     index += 1
   }
-
-  return slug
 }
 
-export function getBlogPosts(): BlogPost[] {
-  return sortPostsByDate(readBlogPosts())
+export async function getBlogPosts(options?: { includeUnpublished?: boolean }): Promise<BlogPost[]> {
+  const posts = await prisma.blogPost.findMany({
+    where: options?.includeUnpublished ? undefined : { isPublished: true },
+    orderBy: { publishedAt: 'desc' },
+  })
+  return posts.map(mapDbPost)
 }
 
-export function getBlogPost(slug: string | string[] | undefined): BlogPost | undefined {
+export async function getBlogPost(
+  slug: string | string[] | undefined,
+  options?: { includeUnpublished?: boolean }
+): Promise<BlogPost | undefined> {
   if (!slug) return undefined
   const normalizedSlug = normalizeSlug(Array.isArray(slug) ? slug.join('/') : slug)
-  return readBlogPosts().find((post) => normalizeSlug(post.slug) === normalizedSlug)
+  const post = await prisma.blogPost.findUnique({ where: { slug: normalizedSlug } })
+  if (!post) return undefined
+  if (!options?.includeUnpublished && !post.isPublished) return undefined
+  return mapDbPost(post)
 }
 
-export function getBlogPostsByCategory(category: string | string[] | undefined): BlogPost[] {
-  if (!category) return sortPostsByDate(readBlogPosts())
+export async function getBlogPostsByCategory(
+  category: string | string[] | undefined
+): Promise<BlogPost[]> {
+  if (!category) return getBlogPosts()
   const normalizedCategory = normalizeSlug(Array.isArray(category) ? category[0] : category)
-  return sortPostsByDate(readBlogPosts().filter((post) => normalizeSlug(post.category) === normalizedCategory))
+  const posts = await prisma.blogPost.findMany({
+    where: { isPublished: true },
+    orderBy: { publishedAt: 'desc' },
+  })
+  return posts
+    .map(mapDbPost)
+    .filter((post) => normalizeSlug(post.category) === normalizedCategory)
 }
 
-export function getBlogPostsByTag(tag: string | string[] | undefined): BlogPost[] {
-  if (!tag) return sortPostsByDate(readBlogPosts())
+export async function getBlogPostsByTag(tag: string | string[] | undefined): Promise<BlogPost[]> {
+  if (!tag) return getBlogPosts()
   const normalizedTag = normalizeSlug(Array.isArray(tag) ? tag[0] : tag)
-  return sortPostsByDate(readBlogPosts().filter((post) => post.tags.some((currentTag) => normalizeSlug(currentTag) === normalizedTag)))
+  const posts = await getBlogPosts()
+  return posts.filter((post) =>
+    post.tags.some((currentTag) => normalizeSlug(currentTag) === normalizedTag)
+  )
 }
 
-export function addBlogPost(postData: {
+export async function addBlogPost(postData: {
   title: string
   description: string
   content: string
   author: string
+  authorId?: string | null
   category: string
   tags: string[]
   image?: string
   readTime: string
   publishedAt?: string
-  updatedAt?: string
-}): BlogPost {
-  const posts = readBlogPosts()
-  const newPost: BlogPost = {
-    slug: generateUniqueSlug(postData.title, posts),
-    title: postData.title,
-    description: postData.description,
-    content: postData.content,
-    author: postData.author,
-    category: postData.category,
-    tags: postData.tags,
-    image: postData.image,
-    readTime: postData.readTime,
-    publishedAt: postData.publishedAt || new Date().toISOString().split('T')[0],
-    updatedAt: postData.updatedAt,
-  }
+  isPublished?: boolean
+}): Promise<BlogPost> {
+  const slug = await generateUniqueSlug(postData.title)
+  const publishedAt = postData.publishedAt
+    ? new Date(postData.publishedAt)
+    : new Date()
 
-  posts.push(newPost)
-  writeBlogPosts(posts)
+  const created = await prisma.blogPost.create({
+    data: {
+      slug,
+      title: postData.title,
+      description: postData.description,
+      content: postData.content,
+      author: postData.author,
+      authorId: postData.authorId || null,
+      category: postData.category,
+      tags: encodeTags(postData.tags),
+      image: postData.image || null,
+      readTime: postData.readTime,
+      publishedAt,
+      isPublished: postData.isPublished ?? true,
+    },
+  })
 
-  return newPost
+  return mapDbPost(created)
 }
 
-export function updateBlogPost(slug: string, postData: {
-  title?: string
-  description?: string
-  content?: string
-  author?: string
-  category?: string
-  tags?: string[]
-  image?: string
-  readTime?: string
-  updatedAt?: string
-}): BlogPost | undefined {
-  const posts = readBlogPosts()
+export async function updateBlogPost(
+  slug: string,
+  postData: {
+    title?: string
+    description?: string
+    content?: string
+    author?: string
+    authorId?: string | null
+    category?: string
+    tags?: string[]
+    image?: string
+    readTime?: string
+    isPublished?: boolean
+  }
+): Promise<BlogPost | undefined> {
   const normalizedSlug = normalizeSlug(slug)
-  const postIndex = posts.findIndex((post) => normalizeSlug(post.slug) === normalizedSlug)
+  const existing = await prisma.blogPost.findUnique({ where: { slug: normalizedSlug } })
+  if (!existing) return undefined
 
-  if (postIndex === -1) {
-    return undefined
-  }
+  const updated = await prisma.blogPost.update({
+    where: { id: existing.id },
+    data: {
+      title: postData.title ?? existing.title,
+      description: postData.description ?? existing.description,
+      content: postData.content ?? existing.content,
+      author: postData.author ?? existing.author,
+      authorId: postData.authorId === undefined ? existing.authorId : postData.authorId,
+      category: postData.category ?? existing.category,
+      tags: postData.tags ? encodeTags(postData.tags) : existing.tags,
+      image: postData.image === undefined ? existing.image : postData.image || null,
+      readTime: postData.readTime ?? existing.readTime,
+      isPublished:
+        postData.isPublished === undefined ? existing.isPublished : postData.isPublished,
+    },
+  })
 
-  const existingPost = posts[postIndex]
-  const updatedPost: BlogPost = {
-    ...existingPost,
-    title: postData.title ?? existingPost.title,
-    description: postData.description ?? existingPost.description,
-    content: postData.content ?? existingPost.content,
-    author: postData.author ?? existingPost.author,
-    category: postData.category ?? existingPost.category,
-    tags: postData.tags ?? existingPost.tags,
-    image: postData.image ?? existingPost.image,
-    readTime: postData.readTime ?? existingPost.readTime,
-    updatedAt: postData.updatedAt || new Date().toISOString().split('T')[0],
-  }
-
-  posts[postIndex] = updatedPost
-  writeBlogPosts(posts)
-
-  return updatedPost
+  return mapDbPost(updated)
 }
 
-export function deleteBlogPost(slug: string): boolean {
-  const posts = readBlogPosts()
+export async function deleteBlogPost(slug: string): Promise<boolean> {
   const normalizedSlug = normalizeSlug(slug)
-  const filteredPosts = posts.filter((post) => normalizeSlug(post.slug) !== normalizedSlug)
+  const existing = await prisma.blogPost.findUnique({ where: { slug: normalizedSlug } })
+  if (!existing) return false
 
-  if (filteredPosts.length === posts.length) {
-    return false
-  }
-
-  writeBlogPosts(filteredPosts)
+  await prisma.blogPost.delete({ where: { id: existing.id } })
   return true
 }

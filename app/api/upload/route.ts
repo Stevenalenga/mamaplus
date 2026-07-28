@@ -28,7 +28,11 @@ export async function POST(request: NextRequest) {
 
     // Check if user is instructor or admin
     const userRole = (session.user as any).role
-    if (userRole !== 'INSTRUCTOR' && userRole !== 'ADMIN') {
+    if (
+      userRole !== 'INSTRUCTOR' &&
+      userRole !== 'ADMIN' &&
+      userRole !== 'ADMIN_ASSISTANT'
+    ) {
       return NextResponse.json(
         { success: false, message: 'Only instructors and admins can upload files' },
         { status: 403 }

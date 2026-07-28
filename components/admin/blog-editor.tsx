@@ -153,9 +153,43 @@ export function AdminBlogEditor({ existingPosts }: AdminBlogEditorProps) {
       }
 
       if (imageSource === 'upload' && localImageData) {
-        payload.imageData = localImageData
-      } else if (imageSource === 'url' && formData.image) {
-        payload.imageUrl = formData.image
+        // Upload via the shared storage API first, then save the public URL on the post
+        const blob = await (await fetch(localImageData)).blob()
+        const uploadForm = new FormData()
+        uploadForm.append('file', blob, `blog-cover.${blob.type.split('/')[1] || 'jpg'}`)
+        uploadForm.append('type', 'image')
+        uploadForm.append('folder', 'mamaplus/blog')
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: uploadForm,
+        })
+        const uploadResult = await uploadResponse.json()
+
+        if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data?.url) {
+          setStatus({
+            type: 'error',
+            message: uploadResult.message || 'Unable to upload cover image',
+          })
+          setSubmitting(false)
+          return
+        }
+
+        // Prefer relative /api/files path when possible
+        try {
+          const parsed = new URL(uploadResult.data.url)
+          payload.imageUrl = parsed.pathname.startsWith('/api/files/')
+            ? parsed.pathname
+            : uploadResult.data.url
+        } catch {
+          payload.imageUrl = uploadResult.data.url
+        }
+      } else if (imageSource === 'url' && formData.image.trim()) {
+        payload.imageUrl = formData.image.trim()
+      } else if (formData.image.trim()) {
+        // Keep existing cover when editing without replacing the image
+        payload.imageUrl = formData.image.trim()
       }
 
       const response = await fetch('/api/admin/blog', {
@@ -268,7 +302,7 @@ export function AdminBlogEditor({ existingPosts }: AdminBlogEditorProps) {
                   className={`px-3 py-2 rounded-full ${imageSource === 'upload' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'}`}
                   onClick={() => {
                     setImageSource('upload')
-                    setFormData((prev) => ({ ...prev, image: '' }))
+                    setLocalImageData(null)
                   }}
                 >
                   Upload

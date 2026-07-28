@@ -6,10 +6,16 @@ import SEOHead from '@/components/seo-head'
 
 export const dynamic = 'force-dynamic'
 
-export default function BlogPage({ searchParams }: { searchParams?: { category?: string | string[] } }) {
-  const category = searchParams?.category
-  const posts = category ? getBlogPostsByCategory(category) : getBlogPosts()
-  const categories = [...new Set(getBlogPosts().map((post) => post.category))]
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ category?: string | string[] }> | { category?: string | string[] }
+}) {
+  const resolvedSearchParams = searchParams instanceof Promise ? await searchParams : searchParams
+  const category = resolvedSearchParams?.category
+  const allPosts = await getBlogPosts()
+  const posts = category ? await getBlogPostsByCategory(category) : allPosts
+  const categories = [...new Set(allPosts.map((post) => post.category))]
 
   const blogSchema = {
     '@context': 'https://schema.org',

@@ -38,6 +38,7 @@ model User {
   reviews       Review[]
   progress      Progress[]
   certificates  Certificate[]
+  blogPosts     BlogPost[]
   
   // Agency relations
   recruitedCaregivers AgencyCaregiver[] @relation("AgencyRecruits")
@@ -257,4 +258,31 @@ model AgencyCaregiver {
   @@index([agencyId])
   @@index([caregiverId])
   @@map("agency_caregivers")
+}
+
+// Blog posts (managed by platform admins)
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @db.Text
+  content     String   @db.Text
+  author      String
+  authorId    String?
+  category    String
+  tags        String   @db.Text // JSON string array
+  image       String?  @db.Text
+  readTime    String
+  publishedAt DateTime
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorUser  User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([category])
+  @@index([publishedAt])
+  @@index([isPublished])
+  @@map("blog_posts")
 }

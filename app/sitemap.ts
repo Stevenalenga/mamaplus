@@ -1,11 +1,11 @@
 import { MetadataRoute } from 'next'
 import { getBlogPosts } from '@/lib/blog'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://mamaplus.co.ke'
   
   // Get all blog posts for dynamic URLs
-  const blogPosts = getBlogPosts()
+  const blogPosts = await getBlogPosts()
   const blogUrls = blogPosts.map(post => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.updatedAt || post.publishedAt),

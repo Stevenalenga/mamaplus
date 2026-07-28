@@ -14,6 +14,7 @@ const ROLE_DASHBOARD: Record<string, string> = {
 
 // Dashboard prefix → allowed roles
 const DASHBOARD_ACCESS: Record<string, string[]> = {
+  '/dashboard/admin/blog': ['ADMIN', 'ADMIN_ASSISTANT'],
   '/dashboard/admin': ['ADMIN'],
   '/dashboard/admin-assistant': ['ADMIN_ASSISTANT', 'ADMIN'],
   '/dashboard/educator': ['INSTRUCTOR', 'ADMIN'],

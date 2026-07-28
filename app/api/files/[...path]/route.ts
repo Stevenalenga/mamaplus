@@ -35,10 +35,11 @@ const EXT_TO_MIME: Record<string, string> = {
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> | { path: string[] } }
 ) {
   try {
-    const segments = params.path
+    const resolvedParams = await Promise.resolve(params)
+    const segments = resolvedParams.path
 
     // Reject any segment that would traverse upward
     if (!segments || segments.length === 0 || segments.some(s => s === '..' || s === '.')) {
