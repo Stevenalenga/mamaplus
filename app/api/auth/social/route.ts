@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateTokenEdge } from '@/lib/auth'
 import { handleCorsPreflight, jsonWithCors } from '@/lib/api-cors'
+import { normalizeEmail } from '@/lib/user-identity'
 
 async function verifyGoogleIdToken(idToken: string) {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`)
@@ -64,11 +65,12 @@ export async function POST(request: NextRequest) {
       return jsonWithCors(request, { success: false, message: 'Failed to verify provider token' }, { status: 400 })
     }
 
-    let user = await prisma.user.findUnique({ where: { email: profile.email } })
+    const email = normalizeEmail(profile.email)
+    let user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
       user = await prisma.user.create({
         data: {
-          email: profile.email,
+          email,
           name: profile.name || 'OAuth User',
           password: '',
           role: 'PENDING',

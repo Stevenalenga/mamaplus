@@ -4,6 +4,7 @@ import Google from 'next-auth/providers/google'
 import AzureAD from 'next-auth/providers/azure-ad'
 import { prisma } from '@/lib/db'
 import { verifyPassword } from '@/lib/db-utils'
+import { normalizeEmail } from '@/lib/user-identity'
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -88,16 +89,17 @@ export const authConfig: NextAuthConfig = {
       // Handle Google OAuth sign-in
       if (account?.provider === 'google') {
         try {
+          const email = normalizeEmail(user.email!)
           // Check if user exists
           let dbUser = await prisma.user.findUnique({
-            where: { email: user.email! }
+            where: { email },
           })
 
           // If user doesn't exist, create one
           if (!dbUser) {
             dbUser = await prisma.user.create({
               data: {
-                email: user.email!,
+                email,
                 name: user.name || 'Google User',
                 password: '', // Empty password for OAuth users
                 role: 'PENDING', // Start as PENDING for onboarding
@@ -126,16 +128,17 @@ export const authConfig: NextAuthConfig = {
       // Handle Microsoft/Azure AD OAuth sign-in
       if (account?.provider === 'azure-ad') {
         try {
+          const email = normalizeEmail(user.email!)
           // Check if user exists
           let dbUser = await prisma.user.findUnique({
-            where: { email: user.email! }
+            where: { email },
           })
 
           // If user doesn't exist, create one
           if (!dbUser) {
             dbUser = await prisma.user.create({
               data: {
-                email: user.email!,
+                email,
                 name: user.name || 'Microsoft User',
                 password: '', // Empty password for OAuth users
                 role: 'PENDING', // Start as PENDING for onboarding

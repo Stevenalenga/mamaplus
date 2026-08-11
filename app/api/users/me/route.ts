@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { getAuthenticatedUser } from '@/lib/get-authenticated-user'
 import { prisma } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/db-utils'
+import { isValidEmail, normalizeEmail } from '@/lib/user-identity'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,14 +116,14 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (email !== undefined) {
-    const trimmedEmail = String(email).trim().toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(trimmedEmail)) {
+    const trimmedEmail = normalizeEmail(String(email))
+    if (!isValidEmail(trimmedEmail)) {
       return NextResponse.json({ success: false, message: 'Invalid email address' }, { status: 400 })
     }
-    if (trimmedEmail !== user.email) {
+    const currentEmail = user.email ? normalizeEmail(user.email) : null
+    if (trimmedEmail !== currentEmail) {
       const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } })
-      if (existing) {
+      if (existing && existing.id !== userId) {
         return NextResponse.json(
           { success: false, message: 'Email address is already in use' },
           { status: 409 },
@@ -144,14 +145,14 @@ export async function PATCH(request: NextRequest) {
       const existingPhone = await prisma.user.findUnique({
         where: { phoneNumber: normalizedPhone },
       })
-      if (existingPhone) {
+      if (existingPhone && existingPhone.id !== userId) {
         return NextResponse.json(
           { success: false, message: 'Phone number is already in use' },
           { status: 409 },
         )
       }
+      updateData.phoneNumber = normalizedPhone
     }
-    updateData.phoneNumber = normalizedPhone
   }
 
   if (newPassword !== undefined) {
@@ -185,15 +186,35 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'No changes provided' }, { status: 400 })
   }
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: updateData,
-    select: { id: true, name: true, email: true, phoneNumber: true, avatar: true, updatedAt: true },
-  })
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: { id: true, name: true, email: true, phoneNumber: true, avatar: true, updatedAt: true },
+    })
 
-  return NextResponse.json({
-    success: true,
-    data: updated,
-    message: 'Profile updated successfully',
-  })
+    return NextResponse.json({
+      success: true,
+      data: updated,
+      message: 'Profile updated successfully',
+    })
+  } catch (error: unknown) {
+    const prismaError = error as { code?: string; meta?: { target?: string | string[] } }
+    if (prismaError?.code === 'P2002') {
+      const target = Array.isArray(prismaError.meta?.target)
+        ? prismaError.meta.target.join(',')
+        : String(prismaError.meta?.target || '')
+      const isPhone = target.includes('phoneNumber')
+      return NextResponse.json(
+        {
+          success: false,
+          message: isPhone
+            ? 'Phone number is already in use'
+            : 'Email address is already in use',
+        },
+        { status: 409 },
+      )
+    }
+    throw error
+  }
 }
