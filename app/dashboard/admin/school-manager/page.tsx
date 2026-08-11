@@ -1,305 +1,392 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
-import { AdminHeader } from '@/components/admin/admin-header'
+import { useCallback, useEffect, useState } from 'react'
+import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type School = {
   id: string
   name: string
-  location: string
+  location: string | null
+  county: string | null
   studentCount: number
+  isActive: boolean
+  _count: { educators: number }
 }
 
 type Educator = {
   id: string
   name: string
-  subject: string
-  school: string
+  email: string | null
+  phone: string | null
+  subject: string | null
+  schoolId: string | null
+  isActive: boolean
+  school: { id: string; name: string } | null
 }
 
-function uid() {
-  return Math.random().toString(36).slice(2, 9)
-}
+const emptySchool = { name: '', location: '', county: '', studentCount: '0' }
+const emptyEducator = { name: '', email: '', phone: '', subject: '', schoolId: '' }
 
 export default function SchoolManagerPage() {
-  const router = useRouter()
-  const { data: session, status } = useSession()
+  const [schools, setSchools] = useState<School[]>([])
+  const [educators, setEducators] = useState<Educator[]>([])
+  const [loading, setLoading] = useState(true)
+  const [schoolDialog, setSchoolDialog] = useState(false)
+  const [educatorDialog, setEducatorDialog] = useState(false)
+  const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null)
+  const [editingEducatorId, setEditingEducatorId] = useState<string | null>(null)
+  const [schoolForm, setSchoolForm] = useState(emptySchool)
+  const [educatorForm, setEducatorForm] = useState(emptyEducator)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'school' | 'educator'; id: string } | null>(null)
 
-  const [schools, setSchools] = useState<School[]>(() => {
+  const load = useCallback(async () => {
+    setLoading(true)
     try {
-      const raw = localStorage.getItem('admin:schools')
-      if (raw) return JSON.parse(raw)
-      const defaultSchools = [
-        { id: uid(), name: 'Nairobi Central Campus', location: 'Nairobi', studentCount: 125 },
-        { id: uid(), name: 'Mombasa Learning Center', location: 'Mombasa', studentCount: 87 },
-        { id: uid(), name: 'Kisumu Training Hub', location: 'Kisumu', studentCount: 64 },
-        { id: uid(), name: 'Eldoret Branch', location: 'Eldoret', studentCount: 71 },
-      ]
-      localStorage.setItem('admin:schools', JSON.stringify(defaultSchools))
-      return defaultSchools
-    } catch {
-      return []
+      const [schoolsRes, educatorsRes] = await Promise.all([
+        fetch('/api/admin/schools'),
+        fetch('/api/admin/educators'),
+      ])
+      const schoolsData = await schoolsRes.json()
+      const educatorsData = await educatorsRes.json()
+      if (schoolsData.success) setSchools(schoolsData.data)
+      if (educatorsData.success) setEducators(educatorsData.data)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [])
 
-  const [educators, setEducators] = useState<Educator[]>(() => {
-    try {
-      const raw = localStorage.getItem('admin:educators')
-      if (raw) return JSON.parse(raw)
-      const defaultEducators = [
-        { id: uid(), name: 'Dr. Sarah Kamau', subject: 'Maternal Health', school: 'Nairobi Central Campus' },
-        { id: uid(), name: 'James Omondi', subject: 'Infant Nutrition', school: 'Mombasa Learning Center' },
-        { id: uid(), name: 'Grace Wanjiku', subject: 'Caregiving Basics', school: 'Kisumu Training Hub' },
-        { id: uid(), name: 'Peter Mutua', subject: 'Child Development', school: 'Nairobi Central Campus' },
-        { id: uid(), name: 'Mary Achieng', subject: 'Emergency Care', school: 'Eldoret Branch' },
-      ]
-      localStorage.setItem('admin:educators', JSON.stringify(defaultEducators))
-      return defaultEducators
-    } catch {
-      return []
+  useEffect(() => { load() }, [load])
+
+  const openSchoolDialog = (school?: School) => {
+    if (school) {
+      setEditingSchoolId(school.id)
+      setSchoolForm({
+        name: school.name,
+        location: school.location || '',
+        county: school.county || '',
+        studentCount: String(school.studentCount),
+      })
+    } else {
+      setEditingSchoolId(null)
+      setSchoolForm(emptySchool)
     }
-  })
+    setSchoolDialog(true)
+  }
 
-  const [schoolName, setSchoolName] = useState('')
-  const [schoolLocation, setSchoolLocation] = useState('')
-  const [schoolStudentCount, setSchoolStudentCount] = useState('')
-
-  const [educatorName, setEducatorName] = useState('')
-  const [educatorSubject, setEducatorSubject] = useState('')
-  const [educatorSchool, setEducatorSchool] = useState('')
-
-  useEffect(() => {
-    if (status === 'loading') return
-    if (status === 'unauthenticated' || session?.user?.role !== 'ADMIN') {
-      window.location.href = '/login'
+  const saveSchool = async () => {
+    if (!schoolForm.name.trim()) {
+      toast.error('School name is required')
+      return
     }
-  }, [router, status, session])
-
-  useEffect(() => {
-    try { localStorage.setItem('admin:schools', JSON.stringify(schools)) } catch {}
-  }, [schools])
-
-  useEffect(() => {
-    try { localStorage.setItem('admin:educators', JSON.stringify(educators)) } catch {}
-  }, [educators])
-
-  function addSchool(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (!schoolName.trim() || !schoolLocation.trim()) return
-    const newSchool: School = {
-      id: uid(),
-      name: schoolName.trim(),
-      location: schoolLocation.trim(),
-      studentCount: parseInt(schoolStudentCount) || 0,
+    const body = {
+      name: schoolForm.name,
+      location: schoolForm.location,
+      county: schoolForm.county,
+      studentCount: Number(schoolForm.studentCount) || 0,
     }
-    setSchools(prev => [newSchool, ...prev])
-    setSchoolName('')
-    setSchoolLocation('')
-    setSchoolStudentCount('')
-  }
-
-  function removeSchool(id: string) {
-    setSchools(prev => prev.filter(s => s.id !== id))
-  }
-
-  function updateSchool(id: string, data: Partial<School>) {
-    setSchools(prev => prev.map(s => (s.id === id ? { ...s, ...data } : s)))
-  }
-
-  function addEducator(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (!educatorName.trim() || !educatorSubject.trim()) return
-    const newEducator: Educator = {
-      id: uid(),
-      name: educatorName.trim(),
-      subject: educatorSubject.trim(),
-      school: educatorSchool.trim(),
+    const res = await fetch(
+      editingSchoolId ? `/api/admin/schools/${editingSchoolId}` : '/api/admin/schools',
+      {
+        method: editingSchoolId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    )
+    const data = await res.json()
+    if (data.success) {
+      toast.success(editingSchoolId ? 'School updated' : 'School created')
+      setSchoolDialog(false)
+      load()
+    } else {
+      toast.error(data.message || 'Failed')
     }
-    setEducators(prev => [newEducator, ...prev])
-    setEducatorName('')
-    setEducatorSubject('')
-    setEducatorSchool('')
   }
 
-  function removeEducator(id: string) {
-    setEducators(prev => prev.filter(e => e.id !== id))
+  const openEducatorDialog = (educator?: Educator) => {
+    if (educator) {
+      setEditingEducatorId(educator.id)
+      setEducatorForm({
+        name: educator.name,
+        email: educator.email || '',
+        phone: educator.phone || '',
+        subject: educator.subject || '',
+        schoolId: educator.schoolId || '',
+      })
+    } else {
+      setEditingEducatorId(null)
+      setEducatorForm(emptyEducator)
+    }
+    setEducatorDialog(true)
   }
 
-  function updateEducator(id: string, data: Partial<Educator>) {
-    setEducators(prev => prev.map(e => (e.id === id ? { ...e, ...data } : e)))
+  const saveEducator = async () => {
+    if (!educatorForm.name.trim()) {
+      toast.error('Educator name is required')
+      return
+    }
+    const body = {
+      ...educatorForm,
+      schoolId: educatorForm.schoolId || null,
+      ...(editingEducatorId && { id: editingEducatorId }),
+    }
+    const res = await fetch('/api/admin/educators', {
+      method: editingEducatorId ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast.success(editingEducatorId ? 'Educator updated' : 'Educator created')
+      setEducatorDialog(false)
+      load()
+    } else {
+      toast.error(data.message || 'Failed')
+    }
   }
 
-  const totalSchoolStudents = schools.reduce((sum, s) => sum + s.studentCount, 0)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    const url =
+      deleteTarget.type === 'school'
+        ? `/api/admin/schools/${deleteTarget.id}`
+        : '/api/admin/educators'
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: deleteTarget.type === 'educator' ? JSON.stringify({ id: deleteTarget.id }) : undefined,
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast.success('Deleted')
+      load()
+    } else {
+      toast.error(data.message || 'Failed')
+    }
+    setDeleteTarget(null)
+  }
 
-  if (status === 'loading') {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader active="school-manager" />
-
-      <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
-        <h1 className="text-3xl font-bold mb-2">School Manager</h1>
-        <p className="text-muted-foreground mb-6">Manage physical school locations and assigned educators.</p>
-
-        {/* Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Schools</p>
-            <p className="text-3xl font-bold text-purple-600">{schools.length}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Students (Schools)</p>
-            <p className="text-3xl font-bold text-blue-600">{totalSchoolStudents}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Educators</p>
-            <p className="text-3xl font-bold text-indigo-600">{educators.length}</p>
-          </div>
-        </div>
-
-        {/* Physical Schools Management */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Physical Schools</h2>
-
-          {/* Add School Form */}
-          <form onSubmit={addSchool} className="space-y-3 mb-6 pb-6 border-b">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">School Name</label>
-                <input value={schoolName} onChange={e => setSchoolName(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="e.g., Nairobi Campus" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Location</label>
-                <input value={schoolLocation} onChange={e => setSchoolLocation(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="e.g., Nairobi" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Student Count</label>
-                <input type="number" value={schoolStudentCount} onChange={e => setSchoolStudentCount(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="0" min="0" />
-              </div>
-            </div>
-            <div>
-              <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Add School</button>
-            </div>
-          </form>
-
-          {/* Schools List */}
-          <div className="space-y-3">
-            {schools.length === 0 && <p className="text-muted-foreground">No schools yet.</p>}
-            {schools.map(school => (
-              <div key={school.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <input
-                        value={school.name}
-                        onChange={e => updateSchool(school.id, { name: e.target.value })}
-                        className="font-semibold text-lg border-b border-transparent hover:border-gray-300 focus:border-primary outline-none bg-transparent"
-                      />
-                      <button onClick={() => removeSchool(school.id)} className="text-red-600 hover:underline text-sm">Remove</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">Location</p>
-                        <input
-                          value={school.location}
-                          onChange={e => updateSchool(school.id, { location: e.target.value })}
-                          className="w-full text-sm border px-2 py-1 rounded"
-                          placeholder="City/Region"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">Students Enrolled</p>
-                        <input
-                          type="number"
-                          value={school.studentCount}
-                          onChange={e => updateSchool(school.id, { studentCount: parseInt(e.target.value) || 0 })}
-                          className="w-full text-sm border px-2 py-1 rounded"
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Educators Management */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Educators</h2>
-
-          {/* Add Educator Form */}
-          <form onSubmit={addEducator} className="space-y-3 mb-6 pb-6 border-b">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Educator Name</label>
-                <input value={educatorName} onChange={e => setEducatorName(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="e.g., Dr. Sarah Kamau" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Subject/Specialization</label>
-                <input value={educatorSubject} onChange={e => setEducatorSubject(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="e.g., Maternal Health" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Assigned School (optional)</label>
-                <input value={educatorSchool} onChange={e => setEducatorSchool(e.target.value)} className="w-full border px-3 py-2 rounded" placeholder="e.g., Nairobi Campus" />
-              </div>
-            </div>
-            <div>
-              <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Add Educator</button>
-            </div>
-          </form>
-
-          {/* Educators List */}
-          <div className="space-y-3">
-            {educators.length === 0 && <p className="text-muted-foreground">No educators yet.</p>}
-            {educators.map(educator => (
-              <div key={educator.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <input
-                        value={educator.name}
-                        onChange={e => updateEducator(educator.id, { name: e.target.value })}
-                        className="font-semibold text-lg border-b border-transparent hover:border-gray-300 focus:border-primary outline-none bg-transparent"
-                      />
-                      <button onClick={() => removeEducator(educator.id)} className="text-red-600 hover:underline text-sm">Remove</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">Subject/Specialization</p>
-                        <input
-                          value={educator.subject}
-                          onChange={e => updateEducator(educator.id, { subject: e.target.value })}
-                          className="w-full text-sm border px-2 py-1 rounded"
-                          placeholder="Subject area"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">Assigned School</p>
-                        <input
-                          value={educator.school}
-                          onChange={e => updateEducator(educator.id, { school: e.target.value })}
-                          className="w-full text-sm border px-2 py-1 rounded"
-                          placeholder="School location"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">School Manager</h2>
+        <p className="text-sm text-muted-foreground">Manage schools and educators across the platform</p>
       </div>
+
+      <Tabs defaultValue="schools">
+        <TabsList>
+          <TabsTrigger value="schools">Schools ({schools.length})</TabsTrigger>
+          <TabsTrigger value="educators">Educators ({educators.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="schools" className="mt-4">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Schools</CardTitle>
+              <Button size="sm" onClick={() => openSchoolDialog()}>
+                <Plus className="mr-1 h-4 w-4" /> Add School
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead>Educators</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {schools.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                          No schools yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      schools.map((s) => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium">{s.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {[s.location, s.county].filter(Boolean).join(', ') || '—'}
+                          </TableCell>
+                          <TableCell>{s.studentCount}</TableCell>
+                          <TableCell>{s._count.educators}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" onClick={() => openSchoolDialog(s)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'school', id: s.id })}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="educators" className="mt-4">
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Educators</CardTitle>
+              <Button size="sm" onClick={() => openEducatorDialog()}>
+                <Plus className="mr-1 h-4 w-4" /> Add Educator
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>School</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {educators.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                          No educators yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      educators.map((e) => (
+                        <TableRow key={e.id}>
+                          <TableCell className="font-medium">{e.name}</TableCell>
+                          <TableCell className="text-sm">{e.school?.name || '—'}</TableCell>
+                          <TableCell className="text-sm">{e.subject || '—'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{e.email || e.phone || '—'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" onClick={() => openEducatorDialog(e)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteTarget({ type: 'educator', id: e.id })}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={schoolDialog} onOpenChange={setSchoolDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingSchoolId ? 'Edit School' : 'Add School'}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Name</Label><Input value={schoolForm.name} onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} /></div>
+            <div><Label>Location</Label><Input value={schoolForm.location} onChange={(e) => setSchoolForm({ ...schoolForm, location: e.target.value })} /></div>
+            <div><Label>County</Label><Input value={schoolForm.county} onChange={(e) => setSchoolForm({ ...schoolForm, county: e.target.value })} /></div>
+            <div><Label>Student Count</Label><Input type="number" value={schoolForm.studentCount} onChange={(e) => setSchoolForm({ ...schoolForm, studentCount: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSchoolDialog(false)}>Cancel</Button>
+            <Button onClick={saveSchool}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={educatorDialog} onOpenChange={setEducatorDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingEducatorId ? 'Edit Educator' : 'Add Educator'}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Name</Label><Input value={educatorForm.name} onChange={(e) => setEducatorForm({ ...educatorForm, name: e.target.value })} /></div>
+            <div><Label>Email</Label><Input value={educatorForm.email} onChange={(e) => setEducatorForm({ ...educatorForm, email: e.target.value })} /></div>
+            <div><Label>Phone</Label><Input value={educatorForm.phone} onChange={(e) => setEducatorForm({ ...educatorForm, phone: e.target.value })} /></div>
+            <div><Label>Subject</Label><Input value={educatorForm.subject} onChange={(e) => setEducatorForm({ ...educatorForm, subject: e.target.value })} /></div>
+            <div>
+              <Label>School</Label>
+              <Select value={educatorForm.schoolId || 'none'} onValueChange={(v) => setEducatorForm({ ...educatorForm, schoolId: v === 'none' ? '' : v })}>
+                <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No school</SelectItem>
+                  {schools.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEducatorDialog(false)}>Cancel</Button>
+            <Button onClick={saveEducator}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.type}?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

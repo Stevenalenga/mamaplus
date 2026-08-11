@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import Cropper from 'react-easy-crop'
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/roles'
-import { AdminHeader } from '@/components/admin/admin-header'
 import { PhoneInput } from '@/components/phone-input'
 import { parseStoredPhoneNumber } from '@/lib/phone-countries'
 import { displayPhoneNumber, validateAndFormatProfilePhone } from '@/lib/validation'
+import { ActivityFeed, type ActivityItem } from '@/components/admin/activity-feed'
 
 type AdminProfile = {
   name: string
@@ -29,16 +29,10 @@ const defaultAdminProfile: AdminProfile = {
   profilePicture: ''
 }
 
-type CourseStats = {
+type PlatformStats = {
   totalCourses: number
   totalStudents: number
   totalRevenue: number
-}
-
-const dummyStats: CourseStats = {
-  totalCourses: 12,
-  totalStudents: 347,
-  totalRevenue: 12456.78
 }
 
 async function getCroppedImg(
@@ -62,7 +56,8 @@ export default function AdminProfilePage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [profile, setProfile] = useState<AdminProfile>(defaultAdminProfile)
-  const [stats, setStats] = useState<CourseStats>(dummyStats)
+  const [stats, setStats] = useState<PlatformStats>({ totalCourses: 0, totalStudents: 0, totalRevenue: 0 })
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(profile.name)
   const [editedEmail, setEditedEmail] = useState(profile.email)
@@ -149,6 +144,24 @@ export default function AdminProfilePage() {
     }
 
     fetchProfile()
+
+    fetch('/api/admin/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const d = data.data
+          setStats({
+            totalCourses: d.courses.published + d.courses.draft,
+            totalStudents: d.users.total,
+            totalRevenue: d.revenue.byCurrency.reduce(
+              (sum: number, r: { total: number }) => sum + r.total,
+              0,
+            ),
+          })
+          setRecentActivity(d.recentActivity)
+        }
+      })
+      .catch(() => {})
   }, [router, status, session])
 
   const saveProfile = async () => {
@@ -288,11 +301,11 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader active="profile" />
-
-      <div className="max-w-6xl mx-auto px-6 py-8 pt-8">
-        <h1 className="text-3xl font-bold mb-6">Admin Profile</h1>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Admin Profile</h2>
+        <p className="text-sm text-muted-foreground">Manage your account settings</p>
+      </div>
 
         {/* Personal Info Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -482,28 +495,7 @@ export default function AdminProfilePage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Admin Activity</h2>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 pb-3 border-b">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <p className="text-sm text-muted-foreground">Course "Infant Nutrition" created - 2 days ago</p>
-            </div>
-            <div className="flex items-center gap-3 pb-3 border-b">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-sm text-muted-foreground">User "Jane Doe" enrolled in "Maternal Health" - 3 days ago</p>
-            </div>
-            <div className="flex items-center gap-3 pb-3 border-b">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <p className="text-sm text-muted-foreground">Course "Caregiving 101" updated - 5 days ago</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <p className="text-sm text-muted-foreground">New payment received $29.99 - 1 week ago</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <ActivityFeed items={recentActivity} />
 
       {/* Crop Modal */}
       {cropModalOpen && imageToCrop && (

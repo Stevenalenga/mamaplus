@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Loader2 } from 'lucide-react'
-import { AdminHeader } from '@/components/admin/admin-header'
+import { CourseCurriculum } from '@/components/admin/course-curriculum'
 import {
   decodeStringList,
   encodeStringList,
@@ -533,22 +533,22 @@ export default function CourseManagementPage() {
 
   if (status === 'loading' || loadingCourses) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader active="course-management" />
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <h1 className="text-3xl font-bold mb-2">Course Management</h1>
-        <p className="text-muted-foreground mb-6">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Course Management</h2>
+        <p className="text-sm text-muted-foreground">
           Create and edit courses shown on the Browse Courses page. Only published courses are visible to users.
         </p>
+      </div>
 
+      <div className="max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Total Courses</p>
@@ -719,6 +719,10 @@ export default function CourseManagementPage() {
               </form>
             )}
           </div>
+        </div>
+
+        <div className="mt-6">
+          <CourseCurriculum courseId={selectedCourseId} />
         </div>
       </div>
     </div>

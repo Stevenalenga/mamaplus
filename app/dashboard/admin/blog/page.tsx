@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { ROLES } from '@/lib/roles'
 import { getBlogPosts } from '@/lib/blog'
-import { AdminHeader } from '@/components/admin/admin-header'
 import { AdminBlogEditor } from '@/components/admin/blog-editor'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -24,10 +23,7 @@ export default async function AdminBlogPage() {
   const posts = await getBlogPosts({ includeUnpublished: true })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader active="blog" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="space-y-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Content</p>
@@ -70,7 +66,6 @@ export default async function AdminBlogPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }

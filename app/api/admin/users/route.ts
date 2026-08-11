@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.trim() || ''
     const roleFilter = searchParams.get('role') || ''
+    const isVerified = searchParams.get('isVerified')
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
     const skip = (page - 1) * limit
@@ -30,12 +31,16 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { email: { contains: search } },
         { name: { contains: search } },
+        { phoneNumber: { contains: search } },
       ]
     }
 
     if (roleFilter && VALID_ROLES.includes(roleFilter as Role)) {
       where.role = roleFilter
     }
+
+    if (isVerified === 'true') where.isVerified = true
+    if (isVerified === 'false') where.isVerified = false
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -45,7 +50,10 @@ export async function GET(request: NextRequest) {
           email: true,
           name: true,
           role: true,
+          phoneNumber: true,
+          isVerified: true,
           createdAt: true,
+          _count: { select: { enrollments: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
