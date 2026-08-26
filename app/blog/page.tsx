@@ -20,35 +20,42 @@ export default async function BlogPage({
   const blogSchema = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
-    name: 'MamaPlus Blog',
-    description: 'Childcare tips, parenting advice, and caregiver career guidance from MamaPlus Kenya',
+    name: 'MamaPlus Learn Library',
+    description: 'Articles on childcare training, child development, and professional caregiver practice from MamaPlus Kenya',
     url: 'https://mamaplus.co.ke/blog',
   }
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Childcare Blog - Tips, Advice & Resources"
-        description="Expert childcare tips, parenting advice, and caregiver career guidance. Learn about child development, safety, training, and quality care practices in Kenya."
+        title="Learning Library - Articles on Childcare Training"
+        description="Articles and resources from MamaPlus on childcare training, child development, and professional caregiver practice in Kenya."
         keywords={[
-          'childcare blog Kenya',
-          'parenting tips Africa',
-          'caregiver career advice',
+          'childcare training articles Kenya',
+          'caregiver learning resources',
           'child development resources',
-          'childcare best practices',
+          'MamaPlus learn library',
         ]}
         canonicalUrl="https://mamaplus.co.ke/blog"
         schema={blogSchema}
       />
 
-      <section className="pt-20 pb-10 px-4 sm:pt-24 sm:pb-12 md:pt-32 md:pb-16 lg:px-8 bg-gradient-to-br from-primary/10 to-secondary/10">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
-            MamaPlus <span className="text-secondary">Blog</span>
+      <section className="pt-24 pb-10 px-4 sm:pt-28 sm:pb-12 md:pt-32 md:pb-16 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">Learn library</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-4 leading-tight">
+            Articles for people who care for children
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold max-w-3xl mx-auto px-4">
-            Expert insights on childcare, parenting, and building a career as a professional caregiver
+          <p className="text-base sm:text-lg text-muted-foreground max-w-3xl">
+            A resource library on training, child development, and professional practice. For learning paths and courses, visit the Learn hub.
           </p>
+          <div className="mt-6">
+            <Link href="/learn">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent">
+                Back to Learn
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -126,19 +133,21 @@ export default async function BlogPage({
 
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Stay Updated</h2>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-            Get the latest childcare tips and resources delivered to your inbox
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Keep learning</h2>
+          <p className="text-base sm:text-lg text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-4">
+            Browse more articles or enrol in a professional childcare course.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg border border-border focus:outline-none focus:border-primary"
-            />
-            <Button className="bg-primary hover:bg-primary/90 text-white py-3">
-              Subscribe
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Link href="/learn">
+              <Button className="bg-primary hover:bg-primary/90 text-white py-3">
+                Open Learn
+              </Button>
+            </Link>
+            <Link href="/courses">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent py-3">
+                Explore courses
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

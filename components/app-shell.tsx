@@ -15,9 +15,6 @@ function shouldShowMarketingShell(pathname: string) {
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
     return false
   }
-  if (pathname === '/courses') {
-    return false
-  }
   return true
 }
 

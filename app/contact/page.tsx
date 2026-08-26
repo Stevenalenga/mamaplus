@@ -18,7 +18,7 @@ type FormState = {
 }
 
 const initialState: FormState = {
-  inquiryType: 'family',
+  inquiryType: 'course',
   name: '',
   email: '',
   phone: '',
@@ -64,7 +64,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <SEOHead
         title="Contact MamaPlus"
-        description="Get in touch with MamaPlus for family support, caregiver onboarding, partnerships, and media inquiries."
+        description="Get in touch with MamaPlus about courses, training, partnerships, and parent or caregiver questions."
         keywords={[
           'MamaPlus contact',
           'caregiver support',
@@ -76,11 +76,11 @@ export default function ContactPage() {
       <section className="pt-28 pb-12 px-4 lg:px-8 bg-secondary/5">
         <div className="max-w-7xl mx-auto text-center">
           <p className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-            Contact MamaPlus
+            Training enquiries
           </p>
-          <h1 className="text-4xl sm:text-5xl font-black text-foreground mb-4">Get in Touch</h1>
+          <h1 className="text-4xl sm:text-5xl font-black text-foreground mb-4">Ask about a course</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Whether you are a family, caregiver, agency, or partner, we are here to support you.
+            Questions about enrolment, curriculum, parent workshops, or organisational training—send them here.
           </p>
         </div>
       </section>
@@ -88,10 +88,10 @@ export default function ContactPage() {
       <section className="px-4 lg:px-8 pb-10">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            ['I am a Family', 'Questions about finding care or your account'],
-            ['I am a Caregiver', 'Questions about joining or training support'],
-            ['I am an Agency/Partner', 'Partnerships, placement data, and collaboration'],
-            ['Media/Other', 'Press, speaking requests, and general enquiries'],
+            ['I have a course question', 'Enrolment, fees, dates, and curriculum'],
+            ['I am a Family', 'Parent workshops and trained care at home'],
+            ['I am a Caregiver', 'Training pathways and certification'],
+            ['I am an Agency/Partner', 'Workforce training and collaboration'],
           ].map(([title, copy]) => (
             <div key={title} className="bg-white rounded-xl border border-border p-4">
               <h3 className="font-semibold text-primary mb-1">{title}</h3>
@@ -143,6 +143,7 @@ export default function ContactPage() {
                 onChange={(event) => setFormData((prev) => ({ ...prev, inquiryType: event.target.value }))}
                 className="w-full border rounded-md px-3 py-2 bg-background"
               >
+                <option value="course">I have a course / training question</option>
                 <option value="family">I am a Family</option>
                 <option value="caregiver">I am a Caregiver</option>
                 <option value="agency-partner">I am an Agency/Partner</option>
@@ -234,7 +235,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-6">Looking to sign up directly? Visit the <Link href="/signup" className="text-primary font-medium hover:underline">registration page</Link>.</p>
+            <p className="text-xs text-muted-foreground mt-6">Ready to enrol? Visit the <Link href="/courses" className="text-primary font-medium hover:underline">course catalogue</Link>.</p>
           </div>
         </div>
       </section>

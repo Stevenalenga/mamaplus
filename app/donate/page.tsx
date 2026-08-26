@@ -11,8 +11,8 @@ export default function DonatePage() {
   const donateSchema = {
     '@context': 'https://schema.org',
     '@type': 'DonateAction',
-    name: 'Support Quality Childcare in Kenya',
-    description: 'Donate to support caregiver training and quality childcare programs across Kenya and Africa.',
+    name: 'Support Childcare Training in Kenya',
+    description: 'Donate to sponsor caregiver training, scholarships, and certification programmes across Kenya.',
     recipient: {
       '@type': 'Organization',
       name: 'MamaPlus',
@@ -47,8 +47,8 @@ export default function DonatePage() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Donate - Support Quality Childcare in Kenya"
-        description="Your donation helps train caregivers, support families, and ensure every child in Kenya receives safe, nurturing care. Make a difference in children's lives today."
+        title="Donate - Sponsor Childcare Training"
+        description="Sponsor caregiver scholarships, training materials, and certification so more people can learn professional childcare skills in Kenya."
         keywords={[
           'support childcare Kenya',
           'donate to childcare programs',
@@ -64,10 +64,10 @@ export default function DonatePage() {
         <div className="max-w-7xl mx-auto text-center">
           <Heart className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-primary mx-auto mb-4 md:mb-6 fill-primary/20" />
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary mb-4 md:mb-6 leading-tight">
-            Support Quality <span className="text-secondary">Childcare</span>
+            Sponsor childcare <span className="text-secondary">training</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold max-w-3xl mx-auto px-4">
-            Your donation helps us train caregivers, support families, and ensure every child receives safe, nurturing care.
+            Your gift funds scholarships, classroom materials, and certification so more caregivers can complete professional training.
           </p>
         </div>
       </section>
@@ -246,8 +246,8 @@ export default function DonatePage() {
               },
               {
                 icon: Heart,
-                title: 'Support Families',
-                description: 'Enable families to access quality, affordable childcare'
+                title: 'Fund scholarships',
+                description: 'Help a caregiver complete a full certification pathway'
               },
               {
                 icon: Shield,

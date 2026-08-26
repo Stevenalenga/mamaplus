@@ -17,9 +17,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary mb-4">Post Not Found</h1>
           <p className="text-muted-foreground mb-6">The blog post you're looking for doesn't exist.</p>
-          <Link href="/blog">
+          <Link href="/learn">
             <Button className="bg-primary hover:bg-primary/90 text-white">
-              <ArrowLeft className="mr-2 w-4 h-4" /> Back to Blog
+              <ArrowLeft className="mr-2 w-4 h-4" /> Back to articles
             </Button>
           </Link>
         </div>
@@ -69,9 +69,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       <section className="pt-20 sm:pt-24 px-4 lg:px-8 bg-white/50">
         <div className="max-w-4xl mx-auto py-4">
-          <Link href="/blog">
+          <Link href="/learn">
             <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent">
-              <ArrowLeft className="mr-2 w-4 h-4" /> Back to Blog
+              <ArrowLeft className="mr-2 w-4 h-4" /> Back to Learn
             </Button>
           </Link>
         </div>
@@ -175,19 +175,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       <section className="py-10 px-4 sm:py-12 md:py-16 lg:px-8 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Ready to Get Started?</h2>
-          <p className="text-base sm:text-lg md:text-xl text-secondary font-semibold mb-6 md:mb-8 max-w-2xl mx-auto px-4">
-            Whether you're a parent or caregiver, MamaPlus is here to support you
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 md:mb-6">Continue learning</h2>
+          <p className="text-base sm:text-lg text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto px-4">
+            Explore more articles or enrol in a professional childcare course.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <Link href="/services">
+            <Link href="/learn">
               <Button className="bg-primary hover:bg-primary/90 text-white px-6 py-3">
-                Find Services
+                Open Learn
               </Button>
             </Link>
             <Link href="/courses">
               <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent px-6 py-3">
-                Explore Courses
+                Explore courses
               </Button>
             </Link>
           </div>

@@ -8,43 +8,9 @@ import {
   Heart, ChevronDown, Building2, CheckCircle2, Star,
   Shield, Sparkles, GraduationCap, Globe2
 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import SEOHead from '@/components/seo-head'
-
-function useInView(threshold = 0.2) {
-  const ref = useRef<HTMLDivElement | null>(null)
-  const [inView, setInView] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true) },
-      { threshold }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [threshold])
-
-  return { ref, inView }
-}
-
-function AnimatedSection({ children, className = '', delay = 0 }: {
-  children: React.ReactNode
-  className?: string
-  delay?: number
-}) {
-  const { ref, inView } = useInView()
-  return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
-  )
-}
+import { AnimatedSection } from '@/components/animated-section'
 
 export default function ServicesPage() {
   const [expandedService, setExpandedService] = useState<number | null>(null)
@@ -52,8 +18,8 @@ export default function ServicesPage() {
   const serviceSchema = {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    name: 'MamaPlus Childcare Services',
-    description: 'Comprehensive childcare services including caregiver placement, training, support for childcare centres, and corporate childcare solutions.',
+    name: 'MamaPlus Training Applications',
+    description: 'How MamaPlus training is applied in homes, childcare centres, workplaces, and parent programmes across Kenya.',
     provider: { '@type': 'Organization', name: 'MamaPlus' },
     areaServed: { '@type': 'Country', name: 'Kenya' },
     serviceType: ['Caregiver Placement', 'Childcare Training', 'Centre Support', 'Corporate Childcare'],
@@ -77,10 +43,10 @@ export default function ServicesPage() {
         "Ongoing check-ins and conflict-resolution support",
         "Guidance on contracts and fair employment practices"
       ],
-      cta: "Find a House Manager",
+      cta: "See family learning",
       ctaHref: "/families",
-      secondaryCta: "Sign In as a Family",
-      secondaryHref: "/login",
+      secondaryCta: "Explore courses",
+      secondaryHref: "/courses",
       stat: "500+",
       statLabel: "Target Placements"
     },
@@ -101,10 +67,10 @@ export default function ServicesPage() {
         "Mental health and wellbeing support",
         "Access to job opportunities through the MamaPlus platform"
       ],
-      cta: "Explore Training",
+      cta: "Explore training",
       ctaHref: "/courses",
-      secondaryCta: "Sign In as a Caregiver",
-      secondaryHref: "/login",
+      secondaryCta: "Caregiver pathways",
+      secondaryHref: "/caregivers",
       stat: "1,200+",
       statLabel: "Training Target"
     },
@@ -125,10 +91,10 @@ export default function ServicesPage() {
         "Increased trust and confidence from families",
         "Community-driven improvements in care quality"
       ],
-      cta: "Join the Centre Network",
+      cta: "Join the centre network",
       ctaHref: "/agencies-partners",
-      secondaryCta: "Centre Sign In",
-      secondaryHref: "/login",
+      secondaryCta: "Explore courses",
+      secondaryHref: "/courses",
       stat: "80+",
       statLabel: "Target Centres"
     },
@@ -149,10 +115,10 @@ export default function ServicesPage() {
         "Quality assurance and compliance support",
         "Flexible scheduling and management"
       ],
-      cta: "Partner With Us",
+      cta: "Partner with us",
       ctaHref: "/agencies-partners",
-      secondaryCta: "Employer Sign In",
-      secondaryHref: "/login",
+      secondaryCta: "Explore courses",
+      secondaryHref: "/courses",
       stat: "30+",
       statLabel: "Target Partners"
     },
@@ -172,10 +138,10 @@ export default function ServicesPage() {
         "Communication tools for working with domestic staff",
         "Parent check-ins, support groups, and practical resources"
       ],
-      cta: "Access Parent Resources",
+      cta: "Parent learning",
       ctaHref: "/families",
-      secondaryCta: "Parent Sign In",
-      secondaryHref: "/login",
+      secondaryCta: "Explore courses",
+      secondaryHref: "/courses",
       stat: "2,000+",
       statLabel: "Target Families"
     },
@@ -185,22 +151,22 @@ export default function ServicesPage() {
     {
       src: '/mamaplus images/relate.jpeg',
       alt: 'Caregiver training session',
-      caption: 'Hands-On Training',
-      description: 'Interactive sessions focused on real-world caregiving skills',
+      caption: 'Hands-on classroom practice',
+      description: 'Learners practise the skills they will use with children',
       tag: 'CPD Certified'
     },
     {
       src: '/mamaplus images/education.jpeg',
       alt: 'Professional development class',
-      caption: 'Professional Development',
-      description: 'Structured curriculum aligned to national care standards',
+      caption: 'Curriculum aligned to care standards',
+      description: 'Structured modules in child development, safety, and care',
       tag: 'Nationally Recognized'
     },
     {
       src: '/mamaplus images/growpep.jpeg',
       alt: 'Mentorship session',
-      caption: 'Personalized Mentorship',
-      description: 'One-on-one guidance to support every caregiver\'s journey',
+      caption: 'Mentorship after class',
+      description: 'Trainers stay with learners as they practise in real settings',
       tag: 'Ongoing Support'
     }
   ]
@@ -208,16 +174,14 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <SEOHead
-        title="Childcare Services - Placement, Training & Support"
-        description="MamaPlus offers integrated childcare services: house manager placement, professional caregiver training, support for childcare centres, corporate solutions, and parent resources across Kenya."
+        title="How Training Is Applied"
+        description="See how MamaPlus classroom training is applied in homes, childcare centres, workplaces, and parent programmes across Kenya."
         keywords={[
-          'childcare placement services Kenya',
-          'house manager hiring Nairobi',
-          'caregiver support programs',
-          'childcare centre support',
-          'corporate childcare solutions',
-          'caregiver background checks',
-          'professional nanny placement',
+          'childcare training applications Kenya',
+          'caregiver training in practice',
+          'childcare centre staff training',
+          'parent workshops Kenya',
+          'corporate childcare training',
         ]}
         canonicalUrl="https://mamaplus.co.ke/services"
         schema={serviceSchema}
@@ -236,34 +200,29 @@ export default function ServicesPage() {
           <AnimatedSection>
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
               <Sparkles className="w-4 h-4" />
-              Digital & Place-Based Childcare Platform
+              How classroom skills show up in real care
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-              Quality Childcare{' '}
+              How training is{' '}
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Families Can Trust
+                applied
               </span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-3 max-w-xl leading-relaxed">
-              MamaPlus is a digital and place-based childcare platform that helps families access safe, nurturing, and high-quality childcare—at home, in centres, and near the workplace.
+              MamaPlus training is practised in homes, centres, workplaces, and parent programmes—so children experience safer, more nurturing care.
             </p>
             <p className="text-base text-muted-foreground mb-8 max-w-xl leading-relaxed">
-              We combine professional training, clear care standards, and technology to connect families with caregivers they can trust. Whether you are a parent looking for reliable care, a caregiver building a career, or an employer supporting working families, MamaPlus brings the right people, skills, and support together.
+              This page shows where learning goes after class: in-home care, centre teams, employer programmes, and parent workshops. Start with a course, then see how the skills are used.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/families">
+              <Link href="/courses">
                 <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-5 text-base rounded-xl shadow-lg shadow-primary/25">
-                  Find Childcare <ArrowRight className="ml-2 w-4 h-4" />
+                  Explore courses <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button variant="outline" className="border-2 border-primary text-primary hover:bg-primary/5 px-8 py-5 text-base rounded-xl bg-transparent">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/caregivers">
+              <Link href="/who-we-serve">
                 <Button variant="outline" className="border-2 border-secondary text-secondary hover:bg-secondary/5 px-8 py-5 text-base rounded-xl bg-transparent">
-                  Become a Caregiver
+                  Who we serve
                 </Button>
               </Link>
             </div>
@@ -378,7 +337,7 @@ export default function ServicesPage() {
       <section id="services" className="py-16 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <AnimatedSection className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">Our Integrated Services</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4">Where training is applied</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Seven pillars supporting every part of the childcare journey
             </p>
@@ -753,26 +712,21 @@ export default function ServicesPage() {
         <AnimatedSection className="relative z-10 max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 text-white rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            Get Started Today
+            Continue learning
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Ready to Get Started?</h2>
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">Ready to enrol?</h2>
           <p className="text-lg text-white/70 mb-10 max-w-2xl mx-auto">
-            Whether you are a parent, caregiver, centre, or employer, MamaPlus is here to support you every step of the way.
+            Start with a course, or talk to the team about training for your family, centre, or organisation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            <Link href="/courses">
               <Button className="bg-white text-primary hover:bg-white/90 px-10 py-5 text-base font-bold rounded-xl shadow-xl w-full sm:w-auto">
-                Sign In <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button variant="outline" className="border-2 border-white/40 text-white hover:bg-white/10 px-10 py-5 text-base rounded-xl bg-transparent w-full sm:w-auto">
-                Create an Account
+                Explore courses <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
             <Link href="/contact">
               <Button variant="outline" className="border-2 border-white/40 text-white hover:bg-white/10 px-10 py-5 text-base rounded-xl bg-transparent w-full sm:w-auto">
-                Contact Us
+                Contact us
               </Button>
             </Link>
           </div>

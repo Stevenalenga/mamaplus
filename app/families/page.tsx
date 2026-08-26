@@ -1,115 +1,118 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { PageHero } from '@/components/page-hero'
+import { PhotoFigure } from '@/components/photo-figure'
+import { AnimatedSection } from '@/components/animated-section'
 import SEOHead from '@/components/seo-head'
 
 export default function FamiliesPage() {
   return (
-    <div className="min-h-screen bg-background pt-24 pb-16 px-4 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background">
       <SEOHead
-        title="For Families - Trusted Care and Health Information"
-        description="Find trusted childcare workers and domestic help, and access maternal and parenting health tools on MamaPlus."
+        title="For Families - Learn What Trained Care Looks Like"
+        description="MamaPlus helps families understand professional childcare training, join parent workshops, and work with caregivers who have practised the skills children need."
         canonicalUrl="https://mamaplus.co.ke/families"
       />
 
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">Trusted Care. Trusted Information. All in One Place.</h1>
-        <p className="text-lg text-muted-foreground max-w-4xl mb-10">Whether you need a childcare worker, domestic help, or reliable health information for your pregnancy and parenting journey—MamaPlus brings it all together.</p>
-
-        <section className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="md:col-span-2 relative h-72 rounded-xl overflow-hidden border border-border">
-            <Image src="/mamaplusservices/crowd2.jpeg" alt="Families and caregivers in a support session" fill className="object-cover" />
-          </div>
-          <div className="grid grid-rows-2 gap-4">
-            <div className="relative h-34 rounded-xl overflow-hidden border border-border">
-              <Image src="/mamaplus images/education.jpeg" alt="Caregiver-led learning in childcare setting" fill className="object-cover" />
-            </div>
-            <div className="relative h-34 rounded-xl overflow-hidden border border-border">
-              <Image src="/mamaplusservices/explain.jpeg" alt="MamaPlus facilitator explaining childcare guidance" fill className="object-cover" />
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white border border-border rounded-xl p-6 mb-8">
-          <h2 className="text-2xl font-semibold mb-4">What Families Can Do on MamaPlus</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-primary/5">
-                <tr>
-                  <th className="px-4 py-3">Feature</th>
-                  <th className="px-4 py-3">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ['Find Caregivers', 'Browse profiles of trained, vetted childcare workers and domestic helpers in your area. View experience, skills, and reviews.'],
-                  ['Health & Parenting Tools', 'Access pregnancy, postnatal, and child health information—online or offline. Audio narration available.'],
-                  ['Peace of Mind', 'All caregivers on the platform have completed MamaPlus training and participate in ongoing peer support.'],
-                  ['Direct Booking', 'Connect with caregivers directly through the platform. No middlemen. No hidden fees.'],
-                ].map(([feature, description]) => (
-                  <tr key={feature} className="border-t border-border">
-                    <td className="px-4 py-3 font-medium text-primary">{feature}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <section className="bg-white border border-border rounded-xl p-6">
-            <h2 className="text-2xl font-semibold mb-4">How It Works for Families</h2>
-            <ol className="space-y-2 text-muted-foreground list-decimal list-inside">
-              <li>Create a free family profile.</li>
-              <li>Browse caregiver profiles in your area.</li>
-              <li>Connect, interview, and hire directly.</li>
-            </ol>
-          </section>
-
-          <section className="bg-white border border-border rounded-xl p-6">
-            <h2 className="text-2xl font-semibold mb-4">Why Families Trust MamaPlus</h2>
-            <ul className="space-y-2 text-muted-foreground list-disc list-inside">
-              <li>Verified caregivers with training credentials and references</li>
-              <li>Expert-reviewed maternal and child health resources</li>
-              <li>Moderated community support for parents</li>
-              <li>Offline access for low-connectivity environments</li>
-            </ul>
-          </section>
+      <PageHero
+        kicker="For families"
+        title="Learn what trained care looks like—and how to support it at home"
+        intro="Parent workshops, child-development guidance, and a clear picture of the skills MamaPlus caregivers practise. Placement support is available after the learning foundation."
+        photo={{
+          src: '/mamaplus images/education.jpeg',
+          alt: 'Parent and caregiver learning session',
+          caption: 'Parents learning alongside trained caregivers',
+        }}
+      >
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link href="/courses">
+            <Button className="bg-primary hover:bg-primary/90 text-white">Explore courses</Button>
+          </Link>
+          <Link href="/learn">
+            <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent">
+              Parent resources
+            </Button>
+          </Link>
         </div>
+      </PageHero>
 
-        <section className="bg-white border border-border rounded-xl p-6 mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Pricing</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-primary/5">
-                <tr>
-                  <th className="px-4 py-3">Service</th>
-                  <th className="px-4 py-3">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ['Family Profile Creation', 'Free'],
-                  ['Browse Caregivers', 'Free'],
-                  ['Connect with Caregivers', 'Free'],
-                  ['Placement fees apply only when you hire', 'Contact for details'],
-                ].map(([service, cost]) => (
-                  <tr key={service} className="border-t border-border">
-                    <td className="px-4 py-3 text-foreground">{service}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{cost}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <div className="grid sm:grid-cols-2 gap-3 max-w-2xl">
-          <Link href="/signup"><Button className="w-full bg-primary hover:bg-primary/90 text-white">Create Your Family Account</Button></Link>
-          <Link href="/courses"><Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 bg-transparent">Browse Caregivers Now</Button></Link>
+      <section className="px-4 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-4">
+          <AnimatedSection>
+            <PhotoFigure
+              src="/mamaplusservices/explain.jpeg"
+              alt="Facilitator explaining childcare guidance to families"
+              caption="Facilitators explaining routines, safety, and nurturing care"
+              heightClassName="h-64"
+            />
+          </AnimatedSection>
+          <AnimatedSection delay={80}>
+            <PhotoFigure
+              src="/mamaplusservices/crowd2.jpeg"
+              alt="Families in a MamaPlus support session"
+              caption="Community sessions for parents and caregivers"
+              heightClassName="h-64"
+            />
+          </AnimatedSection>
         </div>
-      </div>
+      </section>
+
+      <section className="px-4 lg:px-8 pb-16">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <AnimatedSection>
+            <section className="bg-white border border-border rounded-2xl p-6">
+              <h2 className="text-2xl font-semibold mb-4">What families learn with MamaPlus</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-primary/5">
+                    <tr>
+                      <th className="px-4 py-3">Focus</th>
+                      <th className="px-4 py-3">What you gain</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Parent workshops', 'Child development, nurturing care, and how to work with a trained caregiver at home.'],
+                      ['What trained care looks like', 'Clear standards for safety, routines, play, nutrition, and emotional wellbeing.'],
+                      ['Working with caregivers', 'Guidance on expectations, communication, and supporting professional practice.'],
+                      ['Optional placement support', 'After the learning foundation, connect with caregivers who have completed MamaPlus training.'],
+                    ].map(([feature, description]) => (
+                      <tr key={feature} className="border-t border-border">
+                        <td className="px-4 py-3 font-medium text-primary">{feature}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </AnimatedSection>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <AnimatedSection>
+              <section className="bg-white border border-border rounded-2xl p-6 h-full">
+                <h2 className="text-2xl font-semibold mb-4">How it works</h2>
+                <ol className="space-y-2 text-muted-foreground list-decimal list-inside">
+                  <li>Browse parent learning and the course catalogue.</li>
+                  <li>Join a workshop or talk to the team about your child’s needs.</li>
+                  <li>Work with trained caregivers who practise the same standards.</li>
+                </ol>
+              </section>
+            </AnimatedSection>
+            <AnimatedSection delay={80}>
+              <section className="bg-white border border-border rounded-2xl p-6 h-full">
+                <h2 className="text-2xl font-semibold mb-4">Why families choose trained care</h2>
+                <ul className="space-y-2 text-muted-foreground list-disc list-inside">
+                  <li>Caregivers trained in safety, development, and positive discipline</li>
+                  <li>Parent workshops grounded in the same curriculum</li>
+                  <li>Clear care standards you can recognise at home</li>
+                  <li>Ongoing support after class</li>
+                </ul>
+              </section>
+            </AnimatedSection>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

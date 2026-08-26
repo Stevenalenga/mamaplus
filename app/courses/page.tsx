@@ -20,9 +20,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { ROLES } from '@/lib/roles'
 import { toast } from 'sonner'
-import Header from '@/components/header'
-import Footer from '@/components/footer'
-import AuthenticatedHeader from '@/components/authenticated-header'
+import Image from 'next/image'
+import { AnimatedSection } from '@/components/animated-section'
+import SEOHead from '@/components/seo-head'
 
 type Course = {
   id: string
@@ -363,27 +363,43 @@ function CoursesPageInner() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {isUserLoading ? null : user ? (
-        <AuthenticatedHeader activePage="courses" />
-      ) : (
-        <Header />
-      )}
+  const coursePhotos = [
+    '/mamaplusservices/explain.jpeg',
+    '/mamaplus images/education.jpeg',
+    '/mamaplus images/presentaton.jpeg',
+    '/mamaplusservices/excel.jpeg',
+    '/mamaplusservices/platform-community-training.jpeg',
+    '/mamaplus images/explainers.jpeg',
+  ]
 
-      {/* Hero Section */}
-      <div
-        className={`bg-gradient-to-r from-primary to-primary/80 text-white pb-16 ${
-          user ? 'py-16' : 'pt-24 md:pt-32'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Professional Childcare Training Courses</h1>
-          <p className="text-xl text-white/90 max-w-3xl">
-            Elevate your childcare skills with expert-led training designed for professionals who care about quality, safety, and child development.
-          </p>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-white to-background">
+      <SEOHead
+        title="Childcare Training Courses"
+        description="Browse MamaPlus professional childcare courses. Enrol in certified training for caregivers, parents, and centre teams across Kenya."
+        canonicalUrl="https://mamaplus.co.ke/courses"
+      />
+
+      <section className="pt-24 pb-12 px-4 md:pt-32 md:pb-16 lg:px-8 bg-gradient-to-r from-primary to-primary/80 text-white">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 items-center">
+          <AnimatedSection>
+            <p className="text-sm font-semibold uppercase tracking-widest text-white/80 mb-3">Course catalogue</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Professional childcare training courses</h1>
+            <p className="text-lg text-white/90 max-w-3xl">
+              Choose a pathway, learn practical skills, and earn credentials that raise the quality of care for children.
+            </p>
+          </AnimatedSection>
+          <AnimatedSection delay={120} className="relative h-48 md:h-64 rounded-2xl overflow-hidden hidden md:block">
+            <Image
+              src="/mamaplus images/education.jpeg"
+              alt="Learners in a MamaPlus training classroom"
+              fill
+              className="object-cover"
+              priority
+            />
+          </AnimatedSection>
         </div>
-      </div>
+      </section>
 
       {/* Payment Status Banner */}
       {paymentStatusParam === 'success' && (
@@ -437,8 +453,18 @@ function CoursesPageInner() {
         <>
         {/* Course Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          {courses.map((course) => (
-            <Card key={course.id} className={`hover:shadow-lg transition ${course.featured ? 'border-primary border-2' : ''}`}>
+          {courses.map((course, courseIndex) => (
+            <Card key={course.id} className={`overflow-hidden hover:shadow-lg transition ${course.featured ? 'border-primary border-2' : ''}`}>
+              <div className="relative h-44">
+                <Image
+                  src={coursePhotos[courseIndex % coursePhotos.length]}
+                  alt={`${course.title} training session`}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <p className="absolute left-4 bottom-3 text-white text-sm font-medium">Classroom and practice-based learning</p>
+              </div>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
                   <CardTitle className="text-2xl font-bold text-primary">{course.title}</CardTitle>
@@ -944,7 +970,6 @@ function CoursesPageInner() {
         </div>
       </div>
 
-      {!user && !isUserLoading && <Footer />}
     </div>
   )
 }
