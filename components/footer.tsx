@@ -17,34 +17,41 @@ export default function Footer() {
               />
             </Link>
             <p className="text-white/70 text-sm sm:text-base">
-              Professional childcare training that raises the quality of care for children across Kenya.
+              Trusted childcare starts with trained caregivers. MamaPlus trains and certifies caregivers, supports families, and partners with organisations across Kenya.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Learn</h4>
-            <ul className="space-y-2 text-white/70 text-sm sm:text-base">
-              <li><Link href="/courses" className="hover:text-primary transition">Courses</Link></li>
-              <li><Link href="/learn" className="hover:text-primary transition">Learn</Link></li>
-              <li><Link href="/blog" className="hover:text-primary transition">Blog</Link></li>
-              <li><Link href="/about-us" className="hover:text-primary transition">About</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Who we serve</h4>
+            <h4 className="font-semibold mb-4">Explore</h4>
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
               <li><Link href="/families" className="hover:text-primary transition">Families</Link></li>
               <li><Link href="/caregivers" className="hover:text-primary transition">Caregivers</Link></li>
-              <li><Link href="/agencies-partners" className="hover:text-primary transition">Agencies</Link></li>
-              <li><Link href="/services" className="hover:text-primary transition">How training is applied</Link></li>
+              <li><Link href="/courses" className="hover:text-primary transition">Training</Link></li>
+              <li><Link href="/partner" className="hover:text-primary transition">Childcare centres</Link></li>
+              <li><Link href="/learn" className="hover:text-primary transition">Resources</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-4">Get involved</h4>
+            <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-white/70 text-sm sm:text-base">
-              <li><Link href="/partner" className="hover:text-primary transition">Partner</Link></li>
+              <li><Link href="/about-us" className="hover:text-primary transition">About us</Link></li>
+              <li><Link href="/agencies-partners" className="hover:text-primary transition">Partners</Link></li>
               <li><Link href="/donate" className="hover:text-primary transition">Donate</Link></li>
               <li><Link href="/contact" className="hover:text-primary transition">Contact</Link></li>
-              <li><Link href="/services/quicksignup" className="hover:text-primary transition">Quick signup</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Contact</h4>
+            <ul className="space-y-2 text-white/70 text-sm sm:text-base">
+              <li>Nairobi, Kenya</li>
+              <li>
+                <a href="tel:+254769886655" className="hover:text-primary transition">+254 769 886655</a>
+              </li>
+              <li>
+                <a href="tel:+254769886644" className="hover:text-primary transition">+254 769 886644</a>
+              </li>
+              <li>
+                <a href="mailto:mamapluske@gmail.com" className="hover:text-primary transition">mamapluske@gmail.com</a>
+              </li>
             </ul>
           </div>
         </div>

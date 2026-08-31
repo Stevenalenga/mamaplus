@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 type PhotoFigureProps = {
   src: string
@@ -20,7 +21,7 @@ export function PhotoFigure({
   heightClassName = 'h-64 md:h-80',
 }: PhotoFigureProps) {
   return (
-    <figure className={`relative overflow-hidden rounded-2xl shadow-lg ${className}`}>
+    <figure className={cn('relative overflow-hidden rounded-2xl shadow-lg', className)}>
       <div className={`relative ${heightClassName}`}>
         <Image src={src} alt={alt} fill className={imageClassName} priority={priority} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />

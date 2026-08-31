@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'MamaPlus - Professional Childcare Training in Kenya',
+    default: 'MamaPlus - Trusted Childcare Starts with Trained Caregivers',
     template: '%s | MamaPlus',
   },
   description:
-    'Learn professional childcare with MamaPlus. Certified training for caregivers, parents, and centres that raises the quality of care for children across Kenya.',
+    'MamaPlus trains and certifies caregivers, helps families understand quality care, and partners with organisations to strengthen childcare across Kenya.',
 }
 
 export default function RootLayout({

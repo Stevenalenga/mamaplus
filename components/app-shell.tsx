@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
+import { WhatsAppCta } from '@/components/whatsapp-cta'
 import { CanonicalLink } from '@/components/canonical-link'
 
 function shouldShowMarketingShell(pathname: string) {
@@ -28,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {showMarketingShell && <Header />}
       {children}
       {showMarketingShell && <Footer />}
+      {showMarketingShell && <WhatsAppCta />}
       <Toaster />
       <Analytics />
     </SessionProvider>

@@ -25,8 +25,8 @@ export default function FamiliesPage() {
         }}
       >
         <div className="flex flex-col sm:flex-row gap-3">
-          <Link href="/courses">
-            <Button className="bg-primary hover:bg-primary/90 text-white">Explore courses</Button>
+          <Link href="/contact">
+            <Button className="bg-primary hover:bg-primary/90 text-white">Talk to us about care</Button>
           </Link>
           <Link href="/learn">
             <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent">

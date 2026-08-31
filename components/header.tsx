@@ -15,19 +15,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const whoWeServeLinks = [
-  { href: '/who-we-serve', label: 'Overview' },
-  { href: '/families', label: 'Families' },
-  { href: '/caregivers', label: 'Caregivers' },
+const partnerLinks = [
   { href: '/agencies-partners', label: 'Agencies & partners' },
+  { href: '/partner', label: 'ELC network' },
+  { href: '/donate', label: 'Donate' },
 ]
 
-function isWhoWeServePath(pathname: string) {
+function isPartnersPath(pathname: string) {
   return (
-    pathname === '/who-we-serve' ||
-    pathname === '/families' ||
-    pathname === '/caregivers' ||
-    pathname === '/agencies-partners'
+    pathname === '/agencies-partners' ||
+    pathname === '/partner' ||
+    pathname === '/donate'
   )
 }
 
@@ -37,7 +35,7 @@ function isLearnPath(pathname: string) {
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [whoOpen, setWhoOpen] = useState(false)
+  const [partnersOpen, setPartnersOpen] = useState(false)
   const pathname = usePathname()
   const { data: session, status } = useSession()
   const dashboardHref = getDashboardForRole((session?.user as { role?: string } | undefined)?.role)
@@ -52,7 +50,7 @@ export default function Header() {
 
   const closeMobile = () => {
     setMobileMenuOpen(false)
-    setWhoOpen(false)
+    setPartnersOpen(false)
   }
 
   const authCtas = (
@@ -64,17 +62,19 @@ export default function Header() {
           </Button>
         </Link>
       ) : (
-        <Link href="/login" onClick={closeMobile}>
-          <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent px-3 text-xs h-9 w-full lg:w-auto">
-            Sign In
-          </Button>
-        </Link>
+        <>
+          <Link href="/login" onClick={closeMobile}>
+            <Button variant="outline" className="text-primary border-primary hover:bg-primary/10 bg-transparent px-3 text-xs h-9 w-full lg:w-auto">
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/signup" onClick={closeMobile}>
+            <Button className="bg-primary hover:bg-primary/90 text-white px-3 text-xs h-9 w-full lg:w-auto">
+              Get Started
+            </Button>
+          </Link>
+        </>
       )}
-      <Link href="/courses" onClick={closeMobile}>
-        <Button className="bg-primary hover:bg-primary/90 text-white px-3 text-xs h-9 w-full lg:w-auto">
-          Explore Courses
-        </Button>
-      </Link>
     </>
   )
 
@@ -94,18 +94,18 @@ export default function Header() {
 
         <div className="hidden lg:flex items-center gap-5 text-base">
           <Link href="/" className={navClass('/', pathname === '/')}>Home</Link>
-          <Link href="/about-us" className={navClass('/about-us')}>About</Link>
-          <Link href="/courses" className={navClass('/courses')}>Courses</Link>
-          <Link href="/learn" className={navClass('/learn', isLearnPath(pathname))}>Learn</Link>
+          <Link href="/families" className={navClass('/families')}>For Families</Link>
+          <Link href="/caregivers" className={navClass('/caregivers')}>For Caregivers</Link>
+          <Link href="/courses" className={navClass('/courses')}>Training</Link>
           <DropdownMenu>
             <DropdownMenuTrigger
-              className={`${navClass('/who-we-serve', isWhoWeServePath(pathname))} inline-flex items-center gap-1 outline-none bg-transparent border-0 p-0 cursor-pointer`}
+              className={`${navClass('/agencies-partners', isPartnersPath(pathname))} inline-flex items-center gap-1 outline-none bg-transparent border-0 p-0 cursor-pointer`}
             >
-              Who we serve
+              Partners
               <ChevronDown className="w-4 h-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[14rem]">
-              {whoWeServeLinks.map((link) => (
+              {partnerLinks.map((link) => (
                 <DropdownMenuItem key={link.href} asChild>
                   <Link href={link.href} className="cursor-pointer">
                     {link.label}
@@ -114,6 +114,8 @@ export default function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Link href="/about-us" className={navClass('/about-us')}>About</Link>
+          <Link href="/learn" className={navClass('/learn', isLearnPath(pathname))}>Learn</Link>
           <Link href="/contact" className={navClass('/contact')}>Contact</Link>
         </div>
 
@@ -133,31 +135,43 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-border">
           <div className="px-4 py-4 space-y-3">
+            <div className="grid grid-cols-1 gap-2 pb-2">
+              <Link href="/courses" onClick={closeMobile}>
+                <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+                  Start training
+                </Button>
+              </Link>
+              <Link href="/families" onClick={closeMobile}>
+                <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10 bg-transparent">
+                  For families
+                </Button>
+              </Link>
+            </div>
             <Link href="/" className={`${navClass('/', pathname === '/')} block py-2 text-lg`} onClick={closeMobile}>
               Home
             </Link>
-            <Link href="/about-us" className={`${navClass('/about-us')} block py-2 text-lg`} onClick={closeMobile}>
-              About
+            <Link href="/families" className={`${navClass('/families')} block py-2 text-lg`} onClick={closeMobile}>
+              For Families
+            </Link>
+            <Link href="/caregivers" className={`${navClass('/caregivers')} block py-2 text-lg`} onClick={closeMobile}>
+              For Caregivers
             </Link>
             <Link href="/courses" className={`${navClass('/courses')} block py-2 text-lg`} onClick={closeMobile}>
-              Courses
-            </Link>
-            <Link href="/learn" className={`${navClass('/learn', isLearnPath(pathname))} block py-2 text-lg`} onClick={closeMobile}>
-              Learn
+              Training
             </Link>
             <div>
               <button
                 type="button"
-                className={`${navClass('/who-we-serve', isWhoWeServePath(pathname))} flex w-full items-center justify-between py-2 text-lg`}
-                onClick={() => setWhoOpen(!whoOpen)}
-                aria-expanded={whoOpen}
+                className={`${navClass('/agencies-partners', isPartnersPath(pathname))} flex w-full items-center justify-between py-2 text-lg`}
+                onClick={() => setPartnersOpen(!partnersOpen)}
+                aria-expanded={partnersOpen}
               >
-                Who we serve
-                <ChevronDown className={`w-5 h-5 transition-transform ${whoOpen ? 'rotate-180' : ''}`} />
+                Partners
+                <ChevronDown className={`w-5 h-5 transition-transform ${partnersOpen ? 'rotate-180' : ''}`} />
               </button>
-              {whoOpen && (
+              {partnersOpen && (
                 <div className="pl-4 space-y-1 pb-2">
-                  {whoWeServeLinks.map((link) => (
+                  {partnerLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
@@ -170,6 +184,12 @@ export default function Header() {
                 </div>
               )}
             </div>
+            <Link href="/about-us" className={`${navClass('/about-us')} block py-2 text-lg`} onClick={closeMobile}>
+              About
+            </Link>
+            <Link href="/learn" className={`${navClass('/learn', isLearnPath(pathname))} block py-2 text-lg`} onClick={closeMobile}>
+              Learn
+            </Link>
             <Link href="/contact" className={`${navClass('/contact')} block py-2 text-lg`} onClick={closeMobile}>
               Contact
             </Link>

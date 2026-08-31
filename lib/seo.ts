@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 
 const siteConfig = {
   name: 'MamaPlus',
-  description: 'Professional childcare training in Kenya. MamaPlus prepares caregivers, parents, and centres with practical skills so children receive safer, more nurturing care.',
+  description: 'MamaPlus trains and certifies caregivers in Kenya, helps families understand quality childcare, and partners with organisations to strengthen care across communities.',
   url: 'https://mamaplus.co.ke',
   ogImage: 'https://mamaplus.co.ke/og-image.jpg',
   links: {
@@ -13,19 +13,19 @@ const siteConfig = {
 }
 
 export function constructMetadata({
-  title = 'MamaPlus - Professional Childcare Training in Kenya',
-  description = 'Learn professional childcare with MamaPlus. Certified training for caregivers, parents, and centres that raises the quality of care for children across Kenya.',
+  title = 'MamaPlus - Trusted Childcare Starts with Trained Caregivers',
+  description = 'MamaPlus trains and certifies caregivers, helps families understand quality care, and partners with organisations to strengthen childcare across Kenya.',
   image = siteConfig.ogImage,
   icons = '/favicon.ico',
   noIndex = false,
   keywords = [
     'childcare training Kenya',
     'caregiver certification Nairobi',
+    'trusted childcare Kenya',
     'early childhood training',
     'childcare courses Kenya',
     'professional caregiver training',
-    'child development courses',
-    'childcare training programmes',
+    'childcare partners Kenya',
     'MamaPlus training',
   ],
   ...props
