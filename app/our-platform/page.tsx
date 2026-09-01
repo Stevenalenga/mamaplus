@@ -4,6 +4,7 @@ import { PageHero } from '@/components/page-hero'
 import { PhotoFigure } from '@/components/photo-figure'
 import { AnimatedSection } from '@/components/animated-section'
 import SEOHead from '@/components/seo-head'
+import { ApkDownloadButton } from '@/components/apk-download-button'
 
 export default function OurPlatformPage() {
   return (
@@ -28,11 +29,7 @@ export default function OurPlatformPage() {
           <Link href="/learn">
             <Button className="bg-primary hover:bg-primary/90 text-white">Go to Learn</Button>
           </Link>
-          <Link href="/courses">
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent">
-              Explore courses
-            </Button>
-          </Link>
+          <ApkDownloadButton variant="outline" className="border-primary text-primary hover:bg-primary/10 bg-transparent" />
         </div>
       </PageHero>
 

@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { getDashboardForRole } from '@/lib/roles'
+import { ApkDownloadButton } from '@/components/apk-download-button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -146,6 +147,9 @@ export default function Header() {
                   For families
                 </Button>
               </Link>
+              <div onClick={closeMobile}>
+                <ApkDownloadButton className="w-full" />
+              </div>
             </div>
             <Link href="/" className={`${navClass('/', pathname === '/')} block py-2 text-lg`} onClick={closeMobile}>
               Home

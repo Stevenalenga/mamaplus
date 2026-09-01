@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { MAMAPLUS_APK_FILENAME, MAMAPLUS_APK_HREF } from '@/lib/apk'
 
 export default function Footer() {
   return (
@@ -28,6 +29,11 @@ export default function Footer() {
               <li><Link href="/courses" className="hover:text-primary transition">Training</Link></li>
               <li><Link href="/partner" className="hover:text-primary transition">Childcare centres</Link></li>
               <li><Link href="/learn" className="hover:text-primary transition">Resources</Link></li>
+              <li>
+                <a href={MAMAPLUS_APK_HREF} download={MAMAPLUS_APK_FILENAME} className="hover:text-primary transition">
+                  Download Android app
+                </a>
+              </li>
             </ul>
           </div>
           <div>

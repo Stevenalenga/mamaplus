@@ -20,6 +20,7 @@ import SEOHead from '@/components/seo-head'
 import { getDashboardForRole } from '@/lib/roles'
 import { AnimatedSection } from '@/components/animated-section'
 import { PhotoFigure } from '@/components/photo-figure'
+import { ApkDownloadButton } from '@/components/apk-download-button'
 
 type HomePost = {
   slug: string
@@ -425,11 +426,14 @@ export function HomeLanding({ posts }: { posts: HomePost[] }) {
                   </div>
                 ))}
               </div>
-              <Link href="/our-platform">
-                <Button className="bg-primary hover:bg-primary/90 text-white">
-                  See the learning tools <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/our-platform">
+                  <Button variant="outline" className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-transparent">
+                    See the learning tools <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+                <ApkDownloadButton />
+              </div>
             </AnimatedSection>
             <AnimatedSection delay={120}>
               <PhotoFigure
@@ -437,6 +441,36 @@ export function HomeLanding({ posts }: { posts: HomePost[] }) {
                 alt="Caregivers working together with training materials in a community hub"
                 caption="Community hubs that host training, practice, and peer support"
                 heightClassName="h-80 lg:h-[450px]"
+              />
+            </AnimatedSection>
+          </div>
+        </div>
+      </section>
+
+      <section id="get-the-app" className="py-16 px-4 lg:px-8 scroll-mt-24">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white border border-border rounded-2xl p-6 md:p-10 grid lg:grid-cols-2 gap-8 items-center">
+            <AnimatedSection>
+              <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-2">Android app</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+                Install MamaPlus on your phone
+              </h2>
+              <p className="text-muted-foreground mb-4">
+                Download the MamaPlus Android app to keep training on your phone, get realtime updates, and stay connected even when you are away from the website.
+              </p>
+              <ol className="space-y-2 text-sm text-muted-foreground mb-6 list-decimal list-inside">
+                <li>Tap Download Android app and save the MamaPlus APK.</li>
+                <li>Open the file on your phone. If Android asks, allow installs from this source.</li>
+                <li>Install, then open MamaPlus for courses and updates.</li>
+              </ol>
+              <ApkDownloadButton className="px-6 py-5" />
+            </AnimatedSection>
+            <AnimatedSection delay={120}>
+              <PhotoFigure
+                src="/seriopis/DSC_4295.JPG"
+                alt="MamaPlus learners using training tools during a community workshop"
+                caption="Training in your pocket: the MamaPlus Android app"
+                heightClassName="h-64 md:h-80"
               />
             </AnimatedSection>
           </div>
