@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Award,
   UserCircle,
+  Bell,
   type LucideIcon,
 } from 'lucide-react'
 import { ROLES } from '@/lib/roles'
@@ -30,6 +31,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: '/dashboard/admin/agencies', label: 'Agencies', icon: Building2, pageKey: 'agencies' },
   { href: '/dashboard/admin/reviews', label: 'Reviews', icon: MessageSquare, pageKey: 'reviews' },
   { href: '/dashboard/admin/certificates', label: 'Certificates', icon: Award, pageKey: 'certificates' },
+  { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell, pageKey: 'notifications' },
   { href: '/dashboard/admin/blog', label: 'Blog', icon: FileText, pageKey: 'blog' },
   { href: '/dashboard/admin/school-manager', label: 'Schools', icon: School, pageKey: 'schools' },
   { href: '/dashboard/admin/profile', label: 'Profile', icon: UserCircle, pageKey: 'profile' },
