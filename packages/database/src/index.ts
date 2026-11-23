@@ -3,8 +3,11 @@ import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 
 const packageRoot = path.resolve(__dirname, '..')
+const repoRoot = path.resolve(__dirname, '../../..')
 config({ path: path.join(packageRoot, '.env') })
 config({ path: path.join(packageRoot, '.env.local') })
+config({ path: path.join(repoRoot, '.env') })
+config({ path: path.join(repoRoot, '.env.local') })
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

@@ -1,3 +1,10 @@
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+if (!configuredApiUrl || /localhost|127\.0\.0\.1/.test(configuredApiUrl)) {
+  process.env.NEXT_PUBLIC_API_URL = ''
+}
+
+const apiOrigin = (process.env.API_INTERNAL_URL || 'http://127.0.0.1:4000').replace(/\/$/, '')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -5,6 +12,16 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+  },
+  async rewrites() {
+    return {
+      fallback: [
+        {
+          source: '/api/:path*',
+          destination: `${apiOrigin}/api/:path*`,
+        },
+      ],
+    }
   },
   async headers() {
     return [

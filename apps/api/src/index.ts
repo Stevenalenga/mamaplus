@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import './env'
 import { serve } from '@hono/node-server'
 import { swaggerUI } from '@hono/swagger-ui'
 import { Hono } from 'hono'

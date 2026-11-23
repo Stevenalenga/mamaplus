@@ -1,4 +1,10 @@
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
+const API_URL =
+  configuredApiUrl && !/localhost|127\.0\.0\.1/.test(configuredApiUrl)
+    ? configuredApiUrl
+    : typeof window === 'undefined'
+      ? 'http://127.0.0.1:4000'
+      : ''
 
 let cachedToken: string | null = null
 let sessionReady = false
@@ -19,7 +25,8 @@ export function markApiSessionReady() {
 
 export function apiUrl(path: string) {
   if (path.startsWith('http://') || path.startsWith('https://')) return path
-  return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`
+  const normalized = path.startsWith('/') ? path : `/${path}`
+  return API_URL ? `${API_URL}${normalized}` : normalized
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}) {

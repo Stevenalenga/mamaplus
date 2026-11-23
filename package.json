@@ -8,7 +8,7 @@
     "dev:api": "pnpm --filter @mamaplus/api dev",
     "build": "pnpm --filter @mamaplus/database generate && pnpm --filter @mamaplus/api build && pnpm --filter @mamaplus/web build",
     "lint": "pnpm --filter @mamaplus/web lint",
-    "start": "pnpm --filter @mamaplus/web start",
+    "start": "node scripts/start-production.mjs",
     "db:generate": "pnpm --filter @mamaplus/database generate",
     "db:seed": "pnpm --filter @mamaplus/database seed",
     "db:seed-courses": "pnpm --filter @mamaplus/database seed-courses",
