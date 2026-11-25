@@ -13,7 +13,7 @@ export const learningRouter = new Hono<AppEnv>()
  */
 learningRouter.get('/api/enrollments', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json(
         { success: false, message: 'Not authenticated' },
@@ -54,7 +54,7 @@ learningRouter.get('/api/enrollments', async (c) => {
  */
 learningRouter.post('/api/enrollments', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json(
         { success: false, message: 'Not authenticated' },
@@ -121,7 +121,7 @@ learningRouter.post('/api/enrollments', async (c) => {
  */
 learningRouter.get('/api/progress', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json(
         { success: false, message: 'Not authenticated' },
@@ -208,7 +208,7 @@ learningRouter.get('/api/progress', async (c) => {
  */
 learningRouter.post('/api/progress', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json(
         { success: false, message: 'Not authenticated' },

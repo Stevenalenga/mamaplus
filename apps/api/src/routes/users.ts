@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { prisma } from '@mamaplus/database'
 import type { AppEnv } from '../types'
-import { generateToken, getUser, hasRole } from '../lib/auth'
+import { getUser, hasRole, issueAuthToken, toSessionView } from '../lib/auth'
 import { hashPassword, verifyPassword } from '../lib/db-utils'
 import { isValidEmail, normalizeEmail } from '../lib/user-identity'
 import { ROLES } from '../lib/roles'
@@ -20,8 +20,8 @@ type UploadedFile = {
   arrayBuffer: () => Promise<ArrayBuffer>
 }
 
-function getAuthContext(c: Context<AppEnv>) {
-  const currentUser = getUser(c)
+async function getAuthContext(c: Context<AppEnv>) {
+  const currentUser = await getUser(c)
   if (!currentUser) return { error: 'Unauthorized' as const, status: 401 as const }
   return { currentUser }
 }
@@ -34,7 +34,7 @@ export const usersRouter = new Hono<AppEnv>()
  */
 usersRouter.get('/api/users/me', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ message: 'Not authenticated' }, 401)
@@ -81,7 +81,7 @@ usersRouter.get('/api/users/me', async (c) => {
  * Update the authenticated user's name, email, phone number, and/or password.
  */
 usersRouter.patch('/api/users/me', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
   if (!currentUser) {
     return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
@@ -225,7 +225,7 @@ usersRouter.patch('/api/users/me', async (c) => {
  * Upload a new profile picture for the authenticated user.
  */
 usersRouter.post('/api/users/me/avatar', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
   if (!currentUser) {
     return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
@@ -289,7 +289,7 @@ usersRouter.post('/api/users/me/avatar', async (c) => {
  * Remove the profile picture for the authenticated user.
  */
 usersRouter.delete('/api/users/me/avatar', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
   if (!currentUser) {
     return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
@@ -313,7 +313,7 @@ usersRouter.delete('/api/users/me/avatar', async (c) => {
  * Only callable by authenticated users whose current role is PENDING.
  */
 usersRouter.post('/api/users/onboard', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
 
   if (!currentUser) {
     return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -373,17 +373,14 @@ usersRouter.post('/api/users/onboard', async (c) => {
       },
     })
 
-    const token = generateToken({
-      userId: updatedUser.id,
-      email: updatedUser.email ?? '',
-      role: updatedUser.role,
-    })
+    const issued = await issueAuthToken(c, updatedUser)
 
     return c.json({
       success: true,
       data: {
         user: updatedUser,
-        token,
+        token: issued.token,
+        session: issued.session,
       },
     })
   } catch (error) {
@@ -398,7 +395,7 @@ usersRouter.post('/api/users/onboard', async (c) => {
  */
 usersRouter.post('/api/users/push-token', async (c) => {
   try {
-    const user = getUser(c)
+    const user = await getUser(c)
     if (!user) {
       return c.json({ success: false, message: 'Unauthorized' }, 401)
     }
@@ -450,7 +447,7 @@ usersRouter.post('/api/users/push-token', async (c) => {
  */
 usersRouter.delete('/api/users/push-token', async (c) => {
   try {
-    const user = getUser(c)
+    const user = await getUser(c)
     if (!user) {
       return c.json({ success: false, message: 'Unauthorized' }, 401)
     }
@@ -476,13 +473,48 @@ usersRouter.delete('/api/users/push-token', async (c) => {
   }
 })
 
+usersRouter.get('/api/users/sessions', async (c) => {
+  const user = await getUser(c)
+  if (!user) return c.json({ success: false, message: 'Not authenticated' }, 401)
+
+  const sessions = await prisma.session.findMany({
+    where: { userId: user.userId, revokedAt: null },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return c.json({
+    success: true,
+    data: sessions.map((session) => toSessionView(session, user.sessionId)),
+  })
+})
+
+usersRouter.delete('/api/users/sessions/:id', async (c) => {
+  const user = await getUser(c)
+  if (!user) return c.json({ success: false, message: 'Not authenticated' }, 401)
+
+  const id = c.req.param('id')
+  const session = await prisma.session.findFirst({
+    where: { id, userId: user.userId },
+  })
+  if (!session) return c.json({ success: false, message: 'Session not found' }, 404)
+
+  if (!session.revokedAt) {
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    })
+  }
+
+  return c.json({ success: true, message: 'Session revoked' })
+})
+
 /**
  * GET /api/users/:id
  * Admin or self only
  */
 usersRouter.get('/api/users/:id', async (c) => {
   try {
-    const auth = getAuthContext(c)
+    const auth = await getAuthContext(c)
     if ('error' in auth) {
       return c.json({ message: auth.error }, auth.status)
     }
@@ -533,7 +565,7 @@ usersRouter.get('/api/users/:id', async (c) => {
  */
 usersRouter.patch('/api/users/:id', async (c) => {
   try {
-    const auth = getAuthContext(c)
+    const auth = await getAuthContext(c)
     if ('error' in auth) {
       return c.json({ message: auth.error }, auth.status)
     }
@@ -581,7 +613,7 @@ usersRouter.patch('/api/users/:id', async (c) => {
  */
 usersRouter.delete('/api/users/:id', async (c) => {
   try {
-    const auth = getAuthContext(c)
+    const auth = await getAuthContext(c)
     if ('error' in auth) {
       return c.json({ message: auth.error }, auth.status)
     }

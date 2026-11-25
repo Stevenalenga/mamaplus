@@ -46,7 +46,9 @@ export const openApiSpec = {
     '/health': { get: op('Auth', 'Health check') },
     '/api/users/register': { post: op('Auth', 'Register with email or phone') },
     '/api/users/login': { post: op('Auth', 'Login with email or phone and password') },
-    '/api/users/logout': { post: op('Auth', 'Logout') },
+    '/api/users/logout': { post: op('Auth', 'Revoke the current session', true) },
+    '/api/users/sessions': { get: op('Users', 'List the current user sessions', true) },
+    '/api/users/sessions/{id}': { delete: op('Users', 'Revoke one of the current user sessions', true) },
     '/api/auth/social': { post: op('Auth', 'Exchange a social profile for a JWT') },
     '/api/admin/login': { post: op('Auth', 'Admin credential login, returns a JWT') },
     '/api/admin/logout': {

@@ -45,10 +45,29 @@ model User {
   // Agency relations
   recruitedCaregivers AgencyCaregiver[] @relation("AgencyRecruits")
   agencyRecruitments  AgencyCaregiver[] @relation("CaregiverRecruitedBy")
+  sessions            Session[]
   
   @@index([email])
   @@index([phoneNumber])
   @@map("users")
+}
+
+// Revocable login session. The JWT carries sessionId; the raw token is not stored.
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime  @default(now())
+  userAgent  String?   @db.VarChar(512)
+  ip         String?   @db.VarChar(64)
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 // Course model

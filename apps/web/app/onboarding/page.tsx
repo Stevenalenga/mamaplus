@@ -1,6 +1,6 @@
 'use client'
 
-import { apiFetch } from '@/lib/api'
+import { apiFetch, revokeCurrentApiSession } from '@/lib/api'
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -153,6 +153,7 @@ export default function OnboardingPage() {
         )
         setIsSubmitting(false)
         // Log out the user and redirect to login page
+        await revokeCurrentApiSession()
         await signOut({ callbackUrl: '/login' })
       }
     } catch {

@@ -42,7 +42,7 @@ const DELETE_ROLES = [ROLES.INSTRUCTOR, ROLES.ADMIN]
  */
 filesRouter.post('/api/upload', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json({ success: false, message: 'Unauthorized' }, 401)
     }
@@ -112,7 +112,7 @@ filesRouter.post('/api/upload', async (c) => {
  */
 async function deleteUploadedFile(c: Context<AppEnv>) {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     if (!currentUser) {
       return c.json({ success: false, message: 'Unauthorized' }, 401)
     }

@@ -11,8 +11,8 @@ export const adminRouter = new Hono<AppEnv>()
 
 const VALID_ROLES = Object.values(ROLES)
 
-function requireAdmin(c: Context<AppEnv>) {
-  const user = getUser(c)
+async function requireAdmin(c: Context<AppEnv>) {
+  const user = await getUser(c)
   if (!user || !hasRole(user, ROLES.ADMIN)) return null
   return user
 }
@@ -117,8 +117,8 @@ function validatePostBody(body: any) {
   }
 }
 
-function requireBlogAdmin(c: Context<AppEnv>) {
-  const user = getUser(c)
+async function requireBlogAdmin(c: Context<AppEnv>) {
+  const user = await getUser(c)
   if (!user || !hasRole(user, [ROLES.ADMIN, ROLES.ADMIN_ASSISTANT])) {
     return null
   }
@@ -136,7 +136,7 @@ function generateCertificateNumber(): string {
  */
 adminRouter.get('/api/admin/stats', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -341,7 +341,7 @@ adminRouter.get('/api/admin/stats', async (c) => {
  */
 adminRouter.get('/api/admin/users', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -405,7 +405,7 @@ adminRouter.get('/api/admin/users', async (c) => {
  */
 adminRouter.patch('/api/admin/users', async (c) => {
   try {
-    const currentUser = requireAdmin(c)
+    const currentUser = await requireAdmin(c)
     if (!currentUser) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
@@ -457,7 +457,7 @@ adminRouter.patch('/api/admin/users', async (c) => {
  */
 adminRouter.get('/api/admin/users/:id', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -522,7 +522,7 @@ adminRouter.get('/api/admin/users/:id', async (c) => {
  */
 adminRouter.get('/api/admin/schools', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -543,7 +543,7 @@ adminRouter.get('/api/admin/schools', async (c) => {
  */
 adminRouter.post('/api/admin/schools', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -574,7 +574,7 @@ adminRouter.post('/api/admin/schools', async (c) => {
  */
 adminRouter.get('/api/admin/schools/:id', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -600,7 +600,7 @@ adminRouter.get('/api/admin/schools/:id', async (c) => {
  */
 adminRouter.patch('/api/admin/schools/:id', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -630,7 +630,7 @@ adminRouter.patch('/api/admin/schools/:id', async (c) => {
  */
 adminRouter.delete('/api/admin/schools/:id', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -649,7 +649,7 @@ adminRouter.delete('/api/admin/schools/:id', async (c) => {
  */
 adminRouter.get('/api/admin/educators', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -673,7 +673,7 @@ adminRouter.get('/api/admin/educators', async (c) => {
  */
 adminRouter.post('/api/admin/educators', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -706,7 +706,7 @@ adminRouter.post('/api/admin/educators', async (c) => {
  */
 adminRouter.patch('/api/admin/educators', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -740,7 +740,7 @@ adminRouter.patch('/api/admin/educators', async (c) => {
  */
 adminRouter.delete('/api/admin/educators', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -763,7 +763,7 @@ adminRouter.delete('/api/admin/educators', async (c) => {
  */
 adminRouter.get('/api/admin/enrollments', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -817,7 +817,7 @@ adminRouter.get('/api/admin/enrollments', async (c) => {
  */
 adminRouter.post('/api/admin/enrollments', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -858,7 +858,7 @@ adminRouter.post('/api/admin/enrollments', async (c) => {
  */
 adminRouter.patch('/api/admin/enrollments', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -911,7 +911,7 @@ adminRouter.patch('/api/admin/enrollments', async (c) => {
  */
 adminRouter.get('/api/admin/certificates', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -948,7 +948,7 @@ adminRouter.get('/api/admin/certificates', async (c) => {
  */
 adminRouter.post('/api/admin/certificates', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1013,7 +1013,7 @@ adminRouter.post('/api/admin/certificates', async (c) => {
  */
 adminRouter.delete('/api/admin/certificates', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1036,7 +1036,7 @@ adminRouter.delete('/api/admin/certificates', async (c) => {
  */
 adminRouter.get('/api/admin/reviews', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1066,7 +1066,7 @@ adminRouter.get('/api/admin/reviews', async (c) => {
  */
 adminRouter.patch('/api/admin/reviews', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1096,7 +1096,7 @@ adminRouter.patch('/api/admin/reviews', async (c) => {
  */
 adminRouter.delete('/api/admin/reviews', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1119,7 +1119,7 @@ adminRouter.delete('/api/admin/reviews', async (c) => {
  */
 adminRouter.get('/api/admin/agencies', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1197,7 +1197,7 @@ adminRouter.get('/api/admin/agencies', async (c) => {
  */
 adminRouter.get('/api/admin/payments', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1264,7 +1264,7 @@ adminRouter.get('/api/admin/payments', async (c) => {
  */
 adminRouter.get('/api/admin/notifications', async (c) => {
   try {
-    if (!requireAdmin(c)) {
+    if (!await requireAdmin(c)) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
 
@@ -1306,7 +1306,7 @@ adminRouter.get('/api/admin/notifications', async (c) => {
  */
 adminRouter.post('/api/admin/notifications', async (c) => {
   try {
-    const admin = requireAdmin(c)
+    const admin = await requireAdmin(c)
     if (!admin) {
       return c.json({ success: false, message: 'Unauthorized' }, 403)
     }
@@ -1447,7 +1447,7 @@ adminRouter.post('/api/admin/notifications', async (c) => {
  * GET /api/admin/blog
  */
 adminRouter.get('/api/admin/blog', async (c) => {
-  const user = requireBlogAdmin(c)
+  const user = await requireBlogAdmin(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -1460,7 +1460,7 @@ adminRouter.get('/api/admin/blog', async (c) => {
  * POST /api/admin/blog
  */
 adminRouter.post('/api/admin/blog', async (c) => {
-  const user = requireBlogAdmin(c)
+  const user = await requireBlogAdmin(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -1503,7 +1503,7 @@ adminRouter.post('/api/admin/blog', async (c) => {
  * PUT /api/admin/blog
  */
 adminRouter.put('/api/admin/blog', async (c) => {
-  const user = requireBlogAdmin(c)
+  const user = await requireBlogAdmin(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -1555,7 +1555,7 @@ adminRouter.put('/api/admin/blog', async (c) => {
  * DELETE /api/admin/blog
  */
 adminRouter.delete('/api/admin/blog', async (c) => {
-  const user = requireBlogAdmin(c)
+  const user = await requireBlogAdmin(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

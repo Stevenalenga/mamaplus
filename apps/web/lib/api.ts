@@ -29,6 +29,16 @@ export function apiUrl(path: string) {
   return API_URL ? `${API_URL}${normalized}` : normalized
 }
 
+export async function revokeCurrentApiSession() {
+  await sessionReadyPromise
+  if (!cachedToken) return
+  await fetch(apiUrl('/api/users/logout'), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${cachedToken}` },
+  }).catch(() => undefined)
+  setApiAccessToken(null)
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}) {
   await sessionReadyPromise
 

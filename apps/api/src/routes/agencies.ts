@@ -12,7 +12,7 @@ export const agenciesRouter = new Hono<AppEnv>()
  */
 agenciesRouter.get('/api/agencies/stats', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -76,7 +76,7 @@ agenciesRouter.get('/api/agencies/stats', async (c) => {
  */
 agenciesRouter.get('/api/agencies/caregivers', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -184,7 +184,7 @@ agenciesRouter.get('/api/agencies/caregivers', async (c) => {
  */
 agenciesRouter.post('/api/agencies/caregivers', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -271,7 +271,7 @@ agenciesRouter.post('/api/agencies/caregivers', async (c) => {
  * Registered before /api/agencies/caregivers/:id.
  */
 agenciesRouter.get('/api/agencies/caregivers/search', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
   if (!currentUser || !hasRole(currentUser, ROLES.AGENCY)) {
     return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
@@ -325,7 +325,7 @@ agenciesRouter.get('/api/agencies/caregivers/search', async (c) => {
  */
 agenciesRouter.patch('/api/agencies/caregivers/:id', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -409,7 +409,7 @@ agenciesRouter.patch('/api/agencies/caregivers/:id', async (c) => {
  */
 agenciesRouter.delete('/api/agencies/caregivers/:id', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     if (!currentUser) {
       return c.json({ success: false, message: 'Not authenticated' }, 401)
@@ -466,7 +466,7 @@ agenciesRouter.delete('/api/agencies/caregivers/:id', async (c) => {
  * Sponsor a caregiver's enrollment in a course.
  */
 agenciesRouter.post('/api/agencies/sponsorships', async (c) => {
-  const currentUser = getUser(c)
+  const currentUser = await getUser(c)
   if (!currentUser || !hasRole(currentUser, ROLES.AGENCY)) {
     return c.json({ success: false, message: 'Unauthorized' }, 401)
   }

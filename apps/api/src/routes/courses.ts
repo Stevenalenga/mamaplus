@@ -34,7 +34,7 @@ coursesRouter.get('/api/courses', async (c) => {
     const mine = c.req.query('mine') === 'true'
 
     if (mine) {
-      const currentUser = getUser(c)
+      const currentUser = await getUser(c)
       if (!currentUser) {
         return c.json(
           { success: false, message: 'Not authenticated' },
@@ -157,7 +157,7 @@ coursesRouter.get('/api/courses', async (c) => {
  */
 coursesRouter.post('/api/courses', async (c) => {
   try {
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -250,7 +250,7 @@ coursesRouter.post('/api/courses', async (c) => {
 coursesRouter.post('/api/courses/:id/publish', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -298,7 +298,7 @@ coursesRouter.post('/api/courses/:id/publish', async (c) => {
 coursesRouter.post('/api/courses/:id/unpublish', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -329,7 +329,7 @@ coursesRouter.post('/api/courses/:id/unpublish', async (c) => {
 coursesRouter.post('/api/courses/:id/modules', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -375,7 +375,7 @@ coursesRouter.patch('/api/courses/:id/modules/:moduleId', async (c) => {
   try {
     const id = c.req.param('id')
     const moduleId = c.req.param('moduleId')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -410,7 +410,7 @@ coursesRouter.delete('/api/courses/:id/modules/:moduleId', async (c) => {
   try {
     const id = c.req.param('id')
     const moduleId = c.req.param('moduleId')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -435,7 +435,7 @@ coursesRouter.post('/api/courses/:id/modules/:moduleId/lessons', async (c) => {
   try {
     const id = c.req.param('id')
     const moduleId = c.req.param('moduleId')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -482,7 +482,7 @@ coursesRouter.patch('/api/courses/:id/modules/:moduleId/lessons/:lessonId', asyn
   try {
     const moduleId = c.req.param('moduleId')
     const lessonId = c.req.param('lessonId')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -521,7 +521,7 @@ coursesRouter.delete('/api/courses/:id/modules/:moduleId/lessons/:lessonId', asy
   try {
     const moduleId = c.req.param('moduleId')
     const lessonId = c.req.param('lessonId')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -546,7 +546,7 @@ coursesRouter.delete('/api/courses/:id/modules/:moduleId/lessons/:lessonId', asy
 coursesRouter.get('/api/courses/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
 
     // Try to find by ID first, then by slug
     const course = await prisma.course.findFirst({
@@ -650,7 +650,7 @@ coursesRouter.get('/api/courses/:id', async (c) => {
 coursesRouter.patch('/api/courses/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 
@@ -717,7 +717,7 @@ coursesRouter.patch('/api/courses/:id', async (c) => {
 coursesRouter.delete('/api/courses/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const currentUser = getUser(c)
+    const currentUser = await getUser(c)
     const denied = requireAdminForCourseWrite(currentUser)
     if (denied) return c.json(denied.body, denied.status)
 

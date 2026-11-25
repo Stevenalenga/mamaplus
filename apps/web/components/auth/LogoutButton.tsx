@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
+import { revokeCurrentApiSession } from '@/lib/api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { LogOut, Loader2 } from 'lucide-react'
@@ -29,6 +30,7 @@ export function LogoutButton({
     setIsLoading(true)
     
     try {
+      await revokeCurrentApiSession()
       await signOut({ 
         redirect: false,
         callbackUrl: '/login'

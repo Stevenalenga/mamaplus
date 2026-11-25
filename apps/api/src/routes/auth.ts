@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { prisma } from '@mamaplus/database'
 import type { AppEnv } from '../types'
-import { generateToken } from '../lib/auth'
+import { getUser, issueAuthToken } from '../lib/auth'
 import { hashPassword, verifyPassword } from '../lib/db-utils'
 import { ROLES } from '../lib/roles'
 import {
@@ -112,11 +112,7 @@ authRouter.post('/api/users/login', async (c) => {
 
     console.log('Login successful for user:', userLoginLabel(user))
 
-    const token = generateToken({
-      userId: user.id,
-      email: user.email ?? user.phoneNumber ?? '',
-      role: user.role,
-    })
+    const issued = await issueAuthToken(c, user)
 
     const { password: _password, ...userWithoutPassword } = user
 
@@ -124,7 +120,8 @@ authRouter.post('/api/users/login', async (c) => {
       success: true,
       data: {
         user: userWithoutPassword,
-        token,
+        token: issued.token,
+        session: issued.session,
       },
       message: 'Login successful',
     })
@@ -255,11 +252,7 @@ authRouter.post('/api/users/register', async (c) => {
       },
     })
 
-    const token = generateToken({
-      userId: user.id,
-      email: user.email ?? user.phoneNumber ?? '',
-      role: user.role,
-    })
+    const issued = await issueAuthToken(c, user)
 
     console.log('User registered successfully:', userLoginLabel(user))
 
@@ -268,7 +261,8 @@ authRouter.post('/api/users/register', async (c) => {
         success: true,
         data: {
           user,
-          token,
+          token: issued.token,
+          session: issued.session,
         },
         message: 'User registered successfully',
       },
@@ -308,6 +302,16 @@ authRouter.post('/api/users/register', async (c) => {
  */
 authRouter.post('/api/users/logout', async (c) => {
   try {
+    const user = await getUser(c)
+    if (!user) {
+      return c.json({ success: false, message: 'Not authenticated' }, 401)
+    }
+
+    await prisma.session.update({
+      where: { id: user.sessionId },
+      data: { revokedAt: new Date() },
+    })
+
     return c.json({
       success: true,
       message: 'Logout successful',
@@ -370,11 +374,7 @@ authRouter.post('/api/auth/social', async (c) => {
       })
     }
 
-    const token = generateToken({
-      userId: user.id,
-      email: user.email ?? '',
-      role: user.role,
-    })
+    const issued = await issueAuthToken(c, user)
 
     return c.json({
       success: true,
@@ -389,7 +389,8 @@ authRouter.post('/api/auth/social', async (c) => {
           gender: user.gender,
           phoneNumber: user.phoneNumber,
         },
-        token,
+        token: issued.token,
+        session: issued.session,
       },
     })
   } catch (error: any) {
@@ -411,21 +412,26 @@ authRouter.post('/api/admin/login', async (c) => {
   }
 
   const user = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } })
-  const token = generateToken({
-    userId: user?.id ?? 'env-admin',
-    email: ADMIN_EMAIL,
-    role: 'ADMIN',
+  if (!user) {
+    return c.json({ error: 'Admin account is not set up' }, 401)
+  }
+
+  const issued = await issueAuthToken(c, {
+    id: user.id,
+    email: user.email ?? ADMIN_EMAIL,
+    role: ROLES.ADMIN,
   })
 
   return c.json({
     success: true,
     data: {
-      token,
+      token: issued.token,
+      session: issued.session,
       user: {
-        id: user?.id ?? 'env-admin',
+        id: user.id,
         email: ADMIN_EMAIL,
-        role: 'ADMIN',
-        name: user?.name ?? null,
+        role: ROLES.ADMIN,
+        name: user.name ?? null,
       },
     },
   })
