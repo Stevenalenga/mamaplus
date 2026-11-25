@@ -124,10 +124,15 @@ export const openApiSpec = {
     '/api/agencies/sponsorships': { post: op('Agencies', 'Create a sponsorship', true) },
     '/api/admin/stats': { get: op('Admin', 'Admin dashboard stats', true) },
     '/api/admin/users': {
-      get: op('Admin', 'List users', true),
+      get: op('Admin', 'List users, including live sessions and last login', true),
       patch: op('Admin', 'Update users', true),
     },
     '/api/admin/users/{id}': { get: op('Admin', 'Get a user for admin', true) },
+    '/api/admin/users/{id}/sessions/revoke': {
+      post: op('Admin', 'End a user active sessions', true),
+    },
+    '/api/admin/users/{id}/password': { post: op('Admin', 'Reset a user password', true) },
+    '/api/admin/users/{id}/access': { patch: op('Admin', 'Block or allow a user login', true) },
     '/api/admin/schools': {
       get: op('Admin', 'List schools', true),
       post: op('Admin', 'Create a school', true),
@@ -160,6 +165,9 @@ export const openApiSpec = {
     },
     '/api/admin/agencies': { get: op('Admin', 'List agencies', true) },
     '/api/admin/payments': { get: op('Admin', 'List payments', true) },
+    '/api/admin/notifications/preview': {
+      get: op('Admin', 'Count people and devices for a push audience', true),
+    },
     '/api/admin/notifications': {
       get: op('Admin', 'List notification logs', true),
       post: op('Admin', 'Send a push notification', true),

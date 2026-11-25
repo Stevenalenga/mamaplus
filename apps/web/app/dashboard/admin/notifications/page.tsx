@@ -37,6 +37,20 @@ type NotificationLog = {
   failureCount: number
   createdAt: string
   sentBy?: { id: string; name: string | null; email: string | null } | null
+  targetUser?: { id: string; name: string | null; email: string | null } | null
+}
+
+type Person = {
+  id: string
+  name: string | null
+  email: string | null
+  phoneNumber: string | null
+  role: string
+}
+
+type RecipientPreview = {
+  people: number
+  devices: number
 }
 
 type Stats = {
@@ -44,21 +58,34 @@ type Stats = {
   usersWithDevices: number
 }
 
-const ROLE_OPTIONS = [
-  ROLES.USER,
-  ROLES.AGENCY,
-  ROLES.INSTRUCTOR,
-  ROLES.ADMIN_ASSISTANT,
-  ROLES.ADMIN,
-  ROLES.PENDING,
+const SEGMENT_OPTIONS = [
+  { role: ROLES.USER, label: 'Caregivers' },
+  { role: ROLES.INSTRUCTOR, label: 'Educators' },
+  { role: ROLES.AGENCY, label: 'Agencies' },
 ]
+
+function audienceLabel(log: NotificationLog) {
+  if (log.audience === 'ALL') return 'Everyone'
+  if (log.audience === 'ROLE') {
+    return SEGMENT_OPTIONS.find((option) => option.role === log.targetRole)?.label
+      || getRoleDisplayName(log.targetRole || undefined)
+  }
+  const person = log.targetUser
+  if (person?.name && person.email) return `${person.name} (${person.email})`
+  return person?.name || person?.email || 'One person'
+}
 
 export default function AdminNotificationsPage() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [audience, setAudience] = useState<'ALL' | 'ROLE' | 'USER'>('ALL')
   const [targetRole, setTargetRole] = useState<string>(ROLES.USER)
-  const [targetUserId, setTargetUserId] = useState('')
+  const [personQuery, setPersonQuery] = useState('')
+  const [personResults, setPersonResults] = useState<Person[]>([])
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [searchingPeople, setSearchingPeople] = useState(false)
+  const [preview, setPreview] = useState<RecipientPreview | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [logs, setLogs] = useState<NotificationLog[]>([])
@@ -86,9 +113,75 @@ export default function AdminNotificationsPage() {
     load()
   }, [load])
 
+  useEffect(() => {
+    if (audience !== 'USER' || selectedPerson) {
+      setPersonResults([])
+      return
+    }
+
+    const query = personQuery.trim()
+    if (query.length < 2) {
+      setPersonResults([])
+      return
+    }
+
+    const timer = window.setTimeout(async () => {
+      setSearchingPeople(true)
+      try {
+        const params = new URLSearchParams({ search: query, limit: '8' })
+        const res = await apiFetch(`/api/admin/users?${params}`)
+        const data = await res.json()
+        if (res.ok && data.success) {
+          setPersonResults(data.data.users || [])
+        }
+      } catch {
+        setPersonResults([])
+      } finally {
+        setSearchingPeople(false)
+      }
+    }, 300)
+
+    return () => window.clearTimeout(timer)
+  }, [audience, personQuery, selectedPerson])
+
+  useEffect(() => {
+    if (audience === 'USER' && !selectedPerson) {
+      setPreview(null)
+      return
+    }
+
+    const params = new URLSearchParams({ audience })
+    if (audience === 'ROLE') params.set('targetRole', targetRole)
+    if (audience === 'USER' && selectedPerson) params.set('targetUserId', selectedPerson.id)
+
+    let cancelled = false
+    setPreviewLoading(true)
+    apiFetch(`/api/admin/notifications/preview?${params}`)
+      .then(async (res) => {
+        const data = await res.json()
+        if (cancelled) return
+        if (res.ok && data.success) setPreview(data.data)
+        else setPreview(null)
+      })
+      .catch(() => {
+        if (!cancelled) setPreview(null)
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [audience, targetRole, selectedPerson])
+
   async function handleSend() {
     if (!title.trim() || !body.trim()) {
       toast.error('Title and message are required')
+      return
+    }
+    if (audience === 'USER' && !selectedPerson) {
+      toast.error('Choose a person to notify')
       return
     }
 
@@ -100,7 +193,7 @@ export default function AdminNotificationsPage() {
         audience,
       }
       if (audience === 'ROLE') payload.targetRole = targetRole
-      if (audience === 'USER') payload.targetUserId = targetUserId.trim()
+      if (audience === 'USER') payload.targetUserId = selectedPerson?.id
 
       const res = await apiFetch('/api/admin/notifications', {
         method: 'POST',
@@ -116,7 +209,8 @@ export default function AdminNotificationsPage() {
       toast.success(data.message || 'Notification sent')
       setTitle('')
       setBody('')
-      setTargetUserId('')
+      setSelectedPerson(null)
+      setPersonQuery('')
       await load()
     } catch {
       toast.error('Failed to send notification')
@@ -200,24 +294,24 @@ export default function AdminNotificationsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All devices</SelectItem>
-                  <SelectItem value="ROLE">By role</SelectItem>
-                  <SelectItem value="USER">Single user ID</SelectItem>
+                  <SelectItem value="ALL">Everyone</SelectItem>
+                  <SelectItem value="ROLE">Account type</SelectItem>
+                  <SelectItem value="USER">One person</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {audience === 'ROLE' ? (
               <div className="space-y-2">
-                <Label>Role</Label>
+                <Label>Account type</Label>
                 <Select value={targetRole} onValueChange={setTargetRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {getRoleDisplayName(role)}
+                    {SEGMENT_OPTIONS.map((option) => (
+                      <SelectItem key={option.role} value={option.role}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -227,18 +321,86 @@ export default function AdminNotificationsPage() {
 
             {audience === 'USER' ? (
               <div className="space-y-2">
-                <Label htmlFor="target-user">User ID</Label>
-                <Input
-                  id="target-user"
-                  value={targetUserId}
-                  onChange={(e) => setTargetUserId(e.target.value)}
-                  placeholder="cuid from Users page"
-                />
+                <Label htmlFor="person-search">Person</Label>
+                {selectedPerson ? (
+                  <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {selectedPerson.name || selectedPerson.email || selectedPerson.phoneNumber}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[selectedPerson.email, selectedPerson.phoneNumber, getRoleDisplayName(selectedPerson.role)]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedPerson(null)
+                        setPersonQuery('')
+                      }}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      id="person-search"
+                      value={personQuery}
+                      onChange={(e) => setPersonQuery(e.target.value)}
+                      placeholder="Search name, email, or phone"
+                    />
+                    {searchingPeople ? (
+                      <p className="text-xs text-muted-foreground">Searching…</p>
+                    ) : null}
+                    {personResults.length > 0 ? (
+                      <div className="overflow-hidden rounded-md border">
+                        {personResults.map((person) => (
+                          <button
+                            key={person.id}
+                            type="button"
+                            className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() => {
+                              setSelectedPerson(person)
+                              setPersonResults([])
+                              setPersonQuery('')
+                            }}
+                          >
+                            <span className="font-medium">
+                              {person.name || person.email || person.phoneNumber}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {[person.email, person.phoneNumber, getRoleDisplayName(person.role)]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </div>
             ) : null}
           </div>
 
-          <Button onClick={handleSend} disabled={sending}>
+          <p className="text-sm text-muted-foreground">
+            {audience === 'USER' && !selectedPerson
+              ? 'Choose a person to see how many devices will receive this.'
+              : previewLoading
+                ? 'Checking registered devices…'
+                : preview && preview.devices === 0
+                  ? 'No registered devices for this audience.'
+                  : preview
+                    ? `${preview.people} ${preview.people === 1 ? 'person' : 'people'} on ${preview.devices} ${preview.devices === 1 ? 'device' : 'devices'}.`
+                    : 'Recipient count is unavailable.'}
+          </p>
+
+          <Button onClick={handleSend} disabled={sending || (audience === 'USER' && !selectedPerson)}>
             {sending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -288,11 +450,7 @@ export default function AdminNotificationsPage() {
                         <div className="font-medium">{log.title}</div>
                         <div className="line-clamp-1 text-xs text-muted-foreground">{log.body}</div>
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {log.audience}
-                        {log.targetRole ? ` · ${getRoleDisplayName(log.targetRole as any)}` : ''}
-                        {log.targetUserId ? ` · ${log.targetUserId.slice(0, 8)}…` : ''}
-                      </TableCell>
+                      <TableCell className="text-sm">{audienceLabel(log)}</TableCell>
                       <TableCell className="text-sm">
                         <span className="text-emerald-600">{log.successCount} ok</span>
                         {log.failureCount > 0 ? (
