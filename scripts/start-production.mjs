@@ -1,7 +1,13 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
+import http from 'node:http'
+import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const WEB_PORT = 3010
+const PUBLIC_PORT = 3000
+const CHATWOOT_PORT = 3100
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -44,11 +50,80 @@ function start(command, args, cwd) {
   return child
 }
 
+let publicServer = null
+
 function shutdown(code = 0) {
+  if (publicServer) publicServer.close()
   for (const child of children) {
     if (child.exitCode === null && !child.killed) child.kill('SIGTERM')
   }
   process.exit(code)
+}
+
+function isChatwootPath(url = '') {
+  const pathname = url.split('?')[0]
+  return (
+    pathname === '/widget' ||
+    pathname.startsWith('/widget/') ||
+    pathname.startsWith('/packs/') ||
+    pathname.startsWith('/vite/') ||
+    pathname === '/cable' ||
+    pathname.startsWith('/cable/') ||
+    pathname.startsWith('/api/v1/widget') ||
+    pathname.startsWith('/rails/active_storage')
+  )
+}
+
+function proxyHttp(req, res, port) {
+  const upstream = http.request(
+    {
+      hostname: '127.0.0.1',
+      port,
+      method: req.method,
+      path: req.url,
+      headers: req.headers,
+    },
+    (upstreamRes) => {
+      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers)
+      upstreamRes.pipe(res)
+    }
+  )
+  upstream.on('error', () => {
+    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain' })
+    res.end('Bad gateway')
+  })
+  req.pipe(upstream)
+}
+
+function proxyUpgrade(req, socket, head, port) {
+  const upstream = net.connect(port, '127.0.0.1', () => {
+    const headers = Object.entries(req.headers)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+      .join('\r\n')
+    upstream.write(`${req.method} ${req.url} HTTP/${req.httpVersion}\r\n${headers}\r\n\r\n`)
+    if (head?.length) upstream.write(head)
+    upstream.pipe(socket)
+    socket.pipe(upstream)
+  })
+  const closeBoth = () => {
+    socket.destroy()
+    upstream.destroy()
+  }
+  upstream.on('error', closeBoth)
+  socket.on('error', closeBoth)
+}
+
+function startPublicProxy() {
+  publicServer = http.createServer((req, res) => {
+    proxyHttp(req, res, isChatwootPath(req.url) ? CHATWOOT_PORT : WEB_PORT)
+  })
+  publicServer.on('upgrade', (req, socket, head) => {
+    proxyUpgrade(req, socket, head, isChatwootPath(req.url) ? CHATWOOT_PORT : WEB_PORT)
+  })
+  publicServer.listen(PUBLIC_PORT, '0.0.0.0', () => {
+    console.log(`MamaPlus site listening on http://0.0.0.0:${PUBLIC_PORT}`)
+  })
 }
 
 process.on('SIGTERM', () => shutdown(0))
@@ -70,7 +145,12 @@ const healthy = await waitForApi()
 if (!healthy) console.error('MamaPlus API did not open /health; starting the website anyway')
 
 const nextBin = path.join(root, 'apps/web/node_modules/next/dist/bin/next')
-const web = start(process.execPath, [nextBin, 'start', '-H', '0.0.0.0', '-p', '3000'], path.join(root, 'apps/web'))
+const web = start(
+  process.execPath,
+  [nextBin, 'start', '-H', '127.0.0.1', '-p', String(WEB_PORT)],
+  path.join(root, 'apps/web')
+)
+startPublicProxy()
 
 web.on('exit', (code, signal) => {
   if (signal) return

@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/sonner'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { WhatsAppCta } from '@/components/whatsapp-cta'
+import { ChatwootWidget } from '@/components/chatwoot-widget'
 import { CanonicalLink } from '@/components/canonical-link'
 
 function shouldShowMarketingShell(pathname: string) {
@@ -45,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {children}
       {showMarketingShell && <Footer />}
       {showMarketingShell && <WhatsAppCta />}
+      <ChatwootWidget />
       <Toaster />
       <Analytics />
     </SessionProvider>
