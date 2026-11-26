@@ -80,6 +80,7 @@ const authUserSelect = {
   phoneNumber: true,
   avatar: true,
   isVerified: true,
+  loginBlocked: true,
 } as const
 
 export async function findUserByIdentifier(raw: string) {

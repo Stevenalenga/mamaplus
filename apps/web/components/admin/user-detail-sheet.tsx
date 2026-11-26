@@ -21,7 +21,17 @@ type UserDetail = {
   role: string
   phoneNumber: string | null
   isVerified: boolean
+  loginBlocked: boolean
+  lastLoginAt: string | null
   createdAt: string
+  sessions: Array<{
+    id: string
+    createdAt: string
+    lastSeenAt: string
+    expiresAt: string
+    userAgent: string | null
+    ip: string | null
+  }>
   _count: {
     enrollments: number
     payments: number
@@ -87,12 +97,39 @@ export function UserDetailSheet({ userId, open, onOpenChange }: UserDetailSheetP
                   {getRoleDisplayName(user.role)}
                 </span>
                 {user.isVerified && <Badge variant="secondary">Verified</Badge>}
+                {user.loginBlocked ? (
+                  <Badge variant="destructive">Login blocked</Badge>
+                ) : user.sessions?.length ? (
+                  <Badge>Live</Badge>
+                ) : null}
               </div>
               {user.email && <p className="text-sm">{user.email}</p>}
               {user.phoneNumber && <p className="text-sm text-muted-foreground">{user.phoneNumber}</p>}
               <p className="text-xs text-muted-foreground">
                 Joined {new Date(user.createdAt).toLocaleDateString()}
               </p>
+              <p className="text-xs text-muted-foreground">
+                Last login {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('en-KE') : 'never'}
+              </p>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold">Signed-in devices</h3>
+              {!user.sessions?.length ? (
+                <p className="text-sm text-muted-foreground">No active session</p>
+              ) : (
+                <ul className="space-y-2">
+                  {user.sessions.map((session) => (
+                    <li key={session.id} className="rounded-lg border p-3 text-sm">
+                      <p>{session.userAgent || 'Unknown device'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Seen {new Date(session.lastSeenAt).toLocaleString('en-KE')}
+                        {session.ip ? ` · ${session.ip}` : ''}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-center">

@@ -86,6 +86,16 @@ authRouter.post('/api/users/login', async (c) => {
       )
     }
 
+    if (user.loginBlocked) {
+      return c.json(
+        {
+          success: false,
+          message: 'This account is blocked. Contact an administrator.',
+        },
+        403
+      )
+    }
+
     if (!user.password) {
       return c.json(
         {
@@ -374,6 +384,13 @@ authRouter.post('/api/auth/social', async (c) => {
       })
     }
 
+    if (user.loginBlocked) {
+      return c.json(
+        { success: false, message: 'This account is blocked. Contact an administrator.' },
+        403
+      )
+    }
+
     const issued = await issueAuthToken(c, user)
 
     return c.json({
@@ -414,6 +431,9 @@ authRouter.post('/api/admin/login', async (c) => {
   const user = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } })
   if (!user) {
     return c.json({ error: 'Admin account is not set up' }, 401)
+  }
+  if (user.loginBlocked) {
+    return c.json({ error: 'This account is blocked. Contact an administrator.' }, 403)
   }
 
   const issued = await issueAuthToken(c, {

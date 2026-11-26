@@ -28,6 +28,7 @@ import {
 
 type Certificate = {
   id: string
+  serial: number
   certificateNumber: string
   courseId: string
   issuedAt: string
@@ -143,6 +144,7 @@ export default function AdminCertificatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Serial</TableHead>
                     <TableHead>Certificate #</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Issued</TableHead>
@@ -152,11 +154,12 @@ export default function AdminCertificatesPage() {
                 <TableBody>
                   {certificates.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">No certificates</TableCell>
+                      <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No certificates</TableCell>
                     </TableRow>
                   ) : (
                     certificates.map((c) => (
                       <TableRow key={c.id}>
+                        <TableCell className="font-mono text-sm">{String(c.serial).padStart(6, '0')}</TableCell>
                         <TableCell className="font-mono text-sm">{c.certificateNumber}</TableCell>
                         <TableCell>{c.user.name || c.user.email}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">

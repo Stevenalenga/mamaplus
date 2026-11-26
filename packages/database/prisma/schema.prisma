@@ -21,6 +21,7 @@ model User {
   phoneNumber   String?   @unique
   avatar        String?   // Profile picture URL (auto-populated from OAuth providers)
   isVerified    Boolean   @default(false) // Auto-set to true for OAuth users
+  loginBlocked  Boolean   @default(false) // Admin block: login and existing sessions are rejected
   verificationToken String?
   resetToken    String?
   resetTokenExpiry DateTime?
@@ -246,6 +247,7 @@ model Certificate {
   id            String    @id @default(cuid())
   userId        String
   courseId      String
+  serial        Int       @unique
   certificateNumber String @unique
   issuedAt      DateTime  @default(now())
   pdfUrl        String?

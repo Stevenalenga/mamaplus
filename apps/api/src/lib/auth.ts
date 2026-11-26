@@ -113,14 +113,14 @@ export async function getUser(c: Context<AppEnv>): Promise<JWTPayload | null> {
     where: { id: decoded.sessionId },
     include: {
       user: {
-        select: { id: true, email: true, phoneNumber: true, role: true },
+        select: { id: true, email: true, phoneNumber: true, role: true, loginBlocked: true },
       },
     },
   })
 
   if (!session || session.revokedAt || session.userId !== decoded.userId) return null
   if (session.expiresAt.getTime() <= Date.now()) return null
-  if (!session.user) return null
+  if (!session.user || session.user.loginBlocked) return null
 
   if (Date.now() - session.lastSeenAt.getTime() > LAST_SEEN_INTERVAL_MS) {
     prisma.session

@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono'
 import type { AppEnv } from '../types'
 import { prisma } from '@mamaplus/database'
 import { getUser, hasRole } from '../lib/auth'
+import { hashPassword } from '../lib/db-utils'
 import { ROLES, type Role } from '../lib/roles'
 import { addBlogPost, deleteBlogPost, getBlogPosts, updateBlogPost } from '../lib/blog'
 import { uploadToStorage } from '../lib/storage'
@@ -125,10 +126,17 @@ async function requireBlogAdmin(c: Context<AppEnv>) {
   return user
 }
 
-function generateCertificateNumber(): string {
-  const year = new Date().getFullYear()
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
-  return `MP-${year}-${rand}`
+async function allocateCertificateIdentity(): Promise<{ serial: number; certificateNumber: string }> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const last = await prisma.certificate.aggregate({ _max: { serial: true } })
+    const serial = (last._max.serial ?? 0) + 1
+    const certificateNumber = `MP-${new Date().getFullYear()}-${String(serial).padStart(6, '0')}`
+    const clash = await prisma.certificate.findFirst({
+      where: { OR: [{ serial }, { certificateNumber }] },
+    })
+    if (!clash) return { serial, certificateNumber }
+  }
+  throw new Error('Could not allocate a certificate number')
 }
 
 /**
@@ -336,6 +344,43 @@ adminRouter.get('/api/admin/stats', async (c) => {
   }
 })
 
+async function attachSessionStatus<T extends { id: string }>(users: T[], now: Date) {
+  const ids = users.map((user) => user.id)
+  if (ids.length === 0) {
+    return users.map((user) => ({ ...user, lastLoginAt: null as Date | null, liveSessionCount: 0 }))
+  }
+
+  const [lastLogins, live] = await Promise.all([
+    prisma.session.groupBy({
+      by: ['userId'],
+      where: { userId: { in: ids } },
+      _max: { createdAt: true },
+    }),
+    prisma.session.groupBy({
+      by: ['userId'],
+      where: { userId: { in: ids }, revokedAt: null, expiresAt: { gt: now } },
+      _count: { _all: true },
+    }),
+  ])
+
+  const lastByUser = new Map(lastLogins.map((row) => [row.userId, row._max.createdAt]))
+  const liveByUser = new Map(live.map((row) => [row.userId, row._count._all]))
+
+  return users.map((user) => ({
+    ...user,
+    lastLoginAt: lastByUser.get(user.id) ?? null,
+    liveSessionCount: liveByUser.get(user.id) ?? 0,
+  }))
+}
+
+async function revokeUserSessions(userId: string) {
+  const result = await prisma.session.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  })
+  return result.count
+}
+
 /**
  * GET /api/admin/users
  */
@@ -369,7 +414,16 @@ adminRouter.get('/api/admin/users', async (c) => {
     if (isVerified === 'true') where.isVerified = true
     if (isVerified === 'false') where.isVerified = false
 
-    const [users, total] = await Promise.all([
+    const liveOnly = c.req.query('live') === 'true'
+    const blocked = c.req.query('loginBlocked')
+    const now = new Date()
+    if (liveOnly) {
+      where.sessions = { some: { revokedAt: null, expiresAt: { gt: now } } }
+    }
+    if (blocked === 'true') where.loginBlocked = true
+    if (blocked === 'false') where.loginBlocked = false
+
+    const [users, total, liveUsers] = await Promise.all([
       prisma.user.findMany({
         where,
         select: {
@@ -379,6 +433,7 @@ adminRouter.get('/api/admin/users', async (c) => {
           role: true,
           phoneNumber: true,
           isVerified: true,
+          loginBlocked: true,
           createdAt: true,
           _count: { select: { enrollments: true } },
         },
@@ -387,11 +442,23 @@ adminRouter.get('/api/admin/users', async (c) => {
         take: limit,
       }),
       prisma.user.count({ where }),
+      prisma.user.count({
+        where: { sessions: { some: { revokedAt: null, expiresAt: { gt: now } } } },
+      }),
     ])
+
+    const withSessions = await attachSessionStatus(users, now)
 
     return c.json({
       success: true,
-      data: { users, total, page, limit, totalPages: Math.ceil(total / limit) },
+      data: {
+        users: withSessions,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        liveUsers,
+      },
     })
   } catch (error: any) {
     console.error('Admin list users error:', error)
@@ -452,6 +519,103 @@ adminRouter.patch('/api/admin/users', async (c) => {
   }
 })
 
+adminRouter.post('/api/admin/users/:id/sessions/revoke', async (c) => {
+  try {
+    const admin = await requireAdmin(c)
+    if (!admin) return c.json({ success: false, message: 'Unauthorized' }, 403)
+
+    const id = c.req.param('id')
+    if (id === admin.userId) {
+      return c.json({ success: false, message: 'You cannot end your own session from here' }, 400)
+    }
+
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } })
+    if (!user) return c.json({ success: false, message: 'User not found' }, 404)
+
+    const revoked = await revokeUserSessions(id)
+    return c.json({
+      success: true,
+      data: { revoked },
+      message: revoked > 0 ? 'Signed-in sessions ended' : 'This user has no active session',
+    })
+  } catch (error: unknown) {
+    console.error('Admin revoke sessions error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return c.json({ success: false, message }, 500)
+  }
+})
+
+adminRouter.post('/api/admin/users/:id/password', async (c) => {
+  try {
+    const admin = await requireAdmin(c)
+    if (!admin) return c.json({ success: false, message: 'Unauthorized' }, 403)
+
+    const id = c.req.param('id')
+    if (id === admin.userId) {
+      return c.json({ success: false, message: 'You cannot reset your own password from here' }, 400)
+    }
+
+    const body = await c.req.json<any>().catch(() => ({}))
+    const password = typeof body.password === 'string' ? body.password : ''
+    if (password.length < 8) {
+      return c.json({ success: false, message: 'Password must be at least 8 characters' }, 400)
+    }
+
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } })
+    if (!user) return c.json({ success: false, message: 'User not found' }, 404)
+
+    await prisma.user.update({
+      where: { id },
+      data: { password: await hashPassword(password) },
+    })
+    await revokeUserSessions(id)
+
+    return c.json({
+      success: true,
+      message: 'Password reset. The user must sign in again.',
+    })
+  } catch (error: unknown) {
+    console.error('Admin reset password error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return c.json({ success: false, message }, 500)
+  }
+})
+
+adminRouter.patch('/api/admin/users/:id/access', async (c) => {
+  try {
+    const admin = await requireAdmin(c)
+    if (!admin) return c.json({ success: false, message: 'Unauthorized' }, 403)
+
+    const id = c.req.param('id')
+    if (id === admin.userId) {
+      return c.json({ success: false, message: 'You cannot block your own account' }, 400)
+    }
+
+    const body = await c.req.json<any>().catch(() => ({}))
+    if (typeof body.loginBlocked !== 'boolean') {
+      return c.json({ success: false, message: 'loginBlocked must be true or false' }, 400)
+    }
+
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true } })
+    if (!user) return c.json({ success: false, message: 'User not found' }, 404)
+
+    await prisma.user.update({
+      where: { id },
+      data: { loginBlocked: body.loginBlocked },
+    })
+    if (body.loginBlocked) await revokeUserSessions(id)
+
+    return c.json({
+      success: true,
+      message: body.loginBlocked ? 'Login blocked and sessions ended' : 'Login allowed again',
+    })
+  } catch (error: unknown) {
+    console.error('Admin login block error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return c.json({ success: false, message }, 500)
+  }
+})
+
 /**
  * GET /api/admin/users/:id
  */
@@ -472,9 +636,22 @@ adminRouter.get('/api/admin/users/:id', async (c) => {
         phoneNumber: true,
         avatar: true,
         isVerified: true,
+        loginBlocked: true,
         gender: true,
         createdAt: true,
         updatedAt: true,
+        sessions: {
+          where: { revokedAt: null, expiresAt: { gt: new Date() } },
+          orderBy: { lastSeenAt: 'desc' },
+          select: {
+            id: true,
+            createdAt: true,
+            lastSeenAt: true,
+            expiresAt: true,
+            userAgent: true,
+            ip: true,
+          },
+        },
         _count: {
           select: { enrollments: true, payments: true, certificates: true, reviews: true },
         },
@@ -509,7 +686,16 @@ adminRouter.get('/api/admin/users/:id', async (c) => {
       return c.json({ success: false, message: 'User not found' }, 404)
     }
 
-    return c.json({ success: true, data: user })
+    const lastLogin = await prisma.session.findFirst({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    })
+
+    return c.json({
+      success: true,
+      data: { ...user, lastLoginAt: lastLogin?.createdAt ?? null },
+    })
   } catch (error: unknown) {
     console.error('Admin get user error:', error)
     const message = error instanceof Error ? error.message : 'Internal server error'
@@ -917,10 +1103,12 @@ adminRouter.get('/api/admin/certificates', async (c) => {
 
     const search = c.req.query('search')?.trim() || ''
 
+    const serialSearch = /^\d+$/.test(search) ? Number(search) : null
     const where = search
       ? {
           OR: [
             { certificateNumber: { contains: search } },
+            ...(serialSearch ? [{ serial: serialSearch }] : []),
             { user: { email: { contains: search } } },
             { user: { name: { contains: search } } },
           ],
@@ -974,22 +1162,14 @@ adminRouter.post('/api/admin/certificates', async (c) => {
       )
     }
 
-    let certNumber = generateCertificateNumber()
-    let attempts = 0
-    while (attempts < 5) {
-      const clash = await prisma.certificate.findUnique({
-        where: { certificateNumber: certNumber },
-      })
-      if (!clash) break
-      certNumber = generateCertificateNumber()
-      attempts++
-    }
+    const identity = await allocateCertificateIdentity()
 
     const certificate = await prisma.certificate.create({
       data: {
         userId,
         courseId,
-        certificateNumber: certNumber,
+        serial: identity.serial,
+        certificateNumber: identity.certificateNumber,
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -1259,6 +1439,95 @@ adminRouter.get('/api/admin/payments', async (c) => {
   }
 })
 
+type NotificationAudience = {
+  audience: 'ALL' | 'ROLE' | 'USER'
+  targetRole: string | null
+  targetUserId: string | null
+}
+
+function parseNotificationAudience(input: {
+  audience?: unknown
+  targetRole?: unknown
+  targetUserId?: unknown
+}): NotificationAudience | { error: string } {
+  const audience = typeof input.audience === 'string' ? input.audience.trim().toUpperCase() : ''
+  const targetRole =
+    typeof input.targetRole === 'string' && input.targetRole.trim()
+      ? input.targetRole.trim().toUpperCase()
+      : null
+  const targetUserId =
+    typeof input.targetUserId === 'string' && input.targetUserId.trim()
+      ? input.targetUserId.trim()
+      : null
+
+  if (audience !== 'ALL' && audience !== 'ROLE' && audience !== 'USER') {
+    return { error: 'audience must be ALL, ROLE, or USER' }
+  }
+
+  if (audience === 'ROLE') {
+    if (!targetRole || !VALID_ROLES.includes(targetRole as Role)) {
+      return { error: 'targetRole must be a known role' }
+    }
+  }
+
+  if (audience === 'USER' && !targetUserId) {
+    return { error: 'targetUserId is required when audience is USER' }
+  }
+
+  return {
+    audience,
+    targetRole: audience === 'ROLE' ? targetRole : null,
+    targetUserId: audience === 'USER' ? targetUserId : null,
+  }
+}
+
+function notificationTokenWhere(audience: NotificationAudience) {
+  if (audience.audience === 'ALL') return {}
+  if (audience.audience === 'ROLE') return { user: { role: audience.targetRole! } }
+  return { userId: audience.targetUserId! }
+}
+
+async function countNotificationRecipients(audience: NotificationAudience) {
+  const tokens = await prisma.pushToken.findMany({
+    where: notificationTokenWhere(audience),
+    select: { token: true, userId: true },
+  })
+  const validTokens = tokens.filter((token) => isExpoPushToken(token.token))
+  return {
+    people: new Set(validTokens.map((token) => token.userId)).size,
+    devices: validTokens.length,
+    validTokens,
+  }
+}
+
+/**
+ * GET /api/admin/notifications/preview
+ * Query: audience, targetRole?, targetUserId?
+ */
+adminRouter.get('/api/admin/notifications/preview', async (c) => {
+  try {
+    if (!await requireAdmin(c)) {
+      return c.json({ success: false, message: 'Unauthorized' }, 403)
+    }
+
+    const parsed = parseNotificationAudience({
+      audience: c.req.query('audience'),
+      targetRole: c.req.query('targetRole'),
+      targetUserId: c.req.query('targetUserId'),
+    })
+    if ('error' in parsed) {
+      return c.json({ success: false, message: parsed.error }, 400)
+    }
+
+    const { people, devices } = await countNotificationRecipients(parsed)
+    return c.json({ success: true, data: { people, devices } })
+  } catch (error: unknown) {
+    console.error('Admin notifications preview error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return c.json({ success: false, message }, 500)
+  }
+})
+
 /**
  * GET /api/admin/notifications
  */
@@ -1283,10 +1552,25 @@ adminRouter.get('/api/admin/notifications', async (c) => {
       }),
     ])
 
+    const targetIds = [
+      ...new Set(logs.map((log) => log.targetUserId).filter((id): id is string => Boolean(id))),
+    ]
+    const targets =
+      targetIds.length === 0
+        ? []
+        : await prisma.user.findMany({
+            where: { id: { in: targetIds } },
+            select: { id: true, name: true, email: true },
+          })
+    const targetById = new Map(targets.map((user) => [user.id, user]))
+
     return c.json({
       success: true,
       data: {
-        logs,
+        logs: logs.map((log) => ({
+          ...log,
+          targetUser: log.targetUserId ? targetById.get(log.targetUserId) ?? null : null,
+        })),
         stats: {
           deviceTokens: tokenCount,
           usersWithDevices: usersWithTokens.length,
@@ -1314,15 +1598,6 @@ adminRouter.post('/api/admin/notifications', async (c) => {
     const body = await c.req.json<any>()
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     const message = typeof body.body === 'string' ? body.body.trim() : ''
-    const audience = typeof body.audience === 'string' ? body.audience.trim().toUpperCase() : ''
-    const targetRole =
-      typeof body.targetRole === 'string' && body.targetRole.trim()
-        ? body.targetRole.trim().toUpperCase()
-        : null
-    const targetUserId =
-      typeof body.targetUserId === 'string' && body.targetUserId.trim()
-        ? body.targetUserId.trim()
-        : null
     const data =
       body.data && typeof body.data === 'object' && !Array.isArray(body.data)
         ? (body.data as Record<string, unknown>)
@@ -1332,37 +1607,13 @@ adminRouter.post('/api/admin/notifications', async (c) => {
       return c.json({ success: false, message: 'title and body are required' }, 400)
     }
 
-    if (!['ALL', 'ROLE', 'USER'].includes(audience)) {
-      return c.json({ success: false, message: 'audience must be ALL, ROLE, or USER' }, 400)
+    const parsed = parseNotificationAudience(body)
+    if ('error' in parsed) {
+      return c.json({ success: false, message: parsed.error }, 400)
     }
 
-    if (audience === 'ROLE' && !targetRole) {
-      return c.json(
-        { success: false, message: 'targetRole is required when audience is ROLE' },
-        400
-      )
-    }
-
-    if (audience === 'USER' && !targetUserId) {
-      return c.json(
-        { success: false, message: 'targetUserId is required when audience is USER' },
-        400
-      )
-    }
-
-    const where =
-      audience === 'ALL'
-        ? {}
-        : audience === 'ROLE'
-          ? { user: { role: targetRole! } }
-          : { userId: targetUserId! }
-
-    const tokens = await prisma.pushToken.findMany({
-      where,
-      select: { id: true, token: true, userId: true },
-    })
-
-    const validTokens = tokens.filter((t) => isExpoPushToken(t.token))
+    const { audience, targetRole, targetUserId } = parsed
+    const { validTokens } = await countNotificationRecipients(parsed)
 
     if (validTokens.length === 0) {
       const log = await prisma.notificationLog.create({
